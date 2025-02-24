@@ -2,24 +2,28 @@ import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 import { FAB } from "react-native-paper";
 import { useTranslation } from "react-i18next";
+import { getVehicleFillings, addFilling } from "../utils/firestore";
 
 export default function VehicleFuelConsumptionScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
-  const [fillings, setFillings] = useState([
-    {
-      date: new Date("2025-01-01"),
-      liters: 40,
-      cost: 50,
-      odometer: 12500,
-    },
-    {
-      date: new Date("2025-02-15"),
-      liters: 45,
-      cost: 56,
-      odometer: 13100,
-    },
-  ]);
+  const [fillings, setFillings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadFillings();
+  }, []);
+
+  const loadFillings = async () => {
+    try {
+      const loadedFillings = await getVehicleFillings(vehicle.id);
+      setFillings(loadedFillings);
+    } catch (error) {
+      alert(t("common.error.load"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getDistanceSinceLastFilling = (currentIndex) => {
     if (currentIndex === fillings.length - 1) return null;
