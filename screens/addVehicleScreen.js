@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { TextInput, Button, Title, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
+import { addVehicle } from "../utils/firestore";
 
 const AddVehicleScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -34,19 +35,23 @@ const AddVehicleScreen = ({ navigation }) => {
         make: vehicleData.make.trim(),
         model: vehicleData.model.trim(),
         numberPlate: vehicleData.numberPlate.trim(),
-        id: Date.now().toString(),
       };
 
-      navigation.navigate("MyVehiclesMain", { newVehicle });
+      console.log("Adding vehicle:", newVehicle); // Debug log
+      const vehicleId = await addVehicle(newVehicle);
+      console.log("Vehicle added with ID:", vehicleId); // Debug log
 
-      // Clear the form
+      // Clear form and navigate back
       setVehicleData({
         name: "",
         make: "",
         model: "",
         numberPlate: "",
       });
+
+      navigation.navigate("MyVehiclesMain"); // Changed from goBack() to explicit navigation
     } catch (error) {
+      console.error("Error in handleAddVehicle:", error); // Debug log
       alert(t("common.error.save"));
     } finally {
       setSaving(false);

@@ -8,41 +8,50 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Text } from "react-native-paper";
-import { loadVehicles, saveVehicles } from "../utils/storage";
+import { useTranslation } from "react-i18next";
+import { getAllVehicles, addVehicle } from "../utils/firestore";
 
 export default function MyVehiclesScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load vehicles when screen mounts
   useEffect(() => {
-    loadStoredVehicles();
+    const unsubscribe = navigation.addListener("focus", () => {
+      loadVehicles();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    loadVehicles();
   }, []);
 
-  // Handle new vehicle additions
   useEffect(() => {
     if (route.params?.newVehicle) {
       const addNewVehicle = async () => {
         try {
-          const updatedVehicles = [...vehicles, route.params.newVehicle];
-          await saveVehicles(updatedVehicles);
-          setVehicles(updatedVehicles);
-          // Clear the params to prevent duplicate additions
+          await addVehicle(route.params.newVehicle);
+          await loadVehicles(); // Reload the list
           navigation.setParams({ newVehicle: undefined });
         } catch (error) {
-          alert("Failed to save vehicle");
+          alert(t("common.error.save"));
         }
       };
       addNewVehicle();
     }
   }, [route.params?.newVehicle]);
 
-  const loadStoredVehicles = async () => {
+  const loadVehicles = async () => {
     try {
-      const storedVehicles = await loadVehicles();
-      setVehicles(storedVehicles);
+      console.log("Loading vehicles..."); // Debug log
+      const loadedVehicles = await getAllVehicles();
+      console.log("Loaded vehicles:", loadedVehicles); // Debug log
+      setVehicles(loadedVehicles);
     } catch (error) {
-      alert("Failed to load vehicles");
+      console.error("Error loading vehicles:", error); // Debug log
+      alert(t("common.error.load"));
     } finally {
       setLoading(false);
     }
