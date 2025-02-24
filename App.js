@@ -6,7 +6,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider, IconButton } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import "./utils/i18n";
-import { StatusBar } from "react-native";
+import { StatusBar, StyleSheet, View } from "react-native";
 
 // Import screens
 import HomeScreen from "./screens/homeScreen";
@@ -30,7 +30,9 @@ function DrawerToggleButton() {
   return (
     <IconButton
       icon="menu"
-      size={24}
+      size={36}
+      iconColor="#fff"
+      style={styles.headerIcon}
       onPress={() => navigation.toggleDrawer()}
     />
   );
@@ -57,14 +59,16 @@ function MyVehiclesStack() {
         options={({ navigation }) => ({
           title: t("vehicles.title"),
           headerRight: () => (
-            <>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
               <IconButton
                 icon="plus"
-                size={24}
+                size={36}
+                iconColor="#fff"
+                style={styles.headerIcon}
                 onPress={() => navigation.navigate("AddVehicle")}
               />
               <DrawerToggleButton />
-            </>
+            </View>
           ),
         })}
       />
@@ -79,7 +83,10 @@ function MyVehiclesStack() {
       <Stack.Screen
         name="AddVehicle"
         component={AddVehicleScreen}
-        options={{ title: t("vehicles.add") }}
+        options={{
+          title: t("vehicles.add"),
+          headerBackTitle: t("navigation.back"),
+        }}
       />
       <Stack.Screen
         name="AddFilling"
@@ -209,6 +216,13 @@ function SettingsStack() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  headerIcon: {
+    margin: 0,
+    alignSelf: "center",
+  },
+});
 
 export default function App() {
   const { t } = useTranslation();

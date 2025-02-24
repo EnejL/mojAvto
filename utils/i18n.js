@@ -11,6 +11,7 @@ const resources = {
         fuelConsumption: "Fuel Consumption",
         petrolStations: "Petrol Stations",
         settings: "Settings",
+        back: "Back",
       },
       vehicles: {
         title: "My Vehicles",
@@ -54,6 +55,7 @@ const resources = {
         fuelConsumption: "Poraba Goriva",
         petrolStations: "Bencinske Črpalke",
         settings: "Nastavitve",
+        back: "Nazaj",
       },
       vehicles: {
         title: "Moja Vozila",
