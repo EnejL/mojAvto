@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider, IconButton } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import "./utils/i18n";
+import { StatusBar } from "react-native";
 
 // Import screens
 import HomeScreen from "./screens/homeScreen";
@@ -39,7 +40,17 @@ function DrawerToggleButton() {
 function MyVehiclesStack() {
   const { t } = useTranslation();
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          color: "#fff",
+        },
+      }}
+    >
       <Stack.Screen
         name="MyVehiclesMain"
         component={MyVehiclesScreen}
@@ -90,13 +101,15 @@ function HomeStack() {
     <Stack.Navigator
       screenOptions={{
         headerRight: () => <DrawerToggleButton />,
-        headerTitle: "Home",
+        headerTitle: "Domov",
         headerTitleAlign: "center",
         headerStyle: {
-          backgroundColor: "#f0f0f0",
+          backgroundColor: "#000000",
         },
+        headerTintColor: "#fff",
         headerTitleStyle: {
           fontSize: 20,
+          color: "#fff",
         },
       }}
     >
@@ -113,7 +126,17 @@ function HomeStack() {
 function FuelConsumptionStack() {
   const { t } = useTranslation();
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          color: "#fff",
+        },
+      }}
+    >
       <Stack.Screen
         name="FuelConsumption"
         component={FuelConsumptionScreen}
@@ -145,6 +168,13 @@ function PetrolStationsStack() {
     <Stack.Navigator
       screenOptions={{
         headerRight: () => <DrawerToggleButton />,
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          color: "#fff",
+        },
       }}
     >
       <Stack.Screen
@@ -162,6 +192,13 @@ function SettingsStack() {
     <Stack.Navigator
       screenOptions={{
         headerRight: () => <DrawerToggleButton />,
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          color: "#fff",
+        },
       }}
     >
       <Stack.Screen
@@ -178,6 +215,7 @@ export default function App() {
 
   return (
     <PaperProvider>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <NavigationContainer>
         <Drawer.Navigator
           screenOptions={{

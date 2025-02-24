@@ -20,6 +20,7 @@ const resources = {
         make: "Vehicle Make",
         model: "Vehicle Model",
         edit: "Edit Vehicle",
+        numberPlate: "Number Plate",
       },
       fillings: {
         title: "Fuel Fillings",
@@ -63,6 +64,7 @@ const resources = {
         make: "Znamka",
         model: "Model",
         edit: "Uredi Vozilo",
+        numberPlate: "Registrska Oznaka",
       },
       fillings: {
         title: "Točenja Goriva",
