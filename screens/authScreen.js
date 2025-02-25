@@ -4,7 +4,7 @@ import { TextInput, Button, Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getCurrentUser, createAccount, signIn, logOut } from "../utils/auth";
 
-export default function AuthScreen() {
+export default function AuthScreen({ navigation }) {
   const { t } = useTranslation();
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSignIn, setIsSignIn] = useState(false);
@@ -28,8 +28,9 @@ export default function AuthScreen() {
       setUser(newUser);
       setEmail("");
       setPassword("");
+      navigation.navigate("Home");
     } catch (error) {
-      setError(t("auth.error.createAccount"));
+      setError(t(`auth.error.${error.message}`));
     } finally {
       setLoading(false);
     }
@@ -43,8 +44,9 @@ export default function AuthScreen() {
       setUser(signedInUser);
       setEmail("");
       setPassword("");
+      navigation.navigate("Home");
     } catch (error) {
-      setError(t("auth.error.signIn"));
+      setError(t(`auth.error.${error.message}`));
     } finally {
       setLoading(false);
     }
@@ -56,6 +58,7 @@ export default function AuthScreen() {
       const anonymousUser = await logOut();
       setUser(anonymousUser);
       setIsAnonymous(true);
+      navigation.navigate("Home");
     } catch (error) {
       setError(t("auth.error.signOut"));
     } finally {
@@ -125,7 +128,7 @@ export default function AuthScreen() {
 
   return (
     <View style={styles.container}>
-      {isAnonymous ? (
+      {isAnonymous && user?.isAnonymous ? (
         <Surface style={styles.infoCard}>
           <Text style={styles.infoText}>{t("auth.anonymousInfo")}</Text>
         </Surface>

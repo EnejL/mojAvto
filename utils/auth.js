@@ -44,7 +44,17 @@ export const createAccount = async (email, password) => {
     }
   } catch (error) {
     console.error("Error creating account:", error);
-    throw error;
+    // Translate Firebase errors to user-friendly error codes
+    switch (error.code) {
+      case "auth/email-already-in-use":
+        throw new Error("auth/email-taken");
+      case "auth/invalid-email":
+        throw new Error("auth/invalid-email");
+      case "auth/weak-password":
+        throw new Error("auth/weak-password");
+      default:
+        throw new Error("auth/unknown-error");
+    }
   }
 };
 
@@ -58,7 +68,21 @@ export const signIn = async (email, password) => {
     return userCredential.user;
   } catch (error) {
     console.error("Error signing in:", error);
-    throw error;
+    // Translate Firebase errors to user-friendly error codes
+    switch (error.code) {
+      case "auth/invalid-credential":
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+        throw new Error("auth/invalid-credentials");
+      case "auth/invalid-email":
+        throw new Error("auth/invalid-email");
+      case "auth/user-disabled":
+        throw new Error("auth/user-disabled");
+      case "auth/too-many-requests":
+        throw new Error("auth/too-many-attempts");
+      default:
+        throw new Error("auth/unknown-error");
+    }
   }
 };
 

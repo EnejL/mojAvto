@@ -65,6 +65,7 @@ function MyVehiclesStack() {
         component={MyVehiclesScreen}
         options={({ navigation }) => ({
           title: t("vehicles.title"),
+          headerLeft: () => null,
           headerRight: () => (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <IconButton
