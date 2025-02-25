@@ -1,5 +1,5 @@
 // App.js
-import React from "react";
+import React, { useEffect } from "react";
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -7,6 +7,12 @@ import { Provider as PaperProvider, IconButton } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import "./utils/i18n";
 import { StatusBar, StyleSheet, View } from "react-native";
+import { ensureAnonymousAuth } from "./utils/auth";
+import {
+  DrawerContentScrollView,
+  DrawerItemList,
+  DrawerItem,
+} from "@react-navigation/drawer";
 
 // Import screens
 import HomeScreen from "./screens/homeScreen";
@@ -19,6 +25,7 @@ import AddVehicleScreen from "./screens/addVehicleScreen";
 import AddFillingScreen from "./screens/addFillingScreen";
 import EditVehicleScreen from "./screens/editVehicleScreen";
 import VehicleFuelConsumptionScreen from "./screens/vehicleFuelConsumptionScreen";
+import AuthScreen from "./screens/authScreen";
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -217,15 +224,60 @@ function SettingsStack() {
   );
 }
 
+// Auth stack.
+function AuthStack() {
+  const { t } = useTranslation();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          color: "#fff",
+        },
+      }}
+    >
+      <Stack.Screen
+        name="Auth"
+        component={AuthScreen}
+        options={{
+          title: t("auth.title"),
+          headerRight: () => <DrawerToggleButton />,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 const styles = StyleSheet.create({
   headerIcon: {
     margin: 0,
     alignSelf: "center",
   },
+  bottomDrawerSection: {
+    marginBottom: 15,
+    borderTopColor: "#f4f4f4",
+    borderTopWidth: 1,
+    paddingTop: 15,
+    paddingHorizontal: 15,
+  },
+  accountButton: {
+    backgroundColor: "#2196F3",
+    borderRadius: 15,
+  },
+  accountButtonLabel: {
+    color: "#fff",
+  },
 });
 
 export default function App() {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    ensureAnonymousAuth().catch(console.error);
+  }, []);
 
   return (
     <PaperProvider>
@@ -236,6 +288,30 @@ export default function App() {
             headerShown: false,
             drawerPosition: "right",
           }}
+          drawerContent={(props) => (
+            <View style={{ flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <DrawerContentScrollView {...props}>
+                  <DrawerItemList
+                    {...props}
+                    itemStyle={(index) =>
+                      index < props.state.routes.length - 2
+                        ? styles.drawerItem
+                        : null
+                    }
+                  />
+                </DrawerContentScrollView>
+              </View>
+              <View style={styles.bottomDrawerSection}>
+                <DrawerItem
+                  label={t("auth.title")}
+                  onPress={() => props.navigation.navigate("Account")}
+                  style={styles.accountButton}
+                  labelStyle={styles.accountButtonLabel}
+                />
+              </View>
+            </View>
+          )}
         >
           <Drawer.Screen
             name="Home"
@@ -261,6 +337,14 @@ export default function App() {
             name="Settings"
             component={SettingsStack}
             options={{ title: t("navigation.settings") }}
+          />
+          <Drawer.Screen
+            name="Account"
+            component={AuthStack}
+            options={{
+              title: t("auth.title"),
+              drawerItemStyle: { height: 0 }, // Hide from drawer list
+            }}
           />
         </Drawer.Navigator>
       </NavigationContainer>
