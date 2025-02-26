@@ -134,7 +134,7 @@ function HomeStack() {
       }}
     >
       <Stack.Screen
-        name="Home"
+        name="HomeScreen"
         component={HomeScreen}
         options={{ title: "Home" }}
       />
