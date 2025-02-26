@@ -10,6 +10,7 @@ import {
 import { Text, Button } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getAllVehicles, addVehicle } from "../utils/firestore";
+import { getCurrentUser } from "../utils/auth";
 
 export default function MyVehiclesScreen({ navigation, route }) {
   const { t } = useTranslation();

@@ -1,3 +1,5 @@
+import { getCurrentUser } from "./auth";
+
 import { db } from "./firebase";
 import {
   collection,
@@ -65,16 +67,54 @@ export const deleteVehicle = async (vehicleId) => {
 export const getAllVehicles = async () => {
   try {
     const deviceId = await getDeviceId();
-    const q = query(
-      collection(db, "vehicles"),
-      where("deviceId", "==", deviceId),
-      orderBy("createdAt", "desc")
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const currentUser = getCurrentUser();
+
+    // If user is logged in, get both their account vehicles and device vehicles
+    if (currentUser && !currentUser.isAnonymous) {
+      const userQuery = query(
+        collection(db, "vehicles"),
+        where("userId", "==", currentUser.uid)
+      );
+
+      const deviceQuery = query(
+        collection(db, "vehicles"),
+        where("deviceId", "==", deviceId),
+        where("userId", "==", null)
+      );
+
+      const [userSnapshot, deviceSnapshot] = await Promise.all([
+        getDocs(userQuery),
+        getDocs(deviceQuery),
+      ]);
+
+      const userVehicles = userSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        synced: true, // Mark as synced to account
+      }));
+
+      const deviceVehicles = deviceSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        synced: false, // Mark as local only
+      }));
+
+      return [...userVehicles, ...deviceVehicles].sort(
+        (a, b) => b.createdAt - a.createdAt
+      );
+    } else {
+      // Anonymous user - only get device vehicles
+      const q = query(
+        collection(db, "vehicles"),
+        where("deviceId", "==", deviceId)
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        synced: false,
+      }));
+    }
   } catch (error) {
     console.error("Error getting vehicles:", error);
     throw error;

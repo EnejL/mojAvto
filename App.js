@@ -3,11 +3,20 @@ import React, { useEffect } from "react";
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Provider as PaperProvider, IconButton } from "react-native-paper";
+import {
+  Provider as PaperProvider,
+  IconButton,
+  Button,
+} from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import "./utils/i18n";
-import { StatusBar, StyleSheet, View } from "react-native";
-import { setupAuthListener } from "./utils/auth";
+import { StatusBar, StyleSheet, View, Text } from "react-native";
+import { setupAuthListener, getCurrentUser } from "./utils/auth";
+import {
+  DrawerContentScrollView,
+  DrawerItemList,
+  DrawerItem,
+} from "@react-navigation/drawer";
 
 // Import screens
 import HomeScreen from "./screens/homeScreen";
@@ -21,6 +30,7 @@ import AddFillingScreen from "./screens/addFillingScreen";
 import EditVehicleScreen from "./screens/editVehicleScreen";
 import VehicleFuelConsumptionScreen from "./screens/vehicleFuelConsumptionScreen";
 import NoVehiclesWarningScreen from "./screens/noVehiclesWarningScreen";
+import AuthScreen from "./screens/authScreen";
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -70,6 +80,17 @@ function MyVehiclesStack() {
         options={{
           title: t("vehicles.details"),
           headerRight: () => <DrawerToggleButton />,
+          headerBackVisible: true,
+          headerLeft: ({ canGoBack }) =>
+            canGoBack ? (
+              <Button
+                mode="text"
+                onPress={() => navigation.navigate("MyVehiclesMain")}
+                labelStyle={{ color: "#fff" }}
+              >
+                {t("navigation.back")}
+              </Button>
+            ) : null,
         }}
       />
       <Stack.Screen
@@ -218,10 +239,64 @@ function SettingsStack() {
   );
 }
 
+// Auth stack.
+function AuthStack() {
+  const { t } = useTranslation();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          color: "#fff",
+        },
+      }}
+    >
+      <Stack.Screen
+        name="Auth"
+        component={AuthScreen}
+        options={{
+          title: t("auth.title"),
+          headerRight: () => <DrawerToggleButton />,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 const styles = StyleSheet.create({
   headerIcon: {
     margin: 0,
     alignSelf: "center",
+  },
+  bottomDrawerSection: {
+    marginBottom: 15,
+    borderTopColor: "#f4f4f4",
+    borderTopWidth: 1,
+    paddingTop: 15,
+    paddingHorizontal: 15,
+  },
+  accountButton: {
+    backgroundColor: "#2196F3",
+    borderRadius: 15,
+    marginHorizontal: 10,
+  },
+  accountButtonLabel: {
+    color: "#fff",
+    textAlign: "center",
+  },
+  userInfoSection: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f4f4f4",
+  },
+  userGreeting: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 10,
+    textAlign: "center",
   },
 });
 
@@ -242,6 +317,43 @@ export default function App() {
           screenOptions={{
             headerShown: false,
             drawerPosition: "right",
+          }}
+          drawerContent={(props) => {
+            const currentUser = getCurrentUser();
+
+            return (
+              <View style={{ flex: 1 }}>
+                <View style={{ flex: 1 }}>
+                  <DrawerContentScrollView {...props}>
+                    <DrawerItemList
+                      {...props}
+                      itemStyle={(index) =>
+                        index < props.state.routes.length - 2
+                          ? styles.drawerItem
+                          : null
+                      }
+                    />
+                  </DrawerContentScrollView>
+                </View>
+                <View style={styles.bottomDrawerSection}>
+                  {currentUser && !currentUser.isAnonymous && (
+                    <Text style={styles.userGreeting}>
+                      {t("auth.greeting", { email: currentUser.email })}
+                    </Text>
+                  )}
+                  <DrawerItem
+                    label={
+                      currentUser && !currentUser.isAnonymous
+                        ? t("auth.accountManage")
+                        : t("auth.title")
+                    }
+                    onPress={() => props.navigation.navigate("Account")}
+                    style={styles.accountButton}
+                    labelStyle={styles.accountButtonLabel}
+                  />
+                </View>
+              </View>
+            );
           }}
         >
           <Drawer.Screen
@@ -268,6 +380,14 @@ export default function App() {
             name="Settings"
             component={SettingsStack}
             options={{ title: t("navigation.settings") }}
+          />
+          <Drawer.Screen
+            name="Account"
+            component={AuthStack}
+            options={{
+              title: t("auth.title"),
+              drawerItemStyle: { height: 0 }, // Hide from drawer list
+            }}
           />
         </Drawer.Navigator>
       </NavigationContainer>
