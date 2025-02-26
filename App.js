@@ -156,7 +156,10 @@ function FuelConsumptionStack() {
       <Stack.Screen
         name="AddFilling"
         component={AddFillingScreen}
-        options={{ title: t("fillings.add") }}
+        options={{
+          title: t("fillings.add"),
+          headerBackTitle: t("navigation.back"),
+        }}
       />
       <Stack.Screen
         name="NoVehiclesWarning"

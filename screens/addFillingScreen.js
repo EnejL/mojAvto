@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
-import { TextInput, Button, Text, Menu, Divider } from "react-native-paper";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import {
+  TextInput,
+  Button,
+  Text,
+  Menu,
+  Divider,
+  Portal,
+  Modal,
+} from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { addFilling, getVehicles } from "../utils/firestore";
 
@@ -11,6 +19,7 @@ export default function AddFillingScreen({ route, navigation }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [fetchingVehicles, setFetchingVehicles] = useState(true);
+  const buttonRef = useRef(null);
 
   // Get the vehicle from route params if available
   const vehicleFromParams = route.params?.vehicle;
@@ -30,7 +39,12 @@ export default function AddFillingScreen({ route, navigation }) {
         const vehicleData = await getVehicles();
         console.log("Fetched vehicles:", vehicleData);
 
+        // Log each vehicle to debug
         if (vehicleData && vehicleData.length > 0) {
+          vehicleData.forEach((vehicle, index) => {
+            console.log(`Vehicle ${index + 1}:`, vehicle.name, vehicle.id);
+          });
+
           setVehicles(vehicleData);
 
           // If we have a vehicle from params, use it
@@ -85,8 +99,45 @@ export default function AddFillingScreen({ route, navigation }) {
     }
   };
 
+  // Use a modal instead of Menu for better control
+  const renderVehicleSelector = () => (
+    <Portal>
+      <Modal
+        visible={menuVisible}
+        onDismiss={() => setMenuVisible(false)}
+        contentContainerStyle={styles.modalContainer}
+      >
+        <Text style={styles.modalTitle}>{t("vehicles.select")}</Text>
+        <ScrollView style={styles.modalScroll}>
+          {vehicles.map((vehicle) => (
+            <TouchableOpacity
+              key={vehicle.id}
+              style={styles.vehicleItem}
+              onPress={() => {
+                setSelectedVehicle(vehicle);
+                setMenuVisible(false);
+              }}
+            >
+              <Text style={styles.vehicleName}>
+                {vehicle.name} ({vehicle.make} {vehicle.model})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        <Button
+          mode="outlined"
+          onPress={() => setMenuVisible(false)}
+          style={styles.closeButton}
+        >
+          {t("common.cancel")}
+        </Button>
+      </Modal>
+    </Portal>
+  );
+
   return (
     <View style={styles.container}>
+      {renderVehicleSelector()}
       <ScrollView>
         <View style={styles.formContainer}>
           <View style={styles.dropdownContainer}>
@@ -95,36 +146,17 @@ export default function AddFillingScreen({ route, navigation }) {
             {fetchingVehicles ? (
               <Text>Loading vehicles...</Text>
             ) : (
-              <>
-                <Button
-                  mode="outlined"
-                  onPress={() => setMenuVisible(true)}
-                  style={styles.dropdown}
-                  disabled={vehicles.length === 0}
-                >
-                  {selectedVehicle
-                    ? selectedVehicle.name
-                    : t("vehicles.selectPrompt")}
-                </Button>
-
-                <Menu
-                  visible={menuVisible}
-                  onDismiss={() => setMenuVisible(false)}
-                  anchor={<View />}
-                  style={styles.menu}
-                >
-                  {vehicles.map((vehicle) => (
-                    <Menu.Item
-                      key={vehicle.id}
-                      onPress={() => {
-                        setSelectedVehicle(vehicle);
-                        setMenuVisible(false);
-                      }}
-                      title={`${vehicle.name} (${vehicle.make} ${vehicle.model})`}
-                    />
-                  ))}
-                </Menu>
-              </>
+              <Button
+                mode="outlined"
+                onPress={() => setMenuVisible(true)}
+                style={styles.dropdown}
+                disabled={vehicles.length === 0}
+                ref={buttonRef}
+              >
+                {selectedVehicle
+                  ? selectedVehicle.name
+                  : t("vehicles.selectPrompt")}
+              </Button>
             )}
           </View>
 
@@ -226,7 +258,31 @@ const styles = StyleSheet.create({
   dropdown: {
     width: "100%",
   },
-  menu: {
-    width: "80%",
+  modalContainer: {
+    backgroundColor: "white",
+    padding: 20,
+    margin: 20,
+    borderRadius: 8,
+    maxHeight: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  modalScroll: {
+    maxHeight: 300,
+  },
+  vehicleItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  vehicleName: {
+    fontSize: 16,
+  },
+  closeButton: {
+    marginTop: 16,
   },
 });
