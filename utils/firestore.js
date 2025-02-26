@@ -1,3 +1,5 @@
+import { getCurrentUser } from "./auth";
+
 import { db } from "./firebase";
 import {
   collection,
@@ -13,26 +15,29 @@ import {
   where,
 } from "firebase/firestore";
 import { getDeviceId } from "./deviceStorage";
-import { getCurrentUser } from "./auth";
+import { auth } from "./firebase";
 
 // Vehicles Collection Operations
 export const addVehicle = async (vehicleData) => {
   try {
     const deviceId = await getDeviceId();
-    const currentUser = getCurrentUser();
+    const user = auth.currentUser;
 
-    const newVehicle = {
+    const vehicleWithMetadata = {
       ...vehicleData,
       deviceId,
       createdAt: serverTimestamp(),
     };
 
-    // If user is logged in, associate vehicle with their account
-    if (currentUser && !currentUser.isAnonymous) {
-      newVehicle.userId = currentUser.uid;
+    // If user is logged in, associate vehicle with user ID
+    if (user) {
+      vehicleWithMetadata.userId = user.uid;
     }
 
-    const docRef = await addDoc(collection(db, "vehicles"), newVehicle);
+    const docRef = await addDoc(
+      collection(db, "vehicles"),
+      vehicleWithMetadata
+    );
     return docRef.id;
   } catch (error) {
     console.error("Error adding vehicle:", error);
@@ -143,6 +148,55 @@ export const getVehicleFillings = async (vehicleId) => {
     }));
   } catch (error) {
     console.error("Error getting fillings:", error);
+    throw error;
+  }
+};
+
+export const getVehicles = async () => {
+  try {
+    const deviceId = await getDeviceId();
+    const user = auth.currentUser;
+
+    let vehicles = [];
+
+    // Always get device-associated vehicles
+    const deviceQuery = query(
+      collection(db, "vehicles"),
+      where("deviceId", "==", deviceId),
+      orderBy("createdAt", "desc")
+    );
+    const deviceSnapshot = await getDocs(deviceQuery);
+    const deviceVehicles = deviceSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    vehicles = [...deviceVehicles];
+
+    // If user is logged in, also get user-associated vehicles
+    if (user) {
+      const userQuery = query(
+        collection(db, "vehicles"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+      const userSnapshot = await getDocs(userQuery);
+      const userVehicles = userSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Combine and remove duplicates (in case a vehicle has both deviceId and userId)
+      const combinedVehicles = [...deviceVehicles, ...userVehicles];
+      vehicles = combinedVehicles.filter(
+        (vehicle, index, self) =>
+          index === self.findIndex((v) => v.id === vehicle.id)
+      );
+    }
+
+    return vehicles;
+  } catch (error) {
+    console.error("Error in getVehicles:", error);
     throw error;
   }
 };

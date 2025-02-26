@@ -22,6 +22,9 @@ const resources = {
         model: "Vehicle Model",
         edit: "Edit Vehicle",
         numberPlate: "Number Plate",
+        addFirst: "Add Your First Vehicle",
+        select: "Select Vehicle",
+        selectPrompt: "Choose a vehicle",
       },
       fillings: {
         title: "Fuel Fillings",
@@ -34,6 +37,10 @@ const resources = {
         consumptionUnit: "l/100 km",
         notEnoughData: "Not enough fuel entries",
         distanceSince: "Distance since last filling",
+        noVehiclesWarning:
+          "You need to add a vehicle before you can record fuel fillings.",
+        noFillings:
+          "There are currently no fillings to be displayed. Please enter your first filling.",
       },
       common: {
         loading: "Loading...",
@@ -94,6 +101,9 @@ const resources = {
         model: "Model",
         edit: "Uredi Vozilo",
         numberPlate: "Registrska Oznaka",
+        addFirst: "Dodaj Svoje Prvo Vozilo",
+        select: "Izberi Vozilo",
+        selectPrompt: "Izberi vozilo",
       },
       fillings: {
         title: "Točenja Goriva",
@@ -108,6 +118,10 @@ const resources = {
         notEnoughData: "Premalo vnosov točenj",
         empty: "Še ni točenj",
         distanceSince: "Prevoženi kilometri od zadnjega točenja",
+        noVehiclesWarning:
+          "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
+        noFillings:
+          "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
       },
       petrolStations: {
         title: "Bencinske Črpalke",

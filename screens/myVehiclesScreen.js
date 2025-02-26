@@ -7,9 +7,10 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { Text } from "react-native-paper";
+import { Text, Button } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getAllVehicles, addVehicle } from "../utils/firestore";
+import { getCurrentUser } from "../utils/auth";
 
 export default function MyVehiclesScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -79,14 +80,31 @@ export default function MyVehiclesScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      {vehicles.length === 0 ? (
-        <Text style={styles.emptyText}>No vehicles added yet</Text>
+      {loading ? (
+        <ActivityIndicator size="large" />
       ) : (
-        <FlatList
-          data={vehicles}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderItem}
-        />
+        <>
+          {vehicles.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>{t("vehicles.empty")}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={vehicles}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+            />
+          )}
+
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate("AddVehicle")}
+            style={styles.addButton}
+            labelStyle={styles.buttonLabel}
+          >
+            {t("vehicles.add")}
+          </Button>
+        </>
       )}
     </View>
   );
@@ -121,5 +139,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     color: "#666",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addButton: {
+    position: "absolute",
+    bottom: 16,
+    alignSelf: "center",
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

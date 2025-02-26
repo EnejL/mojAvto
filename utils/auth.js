@@ -1,64 +1,87 @@
+import { auth } from "./firebase";
+import { getDeviceId } from "./deviceStorage";
+import { updateVehicle } from "./firestore";
 import {
-  getAuth,
-  signInAnonymously,
-  createUserWithEmailAndPassword,
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import {
   signInWithEmailAndPassword,
-  linkWithCredential,
-  EmailAuthProvider,
-  signOut,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
 } from "firebase/auth";
-import { app } from "./firebase";
 
-const auth = getAuth(app);
-
-export const ensureAnonymousAuth = async () => {
+// Function to get vehicles by device ID
+export const getVehiclesByDeviceId = async (deviceId) => {
   try {
-    // If there's no current user, sign in anonymously
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-    }
-    return auth.currentUser;
+    const db = getFirestore();
+    const vehiclesRef = collection(db, "vehicles");
+    const q = query(
+      vehiclesRef,
+      where("deviceId", "==", deviceId),
+      where("userId", "==", null) // Only get vehicles without a userId
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
   } catch (error) {
-    console.error("Error in anonymous auth:", error);
+    console.error("Error getting vehicles by device ID:", error);
     throw error;
   }
 };
 
-export const createAccount = async (email, password) => {
+// Function to migrate device data to user account
+export const migrateDeviceDataToUser = async (userId) => {
   try {
-    const currentUser = auth.currentUser;
+    const deviceId = await getDeviceId();
 
-    if (currentUser?.isAnonymous) {
-      // Link anonymous account with email/password
-      const credential = EmailAuthProvider.credential(email, password);
-      await linkWithCredential(currentUser, credential);
-      return currentUser;
-    } else {
-      // Create new account
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      return userCredential.user;
+    // Get all vehicles associated with this device that don't have a userId
+    const deviceVehicles = await getVehiclesByDeviceId(deviceId);
+
+    // Update each vehicle to associate with the user ID
+    for (const vehicle of deviceVehicles) {
+      await updateVehicle(vehicle.id, {
+        userId,
+        // Keep the deviceId as well for reference
+        deviceId,
+      });
     }
+
+    console.log(`Migrated ${deviceVehicles.length} vehicles to user ${userId}`);
+    return deviceVehicles.length;
   } catch (error) {
-    console.error("Error creating account:", error);
-    // Translate Firebase errors to user-friendly error codes
-    switch (error.code) {
-      case "auth/email-already-in-use":
-        throw new Error("auth/email-taken");
-      case "auth/invalid-email":
-        throw new Error("auth/invalid-email");
-      case "auth/weak-password":
-        throw new Error("auth/weak-password");
-      default:
-        throw new Error("auth/unknown-error");
-    }
+    console.error("Error migrating device data:", error);
+    return 0;
   }
 };
 
-export const signIn = async (email, password) => {
+// Set up auth state listener to handle login
+export const setupAuthListener = () => {
+  return onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // User is signed in
+      console.log("User signed in:", user.uid);
+      const migratedCount = await migrateDeviceDataToUser(user.uid);
+      if (migratedCount > 0) {
+        console.log(
+          `Successfully migrated ${migratedCount} vehicles to user account`
+        );
+      }
+    } else {
+      // User is signed out
+      console.log("User signed out");
+    }
+  });
+};
+
+// Login with email and password
+export const loginWithEmail = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(
       auth,
@@ -67,37 +90,37 @@ export const signIn = async (email, password) => {
     );
     return userCredential.user;
   } catch (error) {
-    console.error("Error signing in:", error);
-    // Translate Firebase errors to user-friendly error codes
-    switch (error.code) {
-      case "auth/invalid-credential":
-      case "auth/user-not-found":
-      case "auth/wrong-password":
-        throw new Error("auth/invalid-credentials");
-      case "auth/invalid-email":
-        throw new Error("auth/invalid-email");
-      case "auth/user-disabled":
-        throw new Error("auth/user-disabled");
-      case "auth/too-many-requests":
-        throw new Error("auth/too-many-attempts");
-      default:
-        throw new Error("auth/unknown-error");
-    }
-  }
-};
-
-export const getCurrentUser = () => {
-  return auth.currentUser;
-};
-
-export const logOut = async () => {
-  try {
-    await signOut(auth);
-    // Sign in anonymously after logout
-    await signInAnonymously(auth);
-    return auth.currentUser;
-  } catch (error) {
-    console.error("Error in logout:", error);
+    console.error("Error logging in:", error);
     throw error;
   }
+};
+
+// Register with email and password
+export const registerWithEmail = async (email, password) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    return userCredential.user;
+  } catch (error) {
+    console.error("Error registering:", error);
+    throw error;
+  }
+};
+
+// Sign out
+export const signOut = async () => {
+  try {
+    await auth.signOut();
+  } catch (error) {
+    console.error("Error signing out:", error);
+    throw error;
+  }
+};
+
+// Get current user
+export const getCurrentUser = () => {
+  return auth.currentUser;
 };

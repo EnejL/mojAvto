@@ -11,7 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import "./utils/i18n";
 import { StatusBar, StyleSheet, View, Text } from "react-native";
-import { ensureAnonymousAuth, getCurrentUser } from "./utils/auth";
+import { setupAuthListener, getCurrentUser } from "./utils/auth";
 import {
   DrawerContentScrollView,
   DrawerItemList,
@@ -29,6 +29,7 @@ import AddVehicleScreen from "./screens/addVehicleScreen";
 import AddFillingScreen from "./screens/addFillingScreen";
 import EditVehicleScreen from "./screens/editVehicleScreen";
 import VehicleFuelConsumptionScreen from "./screens/vehicleFuelConsumptionScreen";
+import NoVehiclesWarningScreen from "./screens/noVehiclesWarningScreen";
 import AuthScreen from "./screens/authScreen";
 
 const Drawer = createDrawerNavigator();
@@ -69,19 +70,8 @@ function MyVehiclesStack() {
         component={MyVehiclesScreen}
         options={({ navigation }) => ({
           title: t("vehicles.title"),
-          headerLeft: () => null,
-          headerRight: () => (
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <IconButton
-                icon="plus"
-                size={36}
-                iconColor="#fff"
-                style={styles.headerIcon}
-                onPress={() => navigation.navigate("AddVehicle")}
-              />
-              <DrawerToggleButton />
-            </View>
-          ),
+          headerLeft: null,
+          headerRight: () => <DrawerToggleButton />,
         })}
       />
       <Stack.Screen
@@ -155,6 +145,7 @@ function HomeStack() {
 // Fuel Consumption stack.
 function FuelConsumptionStack() {
   const { t } = useTranslation();
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -186,6 +177,14 @@ function FuelConsumptionStack() {
       <Stack.Screen
         name="AddFilling"
         component={AddFillingScreen}
+        options={{
+          title: t("fillings.add"),
+          headerBackTitle: t("navigation.back"),
+        }}
+      />
+      <Stack.Screen
+        name="NoVehiclesWarning"
+        component={NoVehiclesWarningScreen}
         options={{ title: t("fillings.add") }}
       />
     </Stack.Navigator>
@@ -304,8 +303,10 @@ const styles = StyleSheet.create({
 export default function App() {
   const { t } = useTranslation();
 
+  // Set up auth listener when app starts
   useEffect(() => {
-    ensureAnonymousAuth().catch(console.error);
+    const unsubscribe = setupAuthListener();
+    return () => unsubscribe(); // Clean up on unmount
   }, []);
 
   return (

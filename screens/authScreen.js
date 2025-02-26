@@ -1,8 +1,10 @@
+import { getCurrentUser } from "../utils/auth";
+
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import { TextInput, Button, Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { getCurrentUser, createAccount, signIn, logOut } from "../utils/auth";
+import { createAccount, signIn, logOut } from "../utils/auth";
 
 export default function AuthScreen({ navigation }) {
   const { t } = useTranslation();
