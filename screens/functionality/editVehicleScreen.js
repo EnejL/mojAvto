@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { updateVehicle } from "../utils/firestore";
+import { updateVehicle } from "../../utils/firestore";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { Text, Button } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { getVehicles, getVehicleFillings } from "../utils/firestore";
+import { getVehicles, getVehicleFillings } from "../../utils/firestore";
 
 const FuelConsumptionScreen = ({ navigation }) => {
   const { t } = useTranslation();

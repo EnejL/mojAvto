@@ -1,4 +1,4 @@
-import { getCurrentUser } from "../utils/auth";
+import { getCurrentUser } from "../../utils/auth";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -16,9 +16,9 @@ import {
   IconButton,
 } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { createAccount, signIn, logOut } from "../utils/auth";
+import { createAccount, signIn, logOut } from "../../utils/auth";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../utils/firebase";
+import { auth } from "../../utils/firebase";
 
 export default function AuthScreen({ navigation }) {
   const { t } = useTranslation();

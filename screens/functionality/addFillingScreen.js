@@ -10,7 +10,7 @@ import {
   Modal,
 } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { addFilling, getVehicles } from "../utils/firestore";
+import { addFilling, getVehicles } from "../../utils/firestore";
 
 export default function AddFillingScreen({ route, navigation }) {
   const { t } = useTranslation();

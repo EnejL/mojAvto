@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 import { FAB } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { getVehicleFillings, addFilling } from "../utils/firestore";
+import { getVehicleFillings, addFilling } from "../../utils/firestore";
 
 export default function VehicleFuelConsumptionScreen({ route, navigation }) {
   const { t } = useTranslation();

@@ -1,395 +1,58 @@
 // App.js
-import React, { useEffect } from "react";
-import { NavigationContainer, useNavigation } from "@react-navigation/native";
-import { createDrawerNavigator } from "@react-navigation/drawer";
+import React, { useEffect, useState } from "react";
+import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import {
-  Provider as PaperProvider,
-  IconButton,
-  Button,
-} from "react-native-paper";
+import { Provider as PaperProvider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import "./utils/i18n";
-import { StatusBar, StyleSheet, View, Text } from "react-native";
-import { setupAuthListener, getCurrentUser } from "./utils/auth";
-import {
-  DrawerContentScrollView,
-  DrawerItemList,
-  DrawerItem,
-} from "@react-navigation/drawer";
+import { StatusBar } from "react-native";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./utils/firebase";
 
-// Import screens
-import HomeScreen from "./screens/homeScreen";
-import MyVehiclesScreen from "./screens/myVehiclesScreen";
-import FuelConsumptionScreen from "./screens/fuelConsumptionScreen";
-import PetrolStationsScreen from "./screens/petrolStationsScreen";
-import SettingsScreen from "./screens/settingsScreen";
-import VehicleDetailsScreen from "./screens/vehicleDetailsScreen";
-import AddVehicleScreen from "./screens/addVehicleScreen";
-import AddFillingScreen from "./screens/addFillingScreen";
-import EditVehicleScreen from "./screens/editVehicleScreen";
-import VehicleFuelConsumptionScreen from "./screens/vehicleFuelConsumptionScreen";
-import NoVehiclesWarningScreen from "./screens/noVehiclesWarningScreen";
-import AuthScreen from "./screens/authScreen";
+// Auth screens
+import WelcomeScreen from "./screens/navigation/welcomeScreen";
+import LoginScreen from "./screens/navigation/loginScreen";
+import SignUpScreen from "./screens/navigation/signUpScreen";
 
-const Drawer = createDrawerNavigator();
+// Main app
+import MainAppNavigator from "./screens/navigation/mainAppNavigator";
+
 const Stack = createNativeStackNavigator();
-
-// A custom drawer toggle button using Paper's IconButton.
-// Placed in the header's right.
-function DrawerToggleButton() {
-  const navigation = useNavigation();
-  return (
-    <IconButton
-      icon="menu"
-      size={36}
-      iconColor="#fff"
-      style={styles.headerIcon}
-      onPress={() => navigation.toggleDrawer()}
-    />
-  );
-}
-
-// MyVehicles stack: VehicleDetails is only accessible here.
-function MyVehiclesStack() {
-  const { t } = useTranslation();
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="MyVehiclesMain"
-        component={MyVehiclesScreen}
-        options={({ navigation }) => ({
-          title: t("vehicles.title"),
-          headerLeft: null,
-          headerRight: () => <DrawerToggleButton />,
-        })}
-      />
-      <Stack.Screen
-        name="VehicleDetails"
-        component={VehicleDetailsScreen}
-        options={{
-          title: t("vehicles.details"),
-          headerRight: () => <DrawerToggleButton />,
-          headerBackVisible: true,
-          headerLeft: ({ canGoBack }) =>
-            canGoBack ? (
-              <Button
-                mode="text"
-                onPress={() => navigation.navigate("MyVehiclesMain")}
-                labelStyle={{ color: "#fff" }}
-              >
-                {t("navigation.back")}
-              </Button>
-            ) : null,
-        }}
-      />
-      <Stack.Screen
-        name="AddVehicle"
-        component={AddVehicleScreen}
-        options={{
-          title: t("vehicles.add"),
-          headerBackTitle: t("navigation.back"),
-        }}
-      />
-      <Stack.Screen
-        name="AddFilling"
-        component={AddFillingScreen}
-        options={{ title: t("fillings.add") }}
-      />
-      <Stack.Screen
-        name="EditVehicle"
-        component={EditVehicleScreen}
-        options={{ title: t("vehicles.edit") }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Home stack.
-function HomeStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerRight: () => <DrawerToggleButton />,
-        headerTitle: "Domov",
-        headerTitleAlign: "center",
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontSize: 20,
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="HomeScreen"
-        component={HomeScreen}
-        options={{ title: "Home" }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Fuel Consumption stack.
-function FuelConsumptionStack() {
-  const { t } = useTranslation();
-
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="FuelConsumption"
-        component={FuelConsumptionScreen}
-        options={{
-          title: t("navigation.fuelConsumption"),
-          headerRight: () => <DrawerToggleButton />,
-        }}
-      />
-      <Stack.Screen
-        name="VehicleFuelConsumption"
-        component={VehicleFuelConsumptionScreen}
-        options={({ route }) => ({
-          title: route.params.vehicle.name,
-          headerRight: () => <DrawerToggleButton />,
-        })}
-      />
-      <Stack.Screen
-        name="AddFilling"
-        component={AddFillingScreen}
-        options={{
-          title: t("fillings.add"),
-          headerBackTitle: t("navigation.back"),
-        }}
-      />
-      <Stack.Screen
-        name="NoVehiclesWarning"
-        component={NoVehiclesWarningScreen}
-        options={{ title: t("fillings.add") }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Petrol Stations stack.
-function PetrolStationsStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerRight: () => <DrawerToggleButton />,
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="PetrolStations"
-        component={PetrolStationsScreen}
-        options={{ title: "Petrol Stations" }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Settings stack.
-function SettingsStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerRight: () => <DrawerToggleButton />,
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ title: "Settings" }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Auth stack.
-function AuthStack() {
-  const { t } = useTranslation();
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="Auth"
-        component={AuthScreen}
-        options={{
-          title: t("auth.title"),
-          headerRight: () => <DrawerToggleButton />,
-        }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-const styles = StyleSheet.create({
-  headerIcon: {
-    margin: 0,
-    alignSelf: "center",
-  },
-  bottomDrawerSection: {
-    marginBottom: 15,
-    borderTopColor: "#f4f4f4",
-    borderTopWidth: 1,
-    paddingTop: 15,
-    paddingHorizontal: 15,
-  },
-  accountButton: {
-    backgroundColor: "#2196F3",
-    borderRadius: 15,
-    marginHorizontal: 10,
-  },
-  accountButtonLabel: {
-    color: "#fff",
-    textAlign: "center",
-  },
-  userInfoSection: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f4f4f4",
-  },
-  userGreeting: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-});
 
 export default function App() {
   const { t } = useTranslation();
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState(null);
 
-  // Set up auth listener when app starts
+  // Handle user state changes
   useEffect(() => {
-    const unsubscribe = setupAuthListener();
-    return () => unsubscribe(); // Clean up on unmount
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      if (initializing) setInitializing(false);
+    });
+
+    return unsubscribe;
+  }, [initializing]);
+
+  if (initializing) {
+    return null; // Or a loading screen
+  }
 
   return (
     <PaperProvider>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <NavigationContainer>
-        <Drawer.Navigator
-          screenOptions={{
-            headerShown: false,
-            drawerPosition: "right",
-          }}
-          drawerContent={(props) => {
-            const currentUser = getCurrentUser();
-
-            return (
-              <View style={{ flex: 1 }}>
-                <View style={{ flex: 1 }}>
-                  <DrawerContentScrollView {...props}>
-                    <DrawerItemList
-                      {...props}
-                      itemStyle={(index) =>
-                        index < props.state.routes.length - 2
-                          ? styles.drawerItem
-                          : null
-                      }
-                    />
-                  </DrawerContentScrollView>
-                </View>
-                <View style={styles.bottomDrawerSection}>
-                  {currentUser && !currentUser.isAnonymous && (
-                    <Text style={styles.userGreeting}>
-                      {t("auth.greeting", { email: currentUser.email })}
-                    </Text>
-                  )}
-                  <DrawerItem
-                    label={
-                      currentUser && !currentUser.isAnonymous
-                        ? t("auth.accountManage")
-                        : t("auth.title")
-                    }
-                    onPress={() => props.navigation.navigate("Account")}
-                    style={styles.accountButton}
-                    labelStyle={styles.accountButtonLabel}
-                  />
-                </View>
-              </View>
-            );
-          }}
-        >
-          <Drawer.Screen
-            name="Home"
-            component={HomeStack}
-            options={{ title: t("navigation.home") }}
-          />
-          <Drawer.Screen
-            name="My Vehicles"
-            component={MyVehiclesStack}
-            options={{ title: t("navigation.myVehicles") }}
-          />
-          <Drawer.Screen
-            name="Fuel Consumption"
-            component={FuelConsumptionStack}
-            options={{ title: t("navigation.fuelConsumption") }}
-          />
-          <Drawer.Screen
-            name="Petrol Stations"
-            component={PetrolStationsStack}
-            options={{ title: t("navigation.petrolStations") }}
-          />
-          <Drawer.Screen
-            name="Settings"
-            component={SettingsStack}
-            options={{ title: t("navigation.settings") }}
-          />
-          <Drawer.Screen
-            name="Account"
-            component={AuthStack}
-            options={{
-              title: t("auth.title"),
-              drawerItemStyle: { height: 0 }, // Hide from drawer list
-            }}
-          />
-        </Drawer.Navigator>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {user ? (
+            <Stack.Screen name="MainApp" component={MainAppNavigator} />
+          ) : (
+            <>
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="SignUp" component={SignUpScreen} />
+            </>
+          )}
+        </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>
   );

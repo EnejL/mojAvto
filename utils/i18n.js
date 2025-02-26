@@ -84,6 +84,12 @@ const resources = {
         checkEmail:
           "Please check your email for instructions to reset your password",
         resetError: "Error Resetting Password",
+        confirmPassword: "Confirm Password",
+        "passwords-dont-match": "Passwords don't match",
+      },
+      welcome: {
+        message:
+          "Track your vehicle's fuel consumption and maintenance with ease.",
       },
     },
   },
@@ -170,7 +176,7 @@ const resources = {
           "weak-password": "Geslo mora vsebovati vsaj 6 znakov",
         },
         haveAccount: "Že imate račun? Prijavite se",
-        needAccount: "Potrebujete račun? Ustvarite ga",
+        needAccount: "Potrebujete račun?",
         signedInAs: "Prijavljeni kot {{email}}",
         signOut: "Odjava",
         greeting: "Pozdravljeni, {{email}}",
@@ -180,6 +186,11 @@ const resources = {
         resetEmailSent: "E-pošta za ponastavitev gesla poslana",
         checkEmail: "Preverite svojo e-pošto za navodila za ponastavitev gesla",
         resetError: "Napaka pri ponastavitvi gesla",
+        confirmPassword: "Potrdi Geslo",
+        "passwords-dont-match": "Gesla se ne ujemata",
+      },
+      welcome: {
+        message: "Enostavno sledite porabi goriva vaših vozil.",
       },
     },
   },
