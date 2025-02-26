@@ -1,16 +1,19 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
+import { updateVehicle } from "../utils/firestore";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
+  const [saving, setSaving] = useState(false);
 
   const [vehicleData, setVehicleData] = useState({
     name: vehicle.name,
     make: vehicle.make,
     model: vehicle.model,
+    numberPlate: vehicle.numberPlate || "",
   });
 
   const handleSave = async () => {
@@ -24,9 +27,29 @@ export default function EditVehicleScreen({ navigation, route }) {
       return;
     }
 
-    // Here you would save the updated vehicle data
-    // For now, just go back
-    navigation.goBack();
+    setSaving(true);
+    try {
+      // Update vehicle in Firestore
+      await updateVehicle(vehicle.id, {
+        name: vehicleData.name.trim(),
+        make: vehicleData.make.trim(),
+        model: vehicleData.model.trim(),
+        numberPlate: vehicleData.numberPlate.trim(),
+      });
+
+      // Navigate back to vehicle details with updated data
+      navigation.navigate("VehicleDetails", {
+        vehicle: {
+          ...vehicle,
+          ...vehicleData,
+        },
+      });
+    } catch (error) {
+      console.error("Error updating vehicle:", error);
+      alert(t("common.error.save"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -40,33 +63,70 @@ export default function EditVehicleScreen({ navigation, route }) {
         </Surface>
 
         <Surface style={styles.formCard}>
-          <TextInput
-            label={t("vehicles.name")}
-            value={vehicleData.name}
-            onChangeText={(text) =>
-              setVehicleData({ ...vehicleData, name: text })
-            }
-            style={styles.input}
-            mode="outlined"
-          />
-          <TextInput
-            label={t("vehicles.make")}
-            value={vehicleData.make}
-            onChangeText={(text) =>
-              setVehicleData({ ...vehicleData, make: text })
-            }
-            style={styles.input}
-            mode="outlined"
-          />
-          <TextInput
-            label={t("vehicles.model")}
-            value={vehicleData.model}
-            onChangeText={(text) =>
-              setVehicleData({ ...vehicleData, model: text })
-            }
-            style={styles.input}
-            mode="outlined"
-          />
+          <View style={styles.inputContainer}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
+              <Text style={styles.requiredLabel}>*</Text>
+            </View>
+            <TextInput
+              label={t("vehicles.name")}
+              value={vehicleData.name}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, name: text })
+              }
+              style={styles.input}
+              mode="outlined"
+              disabled={saving}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
+              <Text style={styles.requiredLabel}>*</Text>
+            </View>
+            <TextInput
+              label={t("vehicles.make")}
+              value={vehicleData.make}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, make: text })
+              }
+              style={styles.input}
+              mode="outlined"
+              disabled={saving}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
+              <Text style={styles.requiredLabel}>*</Text>
+            </View>
+            <TextInput
+              label={t("vehicles.model")}
+              value={vehicleData.model}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, model: text })
+              }
+              style={styles.input}
+              mode="outlined"
+              disabled={saving}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
+            <TextInput
+              label={t("vehicles.numberPlate")}
+              value={vehicleData.numberPlate}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, numberPlate: text })
+              }
+              style={styles.input}
+              mode="outlined"
+              disabled={saving}
+            />
+          </View>
         </Surface>
       </ScrollView>
 
@@ -75,6 +135,7 @@ export default function EditVehicleScreen({ navigation, route }) {
           mode="outlined"
           onPress={() => navigation.goBack()}
           style={[styles.button, styles.cancelButton]}
+          disabled={saving}
         >
           {t("common.cancel")}
         </Button>
@@ -82,8 +143,9 @@ export default function EditVehicleScreen({ navigation, route }) {
           mode="contained"
           onPress={handleSave}
           style={[styles.button, styles.saveButton]}
+          disabled={saving}
         >
-          {t("common.save")}
+          {saving ? <ActivityIndicator color="white" /> : t("common.save")}
         </Button>
       </View>
     </View>
@@ -120,8 +182,23 @@ const styles = StyleSheet.create({
     elevation: 1,
     backgroundColor: "#fff",
   },
-  input: {
+  inputContainer: {
     marginBottom: 16,
+  },
+  labelContainer: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  requiredLabel: {
+    color: "red",
+    marginLeft: 4,
+  },
+  input: {
+    marginBottom: 8,
     backgroundColor: "#fff",
   },
   buttonContainer: {

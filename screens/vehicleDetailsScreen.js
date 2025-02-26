@@ -28,6 +28,17 @@ export default function VehicleDetailsScreen({ route, navigation }) {
             <Text style={styles.detailLabel}>{t("vehicles.model")}</Text>
             <Text style={styles.detailValue}>{vehicle.model}</Text>
           </View>
+          {vehicle.numberPlate ? (
+            <>
+              <View style={styles.separator} />
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>
+                  {t("vehicles.numberPlate")}
+                </Text>
+                <Text style={styles.detailValue}>{vehicle.numberPlate}</Text>
+              </View>
+            </>
+          ) : null}
         </Surface>
 
         {/* You could add more sections here like:

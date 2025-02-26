@@ -30,7 +30,11 @@ export default function AuthScreen({ navigation }) {
       setPassword("");
       navigation.navigate("Home");
     } catch (error) {
-      setError(t(`auth.error.${error.message}`));
+      if (error.message && error.message.startsWith("auth/")) {
+        setError(t(`auth.error.${error.message.replace("auth/", "")}`));
+      } else {
+        setError(t("auth.error.unknown-error"));
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +50,11 @@ export default function AuthScreen({ navigation }) {
       setPassword("");
       navigation.navigate("Home");
     } catch (error) {
-      setError(t(`auth.error.${error.message}`));
+      if (error.message && error.message.startsWith("auth/")) {
+        setError(t(`auth.error.${error.message.replace("auth/", "")}`));
+      } else {
+        setError(t("auth.error.unknown-error"));
+      }
     } finally {
       setLoading(false);
     }

@@ -3,11 +3,15 @@ import React, { useEffect } from "react";
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Provider as PaperProvider, IconButton } from "react-native-paper";
+import {
+  Provider as PaperProvider,
+  IconButton,
+  Button,
+} from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import "./utils/i18n";
-import { StatusBar, StyleSheet, View } from "react-native";
-import { ensureAnonymousAuth } from "./utils/auth";
+import { StatusBar, StyleSheet, View, Text } from "react-native";
+import { ensureAnonymousAuth, getCurrentUser } from "./utils/auth";
 import {
   DrawerContentScrollView,
   DrawerItemList,
@@ -86,6 +90,17 @@ function MyVehiclesStack() {
         options={{
           title: t("vehicles.details"),
           headerRight: () => <DrawerToggleButton />,
+          headerBackVisible: true,
+          headerLeft: ({ canGoBack }) =>
+            canGoBack ? (
+              <Button
+                mode="text"
+                onPress={() => navigation.navigate("MyVehiclesMain")}
+                labelStyle={{ color: "#fff" }}
+              >
+                {t("navigation.back")}
+              </Button>
+            ) : null,
         }}
       />
       <Stack.Screen
@@ -267,9 +282,22 @@ const styles = StyleSheet.create({
   accountButton: {
     backgroundColor: "#2196F3",
     borderRadius: 15,
+    marginHorizontal: 10,
   },
   accountButtonLabel: {
     color: "#fff",
+    textAlign: "center",
+  },
+  userInfoSection: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f4f4f4",
+  },
+  userGreeting: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 10,
+    textAlign: "center",
   },
 });
 
@@ -289,30 +317,43 @@ export default function App() {
             headerShown: false,
             drawerPosition: "right",
           }}
-          drawerContent={(props) => (
-            <View style={{ flex: 1 }}>
+          drawerContent={(props) => {
+            const currentUser = getCurrentUser();
+
+            return (
               <View style={{ flex: 1 }}>
-                <DrawerContentScrollView {...props}>
-                  <DrawerItemList
-                    {...props}
-                    itemStyle={(index) =>
-                      index < props.state.routes.length - 2
-                        ? styles.drawerItem
-                        : null
+                <View style={{ flex: 1 }}>
+                  <DrawerContentScrollView {...props}>
+                    <DrawerItemList
+                      {...props}
+                      itemStyle={(index) =>
+                        index < props.state.routes.length - 2
+                          ? styles.drawerItem
+                          : null
+                      }
+                    />
+                  </DrawerContentScrollView>
+                </View>
+                <View style={styles.bottomDrawerSection}>
+                  {currentUser && !currentUser.isAnonymous && (
+                    <Text style={styles.userGreeting}>
+                      {t("auth.greeting", { email: currentUser.email })}
+                    </Text>
+                  )}
+                  <DrawerItem
+                    label={
+                      currentUser && !currentUser.isAnonymous
+                        ? t("auth.accountManage")
+                        : t("auth.title")
                     }
+                    onPress={() => props.navigation.navigate("Account")}
+                    style={styles.accountButton}
+                    labelStyle={styles.accountButtonLabel}
                   />
-                </DrawerContentScrollView>
+                </View>
               </View>
-              <View style={styles.bottomDrawerSection}>
-                <DrawerItem
-                  label={t("auth.title")}
-                  onPress={() => props.navigation.navigate("Account")}
-                  style={styles.accountButton}
-                  labelStyle={styles.accountButtonLabel}
-                />
-              </View>
-            </View>
-          )}
+            );
+          }}
         >
           <Drawer.Screen
             name="Home"
