@@ -1,49 +1,63 @@
 // fuelConsumptionScreen.js
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
-import { Text } from "react-native-paper";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { Text, Button } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { loadVehicles } from "../utils/storage";
+import { getVehicles, getVehicleFillings } from "../utils/firestore";
 
 const FuelConsumptionScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fillings, setFillings] = useState([]);
 
   useEffect(() => {
-    loadStoredVehicles();
-  }, []);
+    const fetchVehicles = async () => {
+      try {
+        const vehicleData = await getVehicles();
+        console.log("Fetched vehicles:", vehicleData);
+        setVehicles(vehicleData || []);
+      } catch (error) {
+        console.error("Error fetching vehicles:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const loadStoredVehicles = async () => {
-    try {
-      const storedVehicles = await loadVehicles();
-      setVehicles(storedVehicles);
-    } catch (error) {
-      alert(t("common.error.load"));
-    } finally {
-      setLoading(false);
+    fetchVehicles();
+
+    // Refresh vehicles when the screen is focused
+    const unsubscribe = navigation.addListener("focus", fetchVehicles);
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    // Add this to fetch fillings for the first vehicle when vehicles are loaded
+    const fetchFillings = async () => {
+      if (vehicles && vehicles.length > 0) {
+        try {
+          const fillingsData = await getVehicleFillings(vehicles[0].id);
+          setFillings(fillingsData || []);
+        } catch (error) {
+          console.error("Error fetching fillings:", error);
+        }
+      }
+    };
+
+    if (!loading) {
+      fetchFillings();
+    }
+  }, [vehicles, loading]);
+
+  const handleAddFilling = () => {
+    console.log("Current vehicles:", vehicles);
+    if (vehicles && vehicles.length > 0) {
+      // Pass the first vehicle to AddFilling screen
+      navigation.navigate("AddFilling", { vehicle: vehicles[0] });
+    } else {
+      navigation.navigate("NoVehiclesWarning");
     }
   };
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.vehicleItem}
-      onPress={() =>
-        navigation.navigate("VehicleFuelConsumption", { vehicle: item })
-      }
-    >
-      <Text style={styles.vehicleText}>{item.name}</Text>
-      <Text style={styles.vehicleSubtext}>
-        {item.make} {item.model}
-      </Text>
-    </TouchableOpacity>
-  );
 
   if (loading) {
     return (
@@ -55,15 +69,26 @@ const FuelConsumptionScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {vehicles.length === 0 ? (
-        <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
-      ) : (
-        <FlatList
-          data={vehicles}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-        />
-      )}
+      <Text style={styles.title}>{t("fillings.title")}</Text>
+
+      {/* Display fuel consumption information here */}
+      <View style={styles.contentContainer}>
+        {fillings.length > 0 ? (
+          <Text style={styles.infoText}>{t("fillings.consumption")}</Text>
+        ) : (
+          <Text style={styles.infoText}>{t("fillings.noFillings")}</Text>
+        )}
+        {/* You can add more content here */}
+      </View>
+
+      <Button
+        mode="contained"
+        onPress={handleAddFilling}
+        style={styles.addButton}
+        labelStyle={styles.buttonLabel}
+      >
+        {t("fillings.add")}
+      </Button>
     </View>
   );
 };
@@ -72,31 +97,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    position: "relative",
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  vehicleItem: {
-    padding: 12,
-    marginVertical: 5,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
   },
-  vehicleText: {
+  contentContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  infoText: {
+    fontSize: 18,
+    textAlign: "center",
+  },
+  addButton: {
+    position: "absolute",
+    bottom: 16,
+    alignSelf: "center",
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  buttonLabel: {
     fontSize: 16,
     fontWeight: "bold",
-  },
-  vehicleSubtext: {
-    fontSize: 14,
-    color: "#666",
-  },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-    color: "#666",
   },
 });
 
