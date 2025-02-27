@@ -1,9 +1,18 @@
 // screens/addVehicleScreen.js
-import React, { useState } from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
-import { TextInput, Button, Title, Text } from "react-native-paper";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  Picker,
+} from "react-native";
+import { Button, Title, Text, TextInput } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { addVehicle } from "../../utils/firestore";
+import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
+import AutocompleteInput from "../../components/AutocompleteInput";
+// import TextInput from "react-native-paper/lib/commonjs/components/TextInput";
 
 const AddVehicleScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -14,6 +23,26 @@ const AddVehicleScreen = ({ navigation }) => {
     numberPlate: "",
   });
   const [saving, setSaving] = useState(false);
+  const [carBrands, setCarBrands] = useState([]);
+  const [carModels, setCarModels] = useState([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+
+  // Load car brands when component mounts
+  useEffect(() => {
+    const loadCarBrands = async () => {
+      setLoadingBrands(true);
+      try {
+        const brands = await fetchCarBrands();
+        setCarBrands(brands);
+      } catch (error) {
+        console.error("Failed to load car brands:", error);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+
+    loadCarBrands();
+  }, []);
 
   const handleAddVehicle = async () => {
     // Validate required inputs
@@ -49,7 +78,7 @@ const AddVehicleScreen = ({ navigation }) => {
         numberPlate: "",
       });
 
-      navigation.navigate("MyVehiclesMain"); // Changed from goBack() to explicit navigation
+      navigation.navigate("MyVehiclesMain");
     } catch (error) {
       console.error("Error in handleAddVehicle:", error); // Debug log
       alert(t("common.error.save"));
@@ -58,10 +87,36 @@ const AddVehicleScreen = ({ navigation }) => {
     }
   };
 
+  const handleBrandSelection = (brand) => {
+    setVehicleData({ ...vehicleData, make: brand, model: "" });
+
+    // Fetch models for this brand
+    fetchModelsForBrand(brand);
+  };
+
+  const fetchModelsForBrand = async (brand) => {
+    if (!brand) return;
+
+    try {
+      console.log(`Fetching models for selected brand: ${brand}`);
+      const models = await fetchCarModels(brand);
+      if (Array.isArray(models) && models.length > 0) {
+        console.log(`Found ${models.length} models for ${brand}`);
+        setCarModels(models);
+      } else {
+        console.log(`No models found for ${brand}`);
+        setCarModels([]);
+      }
+    } catch (error) {
+      console.error("Failed to load car models:", error);
+      setCarModels([]);
+    }
+  };
+
   const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Title style={styles.title}>{t("vehicles.add")}</Title>
 
       <View style={styles.inputContainer}>
@@ -85,14 +140,17 @@ const AddVehicleScreen = ({ navigation }) => {
           <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
           {renderRequiredLabel()}
         </View>
-        <TextInput
+        <AutocompleteInput
           value={vehicleData.make}
           onChangeText={(text) =>
-            setVehicleData({ ...vehicleData, make: text })
+            setVehicleData({ ...vehicleData, make: text, model: "" })
           }
-          style={styles.input}
-          disabled={saving}
-          mode="outlined"
+          onSelectSuggestion={handleBrandSelection}
+          suggestions={carBrands}
+          disabled={saving || loadingBrands}
+          required={true}
+          label=""
+          placeholder={loadingBrands ? "Loading brands..." : ""}
         />
       </View>
 
@@ -101,15 +159,30 @@ const AddVehicleScreen = ({ navigation }) => {
           <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
           {renderRequiredLabel()}
         </View>
-        <TextInput
-          value={vehicleData.model}
-          onChangeText={(text) =>
-            setVehicleData({ ...vehicleData, model: text })
-          }
-          style={styles.input}
-          disabled={saving}
-          mode="outlined"
-        />
+        {carModels.length > 0 ? (
+          <AutocompleteInput
+            value={vehicleData.model}
+            onChangeText={(text) =>
+              setVehicleData({ ...vehicleData, model: text })
+            }
+            suggestions={carModels}
+            disabled={saving || !vehicleData.make}
+            required={true}
+            label=""
+            placeholder={!vehicleData.make ? "Select a make first" : ""}
+          />
+        ) : (
+          <TextInput
+            value={vehicleData.model}
+            onChangeText={(text) =>
+              setVehicleData({ ...vehicleData, model: text })
+            }
+            style={styles.input}
+            mode="outlined"
+            disabled={saving || !vehicleData.make}
+            placeholder={!vehicleData.make ? "Select a make first" : ""}
+          />
+        )}
       </View>
 
       <View style={styles.inputContainer}>
@@ -133,7 +206,7 @@ const AddVehicleScreen = ({ navigation }) => {
       >
         {saving ? <ActivityIndicator color="white" /> : t("vehicles.add")}
       </Button>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -148,6 +221,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 16,
+    zIndex: 100, // Ensure autocomplete dropdown shows above other elements
   },
   labelContainer: {
     flexDirection: "row",
@@ -166,6 +240,17 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 16,
+    marginBottom: 32,
+  },
+  pickerContainer: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 4,
+    padding: 8,
+  },
+  picker: {
+    width: "100%",
   },
 });
 
