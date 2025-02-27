@@ -48,25 +48,11 @@ export default function App() {
         <NavigationContainer>
           <Stack.Navigator>
             {user ? (
-              <>
-                <Stack.Screen
-                  name="MainApp"
-                  component={MainAppNavigator}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="MyAccount"
-                  component={MyAccountScreen}
-                  options={{
-                    title: t("auth.title"),
-                    headerStyle: {
-                      backgroundColor: "#000000",
-                    },
-                    headerTintColor: "#fff",
-                    headerBackTitle: t("navigation.back"),
-                  }}
-                />
-              </>
+              <Stack.Screen
+                name="MainApp"
+                component={MainAppNavigator}
+                options={{ headerShown: false }}
+              />
             ) : (
               <>
                 <Stack.Screen

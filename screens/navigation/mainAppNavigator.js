@@ -17,6 +17,7 @@ import AddVehicleScreen from "../functionality/addVehicleScreen";
 import EditVehicleScreen from "../functionality/editVehicleScreen";
 import AuthScreen from "../navigation/authScreen";
 import MyAccountScreen from "../functionality/myAccountScreen";
+import AddFillingScreen from "../functionality/addFillingScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -49,11 +50,24 @@ function MyVehiclesStack() {
       <Stack.Screen
         name="VehicleDetails"
         component={VehicleDetailsScreen}
-        options={{
+        options={({ route, navigation }) => ({
           title: t("vehicles.details"),
-          headerBackVisible: true,
           headerBackTitle: t("navigation.back"),
-        }}
+          headerRight: () => (
+            <IconButton
+              icon="cog"
+              color="#fff"
+              size={24}
+              style={styles.headerIcon}
+              onPress={() => {
+                // Navigate within the same stack
+                navigation.navigate("EditVehicle", {
+                  vehicle: route.params.vehicle,
+                });
+              }}
+            />
+          ),
+        })}
       />
       <Stack.Screen
         name="AddVehicle"
@@ -68,6 +82,14 @@ function MyVehiclesStack() {
         component={EditVehicleScreen}
         options={{
           title: t("vehicles.edit"),
+          headerBackTitle: t("navigation.back"),
+        }}
+      />
+      <Stack.Screen
+        name="AddFilling"
+        component={AddFillingScreen}
+        options={{
+          title: t("fillings.add"),
           headerBackTitle: t("navigation.back"),
         }}
       />
@@ -146,6 +168,34 @@ function SettingsStack() {
   );
 }
 
+// Add MyAccountScreen to each stack navigator
+function AccountStack() {
+  const { t } = useTranslation();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          color: "#fff",
+        },
+      }}
+    >
+      <Stack.Screen
+        name="MyAccountMain"
+        component={MyAccountScreen}
+        options={{
+          title: t("auth.title"),
+          headerLeft: () => null, // Remove back button
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function MainAppNavigator() {
   const { t } = useTranslation();
   const navigation = useNavigation();
@@ -199,15 +249,7 @@ export default function MainAppNavigator() {
       />
       <Tab.Screen
         name="Account"
-        component={() => null} // This is a dummy component
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            // Prevent default action
-            e.preventDefault();
-            // Navigate to MyAccount screen
-            navigation.navigate("MyAccount");
-          },
-        })}
+        component={AccountStack}
         options={{
           title: t("auth.title"),
           tabBarIcon: ({ color, size }) => (
@@ -222,6 +264,7 @@ export default function MainAppNavigator() {
 const styles = StyleSheet.create({
   headerIcon: {
     margin: 0,
+    marginTop: -4,
     alignSelf: "center",
   },
   accountIcon: {

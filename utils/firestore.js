@@ -200,3 +200,40 @@ export const getVehicles = async () => {
     throw error;
   }
 };
+
+/**
+ * Get all fillings for a specific vehicle
+ * @param {string} vehicleId - The ID of the vehicle
+ * @returns {Promise<Array>} - Array of filling objects
+ */
+export const getFillings = async (vehicleId) => {
+  try {
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const fillingsRef = collection(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings"
+    );
+
+    const q = query(fillingsRef, orderBy("date", "desc"));
+    const querySnapshot = await getDocs(q);
+
+    const fillings = [];
+    querySnapshot.forEach((doc) => {
+      fillings.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return fillings;
+  } catch (error) {
+    console.error("Error getting fillings:", error);
+    throw error;
+  }
+};

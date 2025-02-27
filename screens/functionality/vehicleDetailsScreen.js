@@ -1,12 +1,48 @@
 // screens/VehicleConsumptionScreen.js
-import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
-import { Text, Button, Surface } from "react-native-paper";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, ScrollView, FlatList } from "react-native";
+import { Text, Button, Surface, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
+import { getFillings } from "../../utils/firestore";
 
 export default function VehicleDetailsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
+  const [fillings, setFillings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadFillings = async () => {
+      try {
+        const vehicleFillings = await getFillings(vehicle.id);
+        setFillings(vehicleFillings);
+      } catch (error) {
+        console.error("Error loading fillings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFillings();
+
+    // Reload when screen comes into focus
+    const unsubscribe = navigation.addListener("focus", loadFillings);
+    return unsubscribe;
+  }, [navigation, vehicle.id]);
+
+  const renderFillingItem = ({ item }) => (
+    <Surface style={styles.fillingItem}>
+      <View style={styles.fillingHeader}>
+        <Text style={styles.fillingDate}>{item.date}</Text>
+        <Text style={styles.fillingOdometer}>{item.odometer} km</Text>
+      </View>
+      <Divider style={styles.divider} />
+      <View style={styles.fillingDetails}>
+        <Text style={styles.fillingLiters}>{item.liters} L</Text>
+        <Text style={styles.fillingCost}>{item.cost.toFixed(2)} €</Text>
+      </View>
+    </Surface>
+  );
 
   return (
     <View style={styles.container}>
@@ -41,19 +77,28 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           ) : null}
         </Surface>
 
-        {/* You could add more sections here like:
-        - Total distance driven
-        - Date added
-        - Number of fuel fillings
-        - etc. */}
+        <Surface style={styles.fillingsCard}>
+          <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
+
+          {fillings.length === 0 ? (
+            <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
+          ) : (
+            <FlatList
+              data={fillings}
+              renderItem={renderFillingItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
+          )}
+        </Surface>
       </ScrollView>
 
       <Button
         mode="contained"
-        onPress={() => navigation.navigate("EditVehicle", { vehicle })}
-        style={styles.editButton}
+        onPress={() => navigation.navigate("AddFilling", { vehicle })}
+        style={styles.addButton}
       >
-        {t("vehicles.edit")}
+        {t("fillings.add")}
       </Button>
     </View>
   );
@@ -108,7 +153,58 @@ const styles = StyleSheet.create({
     backgroundColor: "#e0e0e0",
     marginVertical: 8,
   },
-  editButton: {
+  fillingsCard: {
+    margin: 16,
+    marginTop: 8,
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    backgroundColor: "#fff",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#666",
+    marginVertical: 16,
+  },
+  fillingItem: {
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
+    elevation: 1,
+  },
+  fillingHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  fillingDate: {
+    fontWeight: "bold",
+  },
+  fillingOdometer: {
+    color: "#666",
+  },
+  divider: {
+    backgroundColor: "#e0e0e0",
+    height: 1,
+    marginVertical: 8,
+  },
+  fillingDetails: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  fillingLiters: {
+    fontSize: 16,
+  },
+  fillingCost: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  addButton: {
     margin: 16,
     paddingVertical: 6,
   },
