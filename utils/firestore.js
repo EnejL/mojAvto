@@ -173,3 +173,51 @@ export const getFillings = async (vehicleId) => {
     throw error;
   }
 };
+
+export const updateFilling = async (vehicleId, fillingId, fillingData) => {
+  try {
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const fillingRef = doc(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings",
+      fillingId
+    );
+
+    await updateDoc(fillingRef, {
+      ...fillingData,
+      date: new Date(fillingData.date),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Error updating filling:", error);
+    throw error;
+  }
+};
+
+export const deleteFilling = async (vehicleId, fillingId) => {
+  try {
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const fillingRef = doc(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings",
+      fillingId
+    );
+
+    await deleteDoc(fillingRef);
+  } catch (error) {
+    console.error("Error deleting filling:", error);
+    throw error;
+  }
+};

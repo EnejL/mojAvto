@@ -41,6 +41,8 @@ const resources = {
           "You need to add a vehicle before you can record fuel fillings.",
         noFillings:
           "There are currently no fillings to be displayed. Please enter your first filling.",
+        edit: "Edit Filling",
+        deleteConfirmMessage: "Are you sure you want to delete this filling?",
       },
       common: {
         loading: "Loading...",
@@ -115,8 +117,7 @@ const resources = {
         edit: "Uredi Vozilo",
         numberPlate: "Registrska Oznaka",
         addFirst: "Dodaj Svoje Prvo Vozilo",
-        select: "Izberi Vozilo",
-        selectPrompt: "Izberi vozilo",
+        selected: "Izbrano Vozilo",
         deleteConfirmMessage: "Ste prepričani, da želite izbrisati to vozilo?",
       },
       fillings: {
@@ -136,6 +137,8 @@ const resources = {
           "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
         noFillings:
           "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
+        edit: "Uredi Točenje",
+        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to točenje?",
       },
       petrolStations: {
         title: "Bencinske Črpalke",

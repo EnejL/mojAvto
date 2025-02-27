@@ -18,6 +18,7 @@ import EditVehicleScreen from "../functionality/editVehicleScreen";
 import AuthScreen from "../navigation/authScreen";
 import MyAccountScreen from "../functionality/myAccountScreen";
 import AddFillingScreen from "../functionality/addFillingScreen";
+import EditFillingScreen from "../functionality/editFillingScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -90,6 +91,14 @@ function MyVehiclesStack() {
         component={AddFillingScreen}
         options={{
           title: t("fillings.add"),
+          headerBackTitle: t("navigation.back"),
+        }}
+      />
+      <Stack.Screen
+        name="EditFilling"
+        component={EditFillingScreen}
+        options={{
+          title: t("fillings.edit"),
           headerBackTitle: t("navigation.back"),
         }}
       />

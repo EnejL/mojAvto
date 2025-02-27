@@ -245,10 +245,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   deleteButton: {
-    margin: 16,
+    margin: 0,
+    marginLeft: "auto",
+    marginRight: "auto",
     marginTop: 24,
     borderColor: "#d32f2f",
     backgroundColor: "transparent",
+    width: "calc(100% - 132px)",
   },
   deleteButtonLabel: {
     fontSize: 16,

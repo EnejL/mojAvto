@@ -1,26 +1,47 @@
 // screens/VehicleConsumptionScreen.js
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, FlatList } from "react-native";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { Text, Button, Surface, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { getFillings } from "../../utils/firestore";
+import { getFillings, deleteFilling } from "../../utils/firestore";
+import { Swipeable } from "react-native-gesture-handler";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
   if (!date) return "";
 
+  let dateObj;
+
   // Handle Firestore timestamp objects
   if (date.seconds) {
-    return new Date(date.seconds * 1000).toLocaleDateString();
+    dateObj = new Date(date.seconds * 1000);
   }
-
   // Handle Date objects
-  if (date instanceof Date) {
-    return date.toLocaleDateString();
+  else if (date instanceof Date) {
+    dateObj = date;
+  }
+  // Handle string dates
+  else {
+    try {
+      dateObj = new Date(date);
+    } catch (e) {
+      return date;
+    }
   }
 
-  // Handle string dates
-  return date;
+  // Format as dd. mm. yyyy
+  return `${dateObj.getDate().toString().padStart(2, "0")}. ${(
+    dateObj.getMonth() + 1
+  )
+    .toString()
+    .padStart(2, "0")}. ${dateObj.getFullYear()}`;
 };
 
 export default function VehicleDetailsScreen({ route, navigation }) {
@@ -48,31 +69,138 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return unsubscribe;
   }, [navigation, vehicle.id]);
 
-  const renderFillingItem = ({ item }) => (
-    <Surface style={styles.fillingItem}>
-      <View style={styles.fillingHeader}>
-        <Text style={styles.fillingDate}>{formatDate(item.date)}</Text>
-        <Text style={styles.fillingOdometer}>{item.odometer} km</Text>
-      </View>
-      <Divider style={styles.divider} />
-      <View style={styles.fillingDetails}>
-        <Text style={styles.fillingLiters}>{item.liters} L</Text>
-        <Text style={styles.fillingCost}>{item.cost.toFixed(2)} €</Text>
-      </View>
-    </Surface>
-  );
+  // Calculate average fuel consumption
+  const averageConsumption = useMemo(() => {
+    if (fillings.length < 2) return null;
+
+    // Sort fillings by odometer reading (ascending)
+    const sortedFillings = [...fillings].sort(
+      (a, b) => a.odometer - b.odometer
+    );
+
+    // Calculate total distance and total liters
+    let totalDistance = 0;
+    let totalLiters = 0;
+
+    for (let i = 1; i < sortedFillings.length; i++) {
+      const distance =
+        sortedFillings[i].odometer - sortedFillings[i - 1].odometer;
+      totalDistance += distance;
+      totalLiters += sortedFillings[i].liters;
+    }
+
+    // Calculate average consumption (liters per 100 km)
+    if (totalDistance === 0) return null;
+    return (totalLiters / totalDistance) * 100;
+  }, [fillings]);
+
+  const renderFillingItem = ({ item }) => {
+    const renderRightActions = (progress, dragX) => {
+      return (
+        <View style={styles.deleteAction}>
+          <Button
+            icon="trash-can"
+            color="#fff"
+            onPress={() => handleDeleteFilling(item.id)}
+            style={styles.deleteActionButton}
+          ></Button>
+        </View>
+      );
+    };
+
+    const handleDeleteFilling = (fillingId) => {
+      Alert.alert(t("common.delete"), t("fillings.deleteConfirmMessage"), [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteFilling(vehicle.id, fillingId);
+              // Refresh the fillings list
+              const updatedFillings = fillings.filter(
+                (f) => f.id !== fillingId
+              );
+              setFillings(updatedFillings);
+            } catch (error) {
+              console.error("Error deleting filling:", error);
+              alert(t("common.error.delete"));
+            }
+          },
+        },
+      ]);
+    };
+
+    return (
+      <Swipeable
+        renderRightActions={renderRightActions}
+        overshootRight={false}
+        friction={2}
+        rightThreshold={40}
+      >
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("EditFilling", {
+              filling: item,
+              vehicleId: vehicle.id,
+            })
+          }
+        >
+          <Surface style={styles.fillingItem}>
+            <View style={styles.fillingContent}>
+              <View style={styles.fillingLabels}>
+                <Text style={styles.fillingLabel}>{t("fillings.date")}:</Text>
+                <Text style={styles.fillingLabel}>
+                  {t("fillings.odometer")}:
+                </Text>
+                <Text style={styles.fillingLabel}>{t("fillings.liters")}:</Text>
+                <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
+              </View>
+
+              <View style={styles.fillingValues}>
+                <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
+                <Text style={styles.fillingValue}>{item.odometer} km</Text>
+                <Text style={styles.fillingValue}>{item.liters} L</Text>
+                <Text style={styles.fillingValue}>
+                  {item.cost.toFixed(2)} €
+                </Text>
+              </View>
+            </View>
+          </Surface>
+        </TouchableOpacity>
+      </Swipeable>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView>
         <Surface style={styles.headerCard}>
-          <Text style={styles.vehicleName}>{vehicle.name}</Text>
-          <Text style={styles.vehicleSubtitle}>
-            {vehicle.make} {vehicle.model}
-          </Text>
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.vehicleName}>{vehicle.name}</Text>
+              <Text style={styles.vehicleSubtitle}>
+                {vehicle.make} {vehicle.model}
+              </Text>
+            </View>
+
+            {averageConsumption && (
+              <View style={styles.consumptionContainer}>
+                <Text style={styles.consumptionValue}>
+                  {averageConsumption.toFixed(1)}
+                </Text>
+                <Text style={styles.consumptionUnit}>
+                  {t("fillings.consumptionUnit")}
+                </Text>
+              </View>
+            )}
+          </View>
         </Surface>
 
-        <Surface style={styles.detailsCard}>
+        {/* <Surface style={styles.detailsCard}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t("vehicles.make")}</Text>
             <Text style={styles.detailValue}>{vehicle.make}</Text>
@@ -93,7 +221,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               </View>
             </>
           ) : null}
-        </Surface>
+        </Surface> */}
 
         <Surface style={styles.fillingsCard}>
           <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
@@ -135,6 +263,11 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#fff",
   },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   vehicleName: {
     fontSize: 24,
     fontWeight: "bold",
@@ -142,6 +275,18 @@ const styles = StyleSheet.create({
   },
   vehicleSubtitle: {
     fontSize: 16,
+    color: "#666",
+  },
+  consumptionContainer: {
+    alignItems: "center",
+  },
+  consumptionValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#2e7d32",
+  },
+  consumptionUnit: {
+    fontSize: 12,
     color: "#666",
   },
   detailsCard: {
@@ -191,39 +336,45 @@ const styles = StyleSheet.create({
   },
   fillingItem: {
     marginBottom: 12,
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
     elevation: 1,
   },
-  fillingHeader: {
+  fillingContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
+  },
+  fillingLabels: {
+    flex: 1,
+  },
+  fillingValues: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  fillingLabel: {
+    fontSize: 14,
+    color: "#666",
     marginBottom: 8,
   },
-  fillingDate: {
-    fontWeight: "bold",
-  },
-  fillingOdometer: {
-    color: "#666",
-  },
-  divider: {
-    backgroundColor: "#e0e0e0",
-    height: 1,
-    marginVertical: 8,
-  },
-  fillingDetails: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  fillingLiters: {
-    fontSize: 16,
-  },
-  fillingCost: {
-    fontSize: 16,
-    fontWeight: "bold",
+  fillingValue: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 8,
   },
   addButton: {
     margin: 16,
     paddingVertical: 6,
+  },
+  deleteAction: {
+    backgroundColor: "#dd2c00",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+  },
+  deleteActionButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
   },
 });
