@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
-import { TextInput, Button, Text } from "react-native-paper";
+import { TextInput, Button, Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { addFilling } from "../../utils/firestore";
 
@@ -48,11 +48,14 @@ export default function AddFillingScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView>
-        <View style={styles.formContainer}>
-          <Text style={styles.vehicleInfo}>
+        <Surface style={styles.vehicleInfoCard}>
+          <Text style={styles.vehicleInfoTitle}>{t("vehicles.selected")}:</Text>
+          <Text style={styles.vehicleInfoText}>
             {vehicle.name} ({vehicle.make} {vehicle.model})
           </Text>
+        </Surface>
 
+        <Surface style={styles.formCard}>
           <TextInput
             label={t("fillings.date")}
             value={fillingData.date}
@@ -116,7 +119,7 @@ export default function AddFillingScreen({ route, navigation }) {
               {t("common.save")}
             </Button>
           </View>
-        </View>
+        </Surface>
       </ScrollView>
     </View>
   );
@@ -125,24 +128,37 @@ export default function AddFillingScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f5f5f5",
     padding: 16,
   },
-  formContainer: {
-    marginBottom: 20,
+  vehicleInfoCard: {
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+    elevation: 2,
   },
-  vehicleInfo: {
+  vehicleInfoTitle: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
+  },
+  vehicleInfoText: {
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
+  },
+  formCard: {
+    padding: 16,
+    borderRadius: 8,
+    elevation: 2,
   },
   input: {
     marginBottom: 16,
+    backgroundColor: "#fff",
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 16,
+    marginTop: 8,
   },
   button: {
     width: "48%",

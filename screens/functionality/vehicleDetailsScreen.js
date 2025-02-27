@@ -5,6 +5,24 @@ import { Text, Button, Surface, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getFillings } from "../../utils/firestore";
 
+// Helper function to format dates from Firestore timestamps
+const formatDate = (date) => {
+  if (!date) return "";
+
+  // Handle Firestore timestamp objects
+  if (date.seconds) {
+    return new Date(date.seconds * 1000).toLocaleDateString();
+  }
+
+  // Handle Date objects
+  if (date instanceof Date) {
+    return date.toLocaleDateString();
+  }
+
+  // Handle string dates
+  return date;
+};
+
 export default function VehicleDetailsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
@@ -33,7 +51,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const renderFillingItem = ({ item }) => (
     <Surface style={styles.fillingItem}>
       <View style={styles.fillingHeader}>
-        <Text style={styles.fillingDate}>{item.date}</Text>
+        <Text style={styles.fillingDate}>{formatDate(item.date)}</Text>
         <Text style={styles.fillingOdometer}>{item.odometer} km</Text>
       </View>
       <Divider style={styles.divider} />
