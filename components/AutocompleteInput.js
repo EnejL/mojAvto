@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, Keyboard } from "react-native";
-import { TextInput, Text, Surface } from "react-native-paper";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Keyboard,
+  Dimensions,
+} from "react-native";
+import { TextInput, Text, Surface, Portal } from "react-native-paper";
 
 const AutocompleteInput = ({
   label,
@@ -18,6 +24,8 @@ const AutocompleteInput = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
+  const [inputLayout, setInputLayout] = useState(null);
+  const screenWidth = Dimensions.get("window").width;
 
   useEffect(() => {
     if (value && suggestions.length > 0) {
@@ -30,54 +38,92 @@ const AutocompleteInput = ({
     }
   }, [value, suggestions]);
 
-  const handleChangeText = async (text) => {
-    onChangeText(text);
-
-    if (text.length > 1) {
-      setShowSuggestions(true);
-
-      // If we have a custom fetch function, use it
-      if (fetchSuggestions) {
-        setLoading(true);
-        try {
-          const customSuggestions = await fetchSuggestions(text);
-          setFilteredSuggestions(customSuggestions.slice(0, 5));
-        } catch (error) {
-          console.error("Error fetching suggestions:", error);
-        } finally {
-          setLoading(false);
-        }
+  const handleFocus = async () => {
+    if (fetchSuggestions) {
+      setLoading(true);
+      try {
+        await fetchSuggestions();
+      } finally {
+        setLoading(false);
       }
-    } else {
-      setShowSuggestions(false);
     }
+    setShowSuggestions(true);
+    measureInput();
   };
 
-  const handleSelectSuggestion = (suggestion) => {
-    onChangeText(suggestion);
+  const handleBlur = () => {
+    // Delay hiding suggestions to allow for selection
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
+  };
+
+  const handleSuggestionPress = (suggestion) => {
     if (onSelectSuggestion) {
       onSelectSuggestion(suggestion);
+    } else {
+      onChangeText(suggestion);
     }
     setShowSuggestions(false);
     Keyboard.dismiss();
   };
 
-  // Render suggestions as individual items
+  // Get the input position for positioning the dropdown
+  const measureInput = () => {
+    if (inputRef.current && inputRef.current.measureInWindow) {
+      inputRef.current.measureInWindow((x, y, width, height) => {
+        setInputLayout({ x, y, width, height });
+      });
+    }
+  };
+
+  // Render suggestions using Portal
   const renderSuggestions = () => {
     if (!showSuggestions || filteredSuggestions.length === 0) return null;
 
     return (
-      <Surface style={styles.suggestionsContainer}>
-        {filteredSuggestions.map((item, index) => (
-          <TouchableOpacity
-            key={`suggestion-${index}`}
-            style={styles.suggestionItem}
-            onPress={() => handleSelectSuggestion(item)}
+      <Portal>
+        <View
+          style={[
+            styles.suggestionsWrapper,
+            {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "transparent",
+              justifyContent: "flex-start",
+              alignItems: "center",
+              zIndex: 9999,
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <Surface
+            style={[
+              styles.suggestionsContainer,
+              {
+                position: "absolute",
+                top: inputLayout ? inputLayout.y + inputLayout.height + 2 : 100,
+                width: inputLayout ? inputLayout.width : screenWidth - 32,
+                left: inputLayout ? inputLayout.x : 16,
+                maxHeight: 200,
+              },
+            ]}
           >
-            <Text>{item}</Text>
-          </TouchableOpacity>
-        ))}
-      </Surface>
+            {filteredSuggestions.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.suggestionItem}
+                onPress={() => handleSuggestionPress(item)}
+              >
+                <Text>{item}</Text>
+              </TouchableOpacity>
+            ))}
+          </Surface>
+        </View>
+      </Portal>
     );
   };
 
@@ -93,34 +139,27 @@ const AutocompleteInput = ({
       <TextInput
         ref={inputRef}
         value={value}
-        onChangeText={handleChangeText}
+        onChangeText={onChangeText}
         style={styles.input}
         mode="outlined"
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         disabled={disabled}
         placeholder={placeholder}
-        onFocus={() => {
-          if (value.length > 1 && suggestions.length > 0) {
-            setShowSuggestions(true);
-          }
-        }}
-        onBlur={() => {
-          setTimeout(() => setShowSuggestions(false), 300);
-        }}
       />
-
-      {renderSuggestions()}
 
       {loading && (
         <Text style={styles.loadingText}>Loading suggestions...</Text>
       )}
+
+      {renderSuggestions()}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-    zIndex: 100,
+    position: "relative",
   },
   labelContainer: {
     flexDirection: "row",
@@ -137,14 +176,13 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#fff",
   },
-  suggestionsContainer: {
-    position: "absolute",
-    top: 60,
+  portalContainer: {
+    zIndex: 9999,
     left: 0,
     right: 0,
+  },
+  suggestionsContainer: {
     maxHeight: 200,
-    zIndex: 9999,
-    elevation: 5,
     borderRadius: 4,
     backgroundColor: "#fff",
     shadowColor: "#000",
@@ -164,6 +202,17 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 12,
     marginTop: 4,
+  },
+  suggestionsWrapper: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    zIndex: 9999,
   },
 });
 
