@@ -52,6 +52,7 @@ function MyVehiclesStack() {
         options={{
           title: t("vehicles.details"),
           headerBackVisible: true,
+          headerBackTitle: t("navigation.back"),
         }}
       />
       <Stack.Screen

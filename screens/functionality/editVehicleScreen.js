@@ -9,6 +9,7 @@ import {
 import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { updateVehicle, deleteVehicle } from "../../utils/firestore";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -155,16 +156,21 @@ export default function EditVehicleScreen({ navigation, route }) {
           </View>
         </Surface>
 
-        <Surface style={styles.deleteButtonContainer}>
-          <Button
-            mode="contained"
-            onPress={handleDelete}
-            style={styles.deleteButton}
-            labelStyle={styles.buttonLabel}
-          >
-            {t("common.delete")}
-          </Button>
-        </Surface>
+        <Button
+          mode="outlined"
+          onPress={handleDelete}
+          style={styles.deleteButton}
+          labelStyle={styles.deleteButtonLabel}
+          icon={({ size, color }) => (
+            <MaterialCommunityIcons
+              name="trash-can"
+              size={size}
+              color={color}
+            />
+          )}
+        >
+          {t("common.delete")}
+        </Button>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
@@ -238,6 +244,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: "#fff",
   },
+  deleteButton: {
+    margin: 16,
+    marginTop: 24,
+    borderColor: "#d32f2f",
+    backgroundColor: "transparent",
+  },
+  deleteButtonLabel: {
+    fontSize: 16,
+    paddingVertical: 4,
+    color: "#d32f2f",
+  },
   buttonContainer: {
     flexDirection: "row",
     padding: 16,
@@ -253,16 +270,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: "#6c757d",
-  },
-  deleteButtonContainer: {
-    margin: 16,
-    marginTop: 8,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-  },
-  deleteButton: {
-    backgroundColor: "#f44336",
   },
   buttonLabel: {
     fontSize: 16,
