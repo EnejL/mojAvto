@@ -5,14 +5,20 @@ import { useTranslation } from "react-i18next";
 import { signIn } from "../../utils/auth";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../utils/firebase";
+import { useNavigation } from "@react-navigation/native";
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen() {
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+  const handleBackToWelcome = () => {
+    navigation.navigate("Welcome");
+  };
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -129,6 +135,8 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.switchLink}>{t("auth.createAccount")}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* <Button onPress={handleBackToWelcome}>{t("navigation.back")}</Button> */}
       </Surface>
     </View>
   );

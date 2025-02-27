@@ -50,6 +50,7 @@ const resources = {
           save: "Failed to save",
           load: "Failed to load",
           required: "Please fill in all fields",
+          delete: "Brisanje ni uspelo",
         },
       },
       auth: {
@@ -99,7 +100,7 @@ const resources = {
         home: "Domov",
         myVehicles: "Moja Vozila",
         fuelConsumption: "Poraba Goriva",
-        petrolStations: "Bencinske Črpalke",
+        petrolStations: "Črpalke",
         settings: "Nastavitve",
         back: "Nazaj",
       },
@@ -116,6 +117,7 @@ const resources = {
         addFirst: "Dodaj Svoje Prvo Vozilo",
         select: "Izberi Vozilo",
         selectPrompt: "Izberi vozilo",
+        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to vozilo?",
       },
       fillings: {
         title: "Točenja Goriva",
@@ -153,7 +155,9 @@ const resources = {
           save: "Shranjevanje ni uspelo",
           load: "Nalaganje ni uspelo",
           required: "Prosim izpolnite vsa polja",
+          delete: "Brisanje ni uspelo",
         },
+        delete: "Izbriši",
       },
       auth: {
         title: "Račun",

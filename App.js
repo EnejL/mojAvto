@@ -3,16 +3,19 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
-import { useTranslation } from "react-i18next";
+import "react-native-gesture-handler";
 import "./utils/i18n";
+import { useTranslation } from "react-i18next";
 import { StatusBar } from "react-native";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./utils/firebase";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Auth screens
 import WelcomeScreen from "./screens/navigation/welcomeScreen";
 import LoginScreen from "./screens/navigation/loginScreen";
 import SignUpScreen from "./screens/navigation/signUpScreen";
+import MyAccountScreen from "./screens/functionality/myAccountScreen";
 
 // Main app
 import MainAppNavigator from "./screens/navigation/mainAppNavigator";
@@ -39,21 +42,91 @@ export default function App() {
   }
 
   return (
-    <PaperProvider>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {user ? (
-            <Stack.Screen name="MainApp" component={MainAppNavigator} />
-          ) : (
-            <>
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="SignUp" component={SignUpScreen} />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PaperProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <NavigationContainer>
+          <Stack.Navigator>
+            {user ? (
+              <>
+                <Stack.Screen
+                  name="MainApp"
+                  component={MainAppNavigator}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="MyAccount"
+                  component={MyAccountScreen}
+                  options={{
+                    title: t("auth.title"),
+                    headerStyle: {
+                      backgroundColor: "#000000",
+                    },
+                    headerTintColor: "#fff",
+                    headerBackTitle: t("navigation.back"),
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <Stack.Screen
+                  name="Welcome"
+                  component={WelcomeScreen}
+                  options={{
+                    title: "",
+                    headerStyle: {
+                      backgroundColor: "#000000",
+                    },
+                    headerTintColor: "#fff",
+                  }}
+                />
+                <Stack.Screen
+                  name="Login"
+                  component={LoginScreen}
+                  options={{
+                    title: t("auth.signIn"),
+                    headerStyle: {
+                      backgroundColor: "#000000",
+                    },
+                    headerTintColor: "#fff",
+                    headerBackTitle: t("navigation.back"),
+                  }}
+                  listeners={({ navigation }) => ({
+                    beforeRemove: (e) => {
+                      // Only allow going back to Welcome
+                      if (e.data.action.type === "GO_BACK") {
+                        e.preventDefault();
+                        navigation.navigate("Welcome");
+                      }
+                    },
+                  })}
+                />
+                <Stack.Screen
+                  name="SignUp"
+                  component={SignUpScreen}
+                  options={{
+                    title: t("auth.createAccount"),
+                    headerStyle: {
+                      backgroundColor: "#000000",
+                    },
+                    headerTintColor: "#fff",
+                    headerBackTitle: t("navigation.back"),
+                  }}
+                  listeners={({ navigation }) => ({
+                    beforeRemove: (e) => {
+                      // Only allow going back to Welcome
+                      if (e.data.action.type === "GO_BACK") {
+                        e.preventDefault();
+                        navigation.navigate("Welcome");
+                      }
+                    },
+                  })}
+                />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }

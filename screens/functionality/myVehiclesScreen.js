@@ -6,11 +6,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Text, Button } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { getAllVehicles, addVehicle } from "../../utils/firestore";
+import {
+  getAllVehicles,
+  addVehicle,
+  deleteVehicle,
+} from "../../utils/firestore";
 import { getCurrentUser } from "../../utils/auth";
+import { Swipeable } from "react-native-gesture-handler";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function MyVehiclesScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -58,16 +65,59 @@ export default function MyVehiclesScreen({ navigation, route }) {
     }
   };
 
+  const handleDeleteVehicle = (vehicleId) => {
+    Alert.alert(
+      t("common.delete"), // Title
+      t("vehicles.deleteConfirmMessage"), // Message
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteVehicle(vehicleId);
+              // Reload the vehicles list
+              loadVehicles();
+            } catch (error) {
+              console.error("Error deleting vehicle:", error);
+              alert(t("common.error.delete"));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const renderRightActions = (vehicleId) => {
+    return (
+      <TouchableOpacity
+        style={styles.deleteAction}
+        onPress={() => handleDeleteVehicle(vehicleId)}
+      >
+        <MaterialCommunityIcons name="trash-can" size={24} color="white" />
+      </TouchableOpacity>
+    );
+  };
+
   const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.vehicleItem}
-      onPress={() => navigation.navigate("VehicleDetails", { vehicle: item })}
+    <Swipeable
+      renderRightActions={() => renderRightActions(item.id)}
+      rightThreshold={40}
     >
-      <Text style={styles.vehicleText}>{item.name}</Text>
-      <Text style={styles.vehicleSubtext}>
-        {item.make} {item.model}
-      </Text>
-    </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.vehicleItem}
+        onPress={() => navigation.navigate("VehicleDetails", { vehicle: item })}
+      >
+        <Text style={styles.vehicleText}>{item.name}</Text>
+        <Text style={styles.vehicleSubtext}>
+          {item.make} {item.model}
+        </Text>
+      </TouchableOpacity>
+    </Swipeable>
   );
 
   if (loading) {
@@ -156,5 +206,12 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  deleteAction: {
+    backgroundColor: "#f44336",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
   },
 });

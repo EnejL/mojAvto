@@ -1,113 +1,25 @@
 import React from "react";
-import { createDrawerNavigator } from "@react-navigation/drawer";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { IconButton, Button } from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
+import { IconButton, Button, Avatar } from "react-native-paper";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { View, Text, StyleSheet } from "react-native";
-import {
-  DrawerContentScrollView,
-  DrawerItemList,
-  DrawerItem,
-} from "@react-navigation/drawer";
+import { StyleSheet, Alert } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { signOut, getCurrentUser } from "../../utils/auth";
 
-// Import all screens
-import HomeScreen from "../functionality/homeScreen";
+// Import screens
 import MyVehiclesScreen from "../functionality/myVehiclesScreen";
-import FuelConsumptionScreen from "../functionality/fuelConsumptionScreen";
 import PetrolStationsScreen from "../functionality/petrolStationsScreen";
 import SettingsScreen from "../functionality/settingsScreen";
 import VehicleDetailsScreen from "../functionality/vehicleDetailsScreen";
 import AddVehicleScreen from "../functionality/addVehicleScreen";
 import EditVehicleScreen from "../functionality/editVehicleScreen";
-import VehicleFuelConsumptionScreen from "../functionality/vehicleFuelConsumptionScreen";
-import AddFillingScreen from "../functionality/addFillingScreen";
-import NoVehiclesWarningScreen from "../functionality/noVehiclesWarningScreen";
+import AuthScreen from "../navigation/authScreen";
+import MyAccountScreen from "../functionality/myAccountScreen";
 
-const Drawer = createDrawerNavigator();
+const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-
-// A custom drawer toggle button
-function DrawerToggleButton() {
-  const navigation = useNavigation();
-  return (
-    <IconButton
-      icon="menu"
-      size={36}
-      iconColor="#fff"
-      style={styles.headerIcon}
-      onPress={() => navigation.toggleDrawer()}
-    />
-  );
-}
-
-// Create placeholder components for all screens
-const PlaceholderHome = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Home Screen</Text>
-  </View>
-);
-
-const PlaceholderMyVehicles = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>My Vehicles Screen</Text>
-  </View>
-);
-
-const PlaceholderVehicleDetails = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Vehicle Details Screen</Text>
-  </View>
-);
-
-const PlaceholderAddVehicle = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Add Vehicle Screen</Text>
-  </View>
-);
-
-const PlaceholderEditVehicle = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Edit Vehicle Screen</Text>
-  </View>
-);
-
-const PlaceholderFuelConsumption = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Fuel Consumption Screen</Text>
-  </View>
-);
-
-const PlaceholderVehicleFuelConsumption = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Vehicle Fuel Consumption Screen</Text>
-  </View>
-);
-
-const PlaceholderAddFilling = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Add Filling Screen</Text>
-  </View>
-);
-
-const PlaceholderNoVehiclesWarning = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>No Vehicles Warning Screen</Text>
-  </View>
-);
-
-const PlaceholderPetrolStations = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Petrol Stations Screen</Text>
-  </View>
-);
-
-const PlaceholderSettings = () => (
-  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    <Text style={{ fontSize: 24 }}>Settings Screen</Text>
-  </View>
-);
 
 // MyVehicles stack
 function MyVehiclesStack() {
@@ -131,8 +43,7 @@ function MyVehiclesStack() {
         component={MyVehiclesScreen}
         options={{
           title: t("vehicles.title"),
-          headerLeft: null,
-          headerRight: () => <DrawerToggleButton />,
+          headerLeft: () => null, // Remove back button
         }}
       />
       <Stack.Screen
@@ -140,18 +51,7 @@ function MyVehiclesStack() {
         component={VehicleDetailsScreen}
         options={{
           title: t("vehicles.details"),
-          headerRight: () => <DrawerToggleButton />,
           headerBackVisible: true,
-          headerLeft: ({ canGoBack }) =>
-            canGoBack ? (
-              <Button
-                mode="text"
-                onPress={() => navigation.navigate("MyVehiclesMain")}
-                labelStyle={{ color: "#fff" }}
-              >
-                {t("navigation.back")}
-              </Button>
-            ) : null,
         }}
       />
       <Stack.Screen
@@ -165,83 +65,15 @@ function MyVehiclesStack() {
       <Stack.Screen
         name="EditVehicle"
         component={EditVehicleScreen}
-        options={{ title: t("vehicles.edit") }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Home stack
-function HomeStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerRight: () => <DrawerToggleButton />,
-        headerTitle: "Domov",
-        headerTitleAlign: "center",
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontSize: 20,
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="HomeScreen"
-        component={HomeScreen}
-        options={{ title: "Home" }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Fuel Consumption stack
-function FuelConsumptionStack() {
-  const { t } = useTranslation();
-
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="FuelConsumption"
-        component={FuelConsumptionScreen}
         options={{
-          title: t("navigation.fuelConsumption"),
-          headerRight: () => <DrawerToggleButton />,
-        }}
-      />
-      <Stack.Screen
-        name="VehicleFuelConsumption"
-        component={VehicleFuelConsumptionScreen}
-        options={({ route }) => ({
-          title: route.params.vehicle.name,
-          headerRight: () => <DrawerToggleButton />,
-        })}
-      />
-      <Stack.Screen
-        name="AddFilling"
-        component={AddFillingScreen}
-        options={{
-          title: t("fillings.add"),
+          title: t("vehicles.edit"),
           headerBackTitle: t("navigation.back"),
         }}
       />
       <Stack.Screen
-        name="NoVehiclesWarning"
-        component={NoVehiclesWarningScreen}
-        options={{ title: t("fillings.add") }}
+        name="Auth"
+        component={AuthScreen}
+        options={{ title: t("auth.title") }}
       />
     </Stack.Navigator>
   );
@@ -249,10 +81,11 @@ function FuelConsumptionStack() {
 
 // Petrol Stations stack
 function PetrolStationsStack() {
+  const { t } = useTranslation();
+
   return (
     <Stack.Navigator
       screenOptions={{
-        headerRight: () => <DrawerToggleButton />,
         headerStyle: {
           backgroundColor: "#000000",
         },
@@ -265,7 +98,15 @@ function PetrolStationsStack() {
       <Stack.Screen
         name="PetrolStations"
         component={PetrolStationsScreen}
-        options={{ title: "Petrol Stations" }}
+        options={{
+          title: t("navigation.petrolStations"),
+          headerLeft: () => null, // Remove back button
+        }}
+      />
+      <Stack.Screen
+        name="Auth"
+        component={AuthScreen}
+        options={{ title: t("auth.title") }}
       />
     </Stack.Navigator>
   );
@@ -273,10 +114,11 @@ function PetrolStationsStack() {
 
 // Settings stack
 function SettingsStack() {
+  const { t } = useTranslation();
+
   return (
     <Stack.Navigator
       screenOptions={{
-        headerRight: () => <DrawerToggleButton />,
         headerStyle: {
           backgroundColor: "#000000",
         },
@@ -289,85 +131,90 @@ function SettingsStack() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ title: "Settings" }}
+        options={{
+          title: t("navigation.settings"),
+          headerLeft: () => null, // Remove back button
+        }}
+      />
+      <Stack.Screen
+        name="Auth"
+        component={AuthScreen}
+        options={{ title: t("auth.title") }}
       />
     </Stack.Navigator>
   );
 }
 
-// Custom drawer content with logout button
-function CustomDrawerContent(props) {
-  const { t } = useTranslation();
-  const currentUser = getCurrentUser();
-  const navigation = useNavigation();
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      // Navigation will be handled by the auth state listener in App.js
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
-  return (
-    <View style={{ flex: 1 }}>
-      <DrawerContentScrollView {...props}>
-        <View style={styles.userInfoSection}>
-          <Text style={styles.userEmail}>{currentUser?.email}</Text>
-        </View>
-        <DrawerItemList {...props} />
-      </DrawerContentScrollView>
-      <View style={styles.bottomDrawerSection}>
-        <DrawerItem
-          label={t("auth.signOut")}
-          onPress={handleLogout}
-          icon={({ color, size }) => (
-            <IconButton icon="logout" size={size} color={color} />
-          )}
-        />
-      </View>
-    </View>
-  );
-}
-
 export default function MainAppNavigator() {
   const { t } = useTranslation();
+  const navigation = useNavigation();
 
   return (
-    <Drawer.Navigator
+    <Tab.Navigator
       screenOptions={{
+        tabBarActiveTintColor: "#000000",
+        tabBarInactiveTintColor: "#777777",
+        tabBarStyle: {
+          backgroundColor: "#ffffff",
+          borderTopWidth: 1,
+          borderTopColor: "#e0e0e0",
+        },
         headerShown: false,
-        drawerPosition: "right",
       }}
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
     >
-      <Drawer.Screen
-        name="Home"
-        component={HomeStack}
-        options={{ title: t("navigation.home") }}
-      />
-      <Drawer.Screen
-        name="My Vehicles"
+      <Tab.Screen
+        name="MyVehicles"
         component={MyVehiclesStack}
-        options={{ title: t("navigation.myVehicles") }}
+        options={{
+          title: t("navigation.myVehicles"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="car" color={color} size={size} />
+          ),
+        }}
       />
-      <Drawer.Screen
-        name="Fuel Consumption"
-        component={FuelConsumptionStack}
-        options={{ title: t("navigation.fuelConsumption") }}
-      />
-      <Drawer.Screen
-        name="Petrol Stations"
+      <Tab.Screen
+        name="PetrolStations"
         component={PetrolStationsStack}
-        options={{ title: t("navigation.petrolStations") }}
+        options={{
+          title: t("navigation.petrolStations"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="gas-station"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="Settings"
         component={SettingsStack}
-        options={{ title: t("navigation.settings") }}
+        options={{
+          title: t("navigation.settings"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="cog" color={color} size={size} />
+          ),
+        }}
       />
-    </Drawer.Navigator>
+      <Tab.Screen
+        name="Account"
+        component={() => null} // This is a dummy component
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            // Prevent default action
+            e.preventDefault();
+            // Navigate to MyAccount screen
+            navigation.navigate("MyAccount");
+          },
+        })}
+        options={{
+          title: t("auth.title"),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 }
 
@@ -376,20 +223,9 @@ const styles = StyleSheet.create({
     margin: 0,
     alignSelf: "center",
   },
-  userInfoSection: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f4f4f4",
-    alignItems: "center",
-  },
-  userEmail: {
-    fontSize: 16,
-    marginBottom: 5,
-    fontWeight: "bold",
-  },
-  bottomDrawerSection: {
-    marginBottom: 15,
-    borderTopColor: "#f4f4f4",
-    borderTopWidth: 1,
+  accountIcon: {
+    backgroundColor: "#333",
+    marginRight: 10,
+    marginTop: -4,
   },
 });
