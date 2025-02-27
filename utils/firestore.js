@@ -1,6 +1,5 @@
 import { getCurrentUser } from "./auth";
-
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import {
   collection,
   addDoc,
@@ -14,28 +13,22 @@ import {
   getDoc,
   where,
 } from "firebase/firestore";
-import { getDeviceId } from "./deviceStorage";
-import { auth } from "./firebase";
 
 // Vehicles Collection Operations
 export const addVehicle = async (vehicleData) => {
   try {
-    const deviceId = await getDeviceId();
     const user = auth.currentUser;
-
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
     const vehicleWithMetadata = {
       ...vehicleData,
-      deviceId,
+      userId: user.uid,
       createdAt: serverTimestamp(),
     };
-
-    // If user is logged in, associate vehicle with user ID
-    if (user) {
-      vehicleWithMetadata.userId = user.uid;
-    }
-
+    // Store the vehicle in the user's vehicles subcollection.
     const docRef = await addDoc(
-      collection(db, "vehicles"),
+      collection(db, "users", user.uid, "vehicles"),
       vehicleWithMetadata
     );
     return docRef.id;
@@ -47,7 +40,10 @@ export const addVehicle = async (vehicleData) => {
 
 export const updateVehicle = async (vehicleId, vehicleData) => {
   try {
-    const vehicleRef = doc(db, "vehicles", vehicleId);
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+    // Update the vehicle document under the user's vehicles subcollection.
+    const vehicleRef = doc(db, "users", user.uid, "vehicles", vehicleId);
     await updateDoc(vehicleRef, vehicleData);
   } catch (error) {
     console.error("Error updating vehicle:", error);
@@ -57,7 +53,10 @@ export const updateVehicle = async (vehicleId, vehicleData) => {
 
 export const deleteVehicle = async (vehicleId) => {
   try {
-    await deleteDoc(doc(db, "vehicles", vehicleId));
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+    // Delete the vehicle document from the user's vehicles subcollection.
+    await deleteDoc(doc(db, "users", user.uid, "vehicles", vehicleId));
   } catch (error) {
     console.error("Error deleting vehicle:", error);
     throw error;
@@ -66,57 +65,35 @@ export const deleteVehicle = async (vehicleId) => {
 
 export const getAllVehicles = async () => {
   try {
-    const deviceId = await getDeviceId();
     const currentUser = getCurrentUser();
-
-    // If user is logged in, get both their account vehicles and device vehicles
-    if (currentUser && !currentUser.isAnonymous) {
-      const userQuery = query(
-        collection(db, "vehicles"),
-        where("userId", "==", currentUser.uid)
-      );
-
-      const deviceQuery = query(
-        collection(db, "vehicles"),
-        where("deviceId", "==", deviceId),
-        where("userId", "==", null)
-      );
-
-      const [userSnapshot, deviceSnapshot] = await Promise.all([
-        getDocs(userQuery),
-        getDocs(deviceQuery),
-      ]);
-
-      const userVehicles = userSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        synced: true, // Mark as synced to account
-      }));
-
-      const deviceVehicles = deviceSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        synced: false, // Mark as local only
-      }));
-
-      return [...userVehicles, ...deviceVehicles].sort(
-        (a, b) => b.createdAt - a.createdAt
-      );
-    } else {
-      // Anonymous user - only get device vehicles
-      const q = query(
-        collection(db, "vehicles"),
-        where("deviceId", "==", deviceId)
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        synced: false,
-      }));
-    }
+    if (!currentUser) throw new Error("User not authenticated");
+    // Query vehicles from the authenticated user's vehicles subcollection.
+    const vehiclesRef = collection(db, "users", currentUser.uid, "vehicles");
+    const q = query(vehiclesRef, orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
   } catch (error) {
     console.error("Error getting vehicles:", error);
+    throw error;
+  }
+};
+
+export const getVehicles = async () => {
+  try {
+    const currentUser = getCurrentUser();
+    if (!currentUser) throw new Error("User not authenticated");
+    const vehiclesRef = collection(db, "users", currentUser.uid, "vehicles");
+    const q = query(vehiclesRef, orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Error in getVehicles:", error);
     throw error;
   }
 };
@@ -124,7 +101,17 @@ export const getAllVehicles = async () => {
 // Fillings Subcollection Operations
 export const addFilling = async (vehicleId, fillingData) => {
   try {
-    const fillingsRef = collection(db, "vehicles", vehicleId, "fillings");
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+    // Store fillings under the vehicle document in the user's vehicles subcollection.
+    const fillingsRef = collection(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings"
+    );
     const docRef = await addDoc(fillingsRef, {
       ...fillingData,
       date: new Date(fillingData.date),
@@ -139,7 +126,17 @@ export const addFilling = async (vehicleId, fillingData) => {
 
 export const getVehicleFillings = async (vehicleId) => {
   try {
-    const fillingsRef = collection(db, "vehicles", vehicleId, "fillings");
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+    // Read fillings from the correct subcollection path.
+    const fillingsRef = collection(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings"
+    );
     const q = query(fillingsRef, orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map((doc) => ({
@@ -152,51 +149,75 @@ export const getVehicleFillings = async (vehicleId) => {
   }
 };
 
-export const getVehicles = async () => {
+export const getFillings = async (vehicleId) => {
+  // This function is identical to getVehicleFillings in this new structure.
   try {
-    const deviceId = await getDeviceId();
-    const user = auth.currentUser;
-
-    let vehicles = [];
-
-    // Always get device-associated vehicles
-    const deviceQuery = query(
-      collection(db, "vehicles"),
-      where("deviceId", "==", deviceId),
-      orderBy("createdAt", "desc")
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+    const fillingsRef = collection(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings"
     );
-    const deviceSnapshot = await getDocs(deviceQuery);
-    const deviceVehicles = deviceSnapshot.docs.map((doc) => ({
+    const q = query(fillingsRef, orderBy("date", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-
-    vehicles = [...deviceVehicles];
-
-    // If user is logged in, also get user-associated vehicles
-    if (user) {
-      const userQuery = query(
-        collection(db, "vehicles"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
-      );
-      const userSnapshot = await getDocs(userQuery);
-      const userVehicles = userSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // Combine and remove duplicates (in case a vehicle has both deviceId and userId)
-      const combinedVehicles = [...deviceVehicles, ...userVehicles];
-      vehicles = combinedVehicles.filter(
-        (vehicle, index, self) =>
-          index === self.findIndex((v) => v.id === vehicle.id)
-      );
-    }
-
-    return vehicles;
   } catch (error) {
-    console.error("Error in getVehicles:", error);
+    console.error("Error getting fillings:", error);
+    throw error;
+  }
+};
+
+export const updateFilling = async (vehicleId, fillingId, fillingData) => {
+  try {
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const fillingRef = doc(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings",
+      fillingId
+    );
+
+    await updateDoc(fillingRef, {
+      ...fillingData,
+      date: new Date(fillingData.date),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Error updating filling:", error);
+    throw error;
+  }
+};
+
+export const deleteFilling = async (vehicleId, fillingId) => {
+  try {
+    const user = getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const fillingRef = doc(
+      db,
+      "users",
+      user.uid,
+      "vehicles",
+      vehicleId,
+      "fillings",
+      fillingId
+    );
+
+    await deleteDoc(fillingRef);
+  } catch (error) {
+    console.error("Error deleting filling:", error);
     throw error;
   }
 };

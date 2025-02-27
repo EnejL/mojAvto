@@ -41,6 +41,8 @@ const resources = {
           "You need to add a vehicle before you can record fuel fillings.",
         noFillings:
           "There are currently no fillings to be displayed. Please enter your first filling.",
+        edit: "Edit Filling",
+        deleteConfirmMessage: "Are you sure you want to delete this filling?",
       },
       common: {
         loading: "Loading...",
@@ -50,6 +52,7 @@ const resources = {
           save: "Failed to save",
           load: "Failed to load",
           required: "Please fill in all fields",
+          delete: "Brisanje ni uspelo",
         },
       },
       auth: {
@@ -78,6 +81,18 @@ const resources = {
         signOut: "Sign Out",
         greeting: "Hello, {{email}}",
         accountManage: "Manage Account",
+        forgotPassword: "Forgot Password?",
+        enterEmailFirst: "Please enter your email address first",
+        resetEmailSent: "Password Reset Email Sent",
+        checkEmail:
+          "Please check your email for instructions to reset your password",
+        resetError: "Error Resetting Password",
+        confirmPassword: "Confirm Password",
+        "passwords-dont-match": "Passwords don't match",
+      },
+      welcome: {
+        message:
+          "Track your vehicle's fuel consumption and maintenance with ease.",
       },
     },
   },
@@ -87,7 +102,7 @@ const resources = {
         home: "Domov",
         myVehicles: "Moja Vozila",
         fuelConsumption: "Poraba Goriva",
-        petrolStations: "Bencinske Črpalke",
+        petrolStations: "Črpalke",
         settings: "Nastavitve",
         back: "Nazaj",
       },
@@ -102,8 +117,8 @@ const resources = {
         edit: "Uredi Vozilo",
         numberPlate: "Registrska Oznaka",
         addFirst: "Dodaj Svoje Prvo Vozilo",
-        select: "Izberi Vozilo",
-        selectPrompt: "Izberi vozilo",
+        selected: "Izbrano Vozilo",
+        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to vozilo?",
       },
       fillings: {
         title: "Točenja Goriva",
@@ -122,6 +137,8 @@ const resources = {
           "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
         noFillings:
           "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
+        edit: "Uredi Točenje",
+        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to točenje?",
       },
       petrolStations: {
         title: "Bencinske Črpalke",
@@ -141,7 +158,9 @@ const resources = {
           save: "Shranjevanje ni uspelo",
           load: "Nalaganje ni uspelo",
           required: "Prosim izpolnite vsa polja",
+          delete: "Brisanje ni uspelo",
         },
+        delete: "Izbriši",
       },
       auth: {
         title: "Račun",
@@ -164,11 +183,21 @@ const resources = {
           "weak-password": "Geslo mora vsebovati vsaj 6 znakov",
         },
         haveAccount: "Že imate račun? Prijavite se",
-        needAccount: "Potrebujete račun? Ustvarite ga",
+        needAccount: "Potrebujete račun?",
         signedInAs: "Prijavljeni kot {{email}}",
         signOut: "Odjava",
         greeting: "Pozdravljeni, {{email}}",
         accountManage: "Moj Račun",
+        forgotPassword: "Ste pozabili geslo?",
+        enterEmailFirst: "Prosimo, najprej vnesite svoj e-poštni naslov",
+        resetEmailSent: "E-pošta za ponastavitev gesla poslana",
+        checkEmail: "Preverite svojo e-pošto za navodila za ponastavitev gesla",
+        resetError: "Napaka pri ponastavitvi gesla",
+        confirmPassword: "Potrdi Geslo",
+        "passwords-dont-match": "Gesla se ne ujemata",
+      },
+      welcome: {
+        message: "Enostavno sledite porabi goriva vaših vozil.",
       },
     },
   },

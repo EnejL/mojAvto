@@ -1,10 +1,24 @@
-import { getCurrentUser } from "../utils/auth";
+import { getCurrentUser } from "../../utils/auth";
 
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Alert } from "react-native";
-import { TextInput, Button, Text, Surface } from "react-native-paper";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
+import {
+  TextInput,
+  Button,
+  Text,
+  Surface,
+  IconButton,
+} from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { createAccount, signIn, logOut } from "../utils/auth";
+import { createAccount, signIn, logOut } from "../../utils/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../../utils/firebase";
 
 export default function AuthScreen({ navigation }) {
   const { t } = useTranslation();
@@ -15,6 +29,7 @@ export default function AuthScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -46,14 +61,19 @@ export default function AuthScreen({ navigation }) {
     setLoading(true);
     setError(null);
     try {
+      console.log("Attempting to sign in with:", email);
       const signedInUser = await signIn(email, password);
+      console.log("Sign in successful:", signedInUser);
       setUser(signedInUser);
       setEmail("");
       setPassword("");
       navigation.navigate("Home");
     } catch (error) {
-      if (error.message && error.message.startsWith("auth/")) {
-        setError(t(`auth.error.${error.message.replace("auth/", "")}`));
+      console.error("Sign in error:", error);
+      if (error.message && error.message.includes("auth/")) {
+        const errorCode = error.message.replace("auth/", "");
+        console.log("Error code:", errorCode);
+        setError(t(`auth.error.${errorCode}`));
       } else {
         setError(t("auth.error.unknown-error"));
       }
@@ -74,6 +94,36 @@ export default function AuthScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setPasswordVisible(!passwordVisible);
+  };
+
+  const handleForgotPassword = () => {
+    if (!email) {
+      Alert.alert(t("auth.forgotPassword"), t("auth.enterEmailFirst"), [
+        { text: t("common.ok") },
+      ]);
+      return;
+    }
+
+    setLoading(true);
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+        Alert.alert(t("auth.resetEmailSent"), t("auth.checkEmail"), [
+          { text: t("common.ok") },
+        ]);
+      })
+      .catch((error) => {
+        console.error("Error sending password reset email:", error);
+        Alert.alert(t("auth.resetError"), t("auth.error.unknown-error"), [
+          { text: t("common.ok") },
+        ]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const renderAuthForm = () => {
@@ -109,8 +159,14 @@ export default function AuthScreen({ navigation }) {
           label={t("auth.password")}
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secureTextEntry={!passwordVisible}
           style={styles.input}
+          right={
+            <TextInput.Icon
+              icon={passwordVisible ? "eye-off" : "eye"}
+              onPress={togglePasswordVisibility}
+            />
+          }
         />
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -132,6 +188,17 @@ export default function AuthScreen({ navigation }) {
             {t(isSignIn ? "auth.needAccount" : "auth.haveAccount")}
           </Button>
         </View>
+
+        {isSignIn && (
+          <TouchableOpacity
+            onPress={handleForgotPassword}
+            style={styles.forgotPasswordContainer}
+          >
+            <Text style={styles.forgotPasswordText}>
+              {t("auth.forgotPassword")}
+            </Text>
+          </TouchableOpacity>
+        )}
       </Surface>
     );
   };
@@ -194,5 +261,14 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: 16,
+  },
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  forgotPasswordText: {
+    color: "#2196F3",
+    fontSize: 14,
   },
 });

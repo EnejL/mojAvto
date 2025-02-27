@@ -1,8 +1,15 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { updateVehicle } from "../utils/firestore";
+import { updateVehicle, deleteVehicle } from "../../utils/firestore";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -37,19 +44,39 @@ export default function EditVehicleScreen({ navigation, route }) {
         numberPlate: vehicleData.numberPlate.trim(),
       });
 
-      // Navigate back to vehicle details with updated data
-      navigation.navigate("VehicleDetails", {
-        vehicle: {
-          ...vehicle,
-          ...vehicleData,
-        },
-      });
+      // Navigate back to MyVehiclesMain
+      navigation.navigate("MyVehiclesMain");
     } catch (error) {
       console.error("Error updating vehicle:", error);
       alert(t("common.error.save"));
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(t("common.delete"), t("vehicles.deleteConfirmMessage"), [
+      {
+        text: t("common.cancel"),
+        style: "cancel",
+      },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setSaving(true);
+            await deleteVehicle(vehicle.id);
+            navigation.navigate("MyVehiclesMain");
+          } catch (error) {
+            console.error("Error deleting vehicle:", error);
+            alert(t("common.error.delete"));
+          } finally {
+            setSaving(false);
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -128,6 +155,22 @@ export default function EditVehicleScreen({ navigation, route }) {
             />
           </View>
         </Surface>
+
+        <Button
+          mode="outlined"
+          onPress={handleDelete}
+          style={styles.deleteButton}
+          labelStyle={styles.deleteButtonLabel}
+          icon={({ size, color }) => (
+            <MaterialCommunityIcons
+              name="trash-can"
+              size={size}
+              color={color}
+            />
+          )}
+        >
+          {t("common.delete")}
+        </Button>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
@@ -201,6 +244,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: "#fff",
   },
+  deleteButton: {
+    margin: 0,
+    marginLeft: "auto",
+    marginRight: "auto",
+    marginTop: 24,
+    borderColor: "#d32f2f",
+    backgroundColor: "transparent",
+    width: "calc(100% - 132px)",
+  },
+  deleteButtonLabel: {
+    fontSize: 16,
+    paddingVertical: 4,
+    color: "#d32f2f",
+  },
   buttonContainer: {
     flexDirection: "row",
     padding: 16,
@@ -216,5 +273,9 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: "#6c757d",
+  },
+  buttonLabel: {
+    fontSize: 16,
+    paddingVertical: 4,
   },
 });

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { TextInput, Button, Title, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { addVehicle } from "../utils/firestore";
+import { addVehicle } from "../../utils/firestore";
 
 const AddVehicleScreen = ({ navigation }) => {
   const { t } = useTranslation();

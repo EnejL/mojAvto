@@ -11,6 +11,7 @@ import {
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
   onAuthStateChanged,
 } from "firebase/auth";
 
@@ -81,7 +82,7 @@ export const setupAuthListener = () => {
 };
 
 // Login with email and password
-export const loginWithEmail = async (email, password) => {
+export const signIn = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(
       auth,
@@ -90,13 +91,14 @@ export const loginWithEmail = async (email, password) => {
     );
     return userCredential.user;
   } catch (error) {
-    console.error("Error logging in:", error);
-    throw error;
+    console.error("Error signing in:", error);
+    // Rethrow with a more specific message
+    throw { message: `auth/${error.code}` };
   }
 };
 
 // Register with email and password
-export const registerWithEmail = async (email, password) => {
+export const createAccount = async (email, password) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
@@ -105,15 +107,17 @@ export const registerWithEmail = async (email, password) => {
     );
     return userCredential.user;
   } catch (error) {
-    console.error("Error registering:", error);
-    throw error;
+    console.error("Error creating account:", error);
+    // Rethrow with a more specific message
+    throw { message: `auth/${error.code}` };
   }
 };
 
 // Sign out
 export const signOut = async () => {
   try {
-    await auth.signOut();
+    await firebaseSignOut(auth);
+    return null;
   } catch (error) {
     console.error("Error signing out:", error);
     throw error;
