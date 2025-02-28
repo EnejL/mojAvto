@@ -18,6 +18,7 @@ import {
 import { getCurrentUser } from "../../utils/auth";
 import { Swipeable } from "react-native-gesture-handler";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import BrandLogo from "../../components/BrandLogo";
 
 export default function MyVehiclesScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -103,22 +104,32 @@ export default function MyVehiclesScreen({ navigation, route }) {
     );
   };
 
-  const renderItem = ({ item }) => (
-    <Swipeable
-      renderRightActions={() => renderRightActions(item.id)}
-      rightThreshold={40}
-    >
-      <TouchableOpacity
-        style={styles.vehicleItem}
-        onPress={() => navigation.navigate("VehicleDetails", { vehicle: item })}
-      >
-        <Text style={styles.vehicleText}>{item.name}</Text>
-        <Text style={styles.vehicleSubtext}>
-          {item.make} {item.model}
-        </Text>
-      </TouchableOpacity>
-    </Swipeable>
-  );
+  const renderItem = ({ item }) => {
+    const renderRightActions = (progress, dragX) => {
+      // ... existing code
+    };
+
+    return (
+      <Swipeable renderRightActions={renderRightActions}>
+        <TouchableOpacity
+          style={styles.vehicleItem}
+          onPress={() =>
+            navigation.navigate("VehicleDetails", { vehicle: item })
+          }
+        >
+          <View style={styles.vehicleContent}>
+            <BrandLogo brand={item.make} style={styles.brandLogo} />
+            <View style={styles.vehicleInfo}>
+              <Text style={styles.vehicleName}>{item.name}</Text>
+              <Text style={styles.vehicleSubtitle}>
+                {item.make} {item.model}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Swipeable>
+    );
+  };
 
   if (loading) {
     return (
@@ -171,7 +182,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   vehicleItem: {
-    padding: 12,
     marginVertical: 5,
     backgroundColor: "#e0e0e0",
     borderRadius: 6,
@@ -213,5 +223,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: 80,
     height: "100%",
+  },
+  brandLogo: {
+    width: "auto",
+    minWidth: 70,
+    height: "100%",
+    position: "absolute",
+    left: 0,
+    top: 0,
+    marginRight: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    backgroundColor: "white",
+  },
+  vehicleContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  vehicleInfo: {
+    flex: 1,
+    marginLeft: 70,
+    padding: 12,
+  },
+  vehicleName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  vehicleSubtitle: {
+    fontSize: 14,
+    color: "#666",
   },
 });
