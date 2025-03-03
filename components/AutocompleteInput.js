@@ -5,8 +5,11 @@ import {
   TouchableOpacity,
   Keyboard,
   Dimensions,
+  Modal,
+  ScrollView,
+  TouchableWithoutFeedback,
 } from "react-native";
-import { TextInput, Text, Surface, Portal } from "react-native-paper";
+import { TextInput, Text, Surface } from "react-native-paper";
 
 const AutocompleteInput = ({
   label,
@@ -25,7 +28,7 @@ const AutocompleteInput = ({
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
   const [inputLayout, setInputLayout] = useState(null);
-  const screenWidth = Dimensions.get("window").width;
+  const containerRef = useRef(null);
 
   useEffect(() => {
     if (value && suggestions.length > 0) {
@@ -48,7 +51,6 @@ const AutocompleteInput = ({
       }
     }
     setShowSuggestions(true);
-    measureInput();
   };
 
   const handleBlur = () => {
@@ -68,67 +70,32 @@ const AutocompleteInput = ({
     Keyboard.dismiss();
   };
 
-  // Get the input position for positioning the dropdown
-  const measureInput = () => {
-    if (inputRef.current && inputRef.current.measureInWindow) {
-      inputRef.current.measureInWindow((x, y, width, height) => {
-        setInputLayout({ x, y, width, height });
-      });
-    }
-  };
-
-  // Render suggestions using Portal
+  // Render suggestions directly below the input
   const renderSuggestions = () => {
     if (!showSuggestions || filteredSuggestions.length === 0) return null;
 
     return (
-      <Portal>
-        <View
-          style={[
-            styles.suggestionsWrapper,
-            {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "transparent",
-              justifyContent: "flex-start",
-              alignItems: "center",
-              zIndex: 9999,
-            },
-          ]}
-          pointerEvents="box-none"
+      <View style={styles.suggestionsContainer}>
+        <ScrollView
+          keyboardShouldPersistTaps="always"
+          nestedScrollEnabled={true}
         >
-          <Surface
-            style={[
-              styles.suggestionsContainer,
-              {
-                position: "absolute",
-                top: inputLayout ? inputLayout.y + inputLayout.height + 2 : 100,
-                width: inputLayout ? inputLayout.width : screenWidth - 32,
-                left: inputLayout ? inputLayout.x : 16,
-                maxHeight: 200,
-              },
-            ]}
-          >
-            {filteredSuggestions.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.suggestionItem}
-                onPress={() => handleSuggestionPress(item)}
-              >
-                <Text>{item}</Text>
-              </TouchableOpacity>
-            ))}
-          </Surface>
-        </View>
-      </Portal>
+          {filteredSuggestions.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.suggestionItem}
+              onPress={() => handleSuggestionPress(item)}
+            >
+              <Text>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
     );
   };
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, style]} ref={containerRef}>
       {label && (
         <View style={styles.labelContainer}>
           <Text style={styles.label}>{label}</Text>
@@ -160,6 +127,7 @@ const AutocompleteInput = ({
 const styles = StyleSheet.create({
   container: {
     position: "relative",
+    zIndex: 1,
   },
   labelContainer: {
     flexDirection: "row",
@@ -175,14 +143,12 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#fff",
-  },
-  portalContainer: {
-    zIndex: 9999,
-    left: 0,
-    right: 0,
+    zIndex: 1,
   },
   suggestionsContainer: {
+    position: "relative",
     maxHeight: 200,
+    width: "100%",
     borderRadius: 4,
     backgroundColor: "#fff",
     shadowColor: "#000",
@@ -191,6 +157,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     borderWidth: 1,
     borderColor: "#ddd",
+    elevation: 4,
+    marginTop: 2,
+    zIndex: 2,
   },
   suggestionItem: {
     padding: 12,
@@ -202,17 +171,6 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 12,
     marginTop: 4,
-  },
-  suggestionsWrapper: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "transparent",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    zIndex: 9999,
   },
 });
 
