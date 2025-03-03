@@ -45,6 +45,30 @@ const formatDate = (date) => {
     .padStart(2, "0")}. ${dateObj.getFullYear()}`;
 };
 
+// Fix the helper function for number formatting
+const formatNumber = (value, decimals = 1) => {
+  if (value === null || value === undefined) return "";
+
+  // First convert to string with fixed decimal places
+  const fixed = value.toFixed(decimals);
+
+  // Split into integer and decimal parts
+  const parts = fixed.split(".");
+  const integerPart = parts[0];
+  const decimalPart = parts.length > 1 ? parts[1] : "";
+
+  // Add thousand separators (dots) to integer part
+  const integerWithSeparators = integerPart.replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    "."
+  );
+
+  // Combine with decimal part using comma as separator
+  return decimalPart
+    ? `${integerWithSeparators},${decimalPart}`
+    : integerWithSeparators;
+};
+
 export default function VehicleDetailsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
@@ -93,6 +117,29 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     // Calculate average consumption (liters per 100 km)
     if (totalDistance === 0) return null;
     return (totalLiters / totalDistance) * 100;
+  }, [fillings]);
+
+  // Calculate average cost per filling
+  const averageCost = useMemo(() => {
+    if (fillings.length === 0) return null;
+    const totalCost = fillings.reduce((sum, filling) => sum + filling.cost, 0);
+    return totalCost / fillings.length;
+  }, [fillings]);
+
+  // Calculate total cost
+  const totalCost = useMemo(() => {
+    if (fillings.length === 0) return null;
+    return fillings.reduce((sum, filling) => sum + filling.cost, 0);
+  }, [fillings]);
+
+  // Calculate average liters per filling
+  const averageLiters = useMemo(() => {
+    if (fillings.length === 0) return null;
+    const totalLiters = fillings.reduce(
+      (sum, filling) => sum + filling.liters,
+      0
+    );
+    return totalLiters / fillings.length;
   }, [fillings]);
 
   const renderFillingItem = ({ item }) => {
@@ -163,10 +210,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
               <View style={styles.fillingValues}>
                 <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
-                <Text style={styles.fillingValue}>{item.odometer} km</Text>
-                <Text style={styles.fillingValue}>{item.liters} L</Text>
                 <Text style={styles.fillingValue}>
-                  {item.cost.toFixed(2)} €
+                  {formatNumber(item.odometer, 0)} km
+                </Text>
+                <Text style={styles.fillingValue}>
+                  {formatNumber(item.liters, 2)} L
+                </Text>
+                <Text style={styles.fillingValue}>
+                  {formatNumber(item.cost, 2)} €
                 </Text>
               </View>
             </View>
@@ -190,24 +241,67 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 </Text>
               </View>
             </View>
-
-            {averageConsumption !== null ? (
-              <View style={styles.consumptionContainer}>
-                <Text style={styles.consumptionValue}>
-                  {averageConsumption.toFixed(1)}
-                </Text>
-                <Text style={styles.consumptionUnit}>
-                  {t("fillings.consumptionUnit")}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
-            )}
           </View>
         </Surface>
 
+        <Surface style={styles.statsCard}>
+          <Text style={styles.sectionTitle}>{t("fillings.statistics")}</Text>
+
+          {fillings.length < 2 ? (
+            <Text style={styles.emptyText}>{t("fillings.notEnoughData")}</Text>
+          ) : (
+            <View style={styles.statsGrid}>
+              {averageConsumption !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>
+                    {t("fillings.avgConsumption")}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(averageConsumption)}{" "}
+                    {t("fillings.consumptionUnit")}
+                  </Text>
+                </View>
+              )}
+
+              {averageCost !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t("fillings.avgCost")}</Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(averageCost, 2)} € / {t("fillings.filling")}
+                  </Text>
+                </View>
+              )}
+
+              {averageLiters !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>
+                    {t("fillings.avgLiters")}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(averageLiters)} L
+                  </Text>
+                </View>
+              )}
+
+              {totalCost !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>
+                    {t("fillings.totalCost")}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(totalCost, 2)} €
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </Surface>
+
         <Surface style={styles.fillingsCard}>
-          <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
+            <Text style={styles.fillingCount}>({fillings.length})</Text>
+          </View>
           {fillings.length === 0 ? (
             <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
           ) : (
@@ -275,17 +369,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  consumptionContainer: {
-    alignItems: "center",
+  statsCard: {
+    margin: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    backgroundColor: "#fff",
   },
-  consumptionValue: {
-    fontSize: 24,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#2e7d32",
   },
-  consumptionUnit: {
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 12,
+  },
+  statItem: {
+    width: "50%",
+    marginBottom: 16,
+  },
+  statLabel: {
     fontSize: 12,
     color: "#666",
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2e7d32",
   },
   fillingsCard: {
     margin: 16,
@@ -295,10 +409,16 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#fff",
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+  sectionTitleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
+  },
+  fillingCount: {
+    fontSize: 14,
+    color: "#888",
+    fontWeight: "500",
   },
   emptyText: {
     textAlign: "center",
