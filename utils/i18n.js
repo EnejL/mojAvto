@@ -100,6 +100,19 @@ const resources = {
         message:
           "Track your vehicle's fuel consumption and maintenance with ease.",
       },
+      petrolStations: {
+        title: "Petrol Stations",
+        list: "List",
+        map: "Map",
+        fetchError: "Failed to load petrol stations",
+        description: "Find petrol stations and compare fuel prices",
+        viewDetails: "View Details",
+        prices: "Fuel Prices",
+        getDirections: "Get Directions",
+        openingHours: "Opening Hours",
+        open24Hours: "Open 24 hours",
+        closed: "Closed",
+      },
     },
   },
   sl: {
@@ -153,7 +166,16 @@ const resources = {
       },
       petrolStations: {
         title: "Bencinske Črpalke",
+        list: "Seznam",
+        map: "Zemljevid",
+        fetchError: "Napaka pri nalaganju bencinskih črpalk",
         description: "Bencinske črpalke bodo tukaj ...",
+        viewDetails: "Več informacij",
+        prices: "Cene goriv",
+        getDirections: "Navigacija",
+        openingHours: "Delovni Čas",
+        open24Hours: "Odprto 24 ur",
+        closed: "Zaprto",
       },
       settings: {
         title: "Nastavitve",
@@ -209,6 +231,15 @@ const resources = {
       },
       welcome: {
         message: "Enostavno sledite porabi goriva vaših vozil.",
+      },
+      days: {
+        monday: "Ponedeljek",
+        tuesday: "Torek",
+        wednesday: "Sreda",
+        thursday: "Četrtek",
+        friday: "Petek",
+        saturday: "Sobota",
+        sunday: "Nedelja",
       },
     },
   },
