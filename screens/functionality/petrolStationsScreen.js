@@ -25,6 +25,117 @@ const PETROL_STATIONS_API = "https://goriva.si/api/v1/search/?format=json";
 // Get screen width
 const initialLayout = { width: Dimensions.get("window").width };
 
+// Add this utility function at the top of the file, outside any component
+const isStationOpen = (station) => {
+  // If the station is marked as 24h, it's always open
+  if (station.open_24h || station.open_24_7 || station.is_open_24h) {
+    return true;
+  }
+
+  // Get current day and time
+  const now = new Date();
+  const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  // Convert to 24-hour format time as decimal for comparison (e.g., 14:30 = 14.5)
+  const currentTime = currentHour + currentMinute / 60;
+
+  // Check if the station has opening hours text
+  const openingHoursText = station.opening_hours || station.open_hours;
+
+  if (!openingHoursText) {
+    return null; // Unknown status
+  }
+
+  // Simple check for common patterns in the text
+  const lowerText = openingHoursText.toLowerCase();
+
+  // Check if it mentions being open 24 hours
+  if (
+    lowerText.includes("24 ur") ||
+    lowerText.includes("00:00-24:00") ||
+    lowerText.includes("00.00-24.00") ||
+    lowerText.includes("24/7")
+  ) {
+    return true;
+  }
+
+  // Check if it mentions being closed today
+  const dayNames = ["ned", "pon", "tor", "sre", "čet", "pet", "sob"];
+  const todayName = dayNames[currentDay];
+
+  if (lowerText.includes(todayName + ".") && lowerText.includes("zaprto")) {
+    return false;
+  }
+
+  // Try to extract opening hours for today
+  // This is a simplified approach - for a more robust solution,
+  // you would need more complex parsing logic
+  try {
+    // Look for patterns like "PON - PET: 08:00-20:00"
+    const dayRanges = [
+      { pattern: "pon.*?-.*?pet", days: [1, 2, 3, 4, 5] }, // Monday-Friday
+      { pattern: "pon.*?-.*?sob", days: [1, 2, 3, 4, 5, 6] }, // Monday-Saturday
+      { pattern: "pon.*?-.*?ned", days: [1, 2, 3, 4, 5, 6, 0] }, // Monday-Sunday
+      { pattern: "sob.*?-.*?ned", days: [6, 0] }, // Saturday-Sunday
+      // Individual days
+      { pattern: "pon", days: [1] },
+      { pattern: "tor", days: [2] },
+      { pattern: "sre", days: [3] },
+      { pattern: "čet", days: [4] },
+      { pattern: "pet", days: [5] },
+      { pattern: "sob", days: [6] },
+      { pattern: "ned", days: [0] },
+    ];
+
+    // Find a day range that includes today
+    for (const range of dayRanges) {
+      if (range.days.includes(currentDay)) {
+        const regex = new RegExp(
+          `${range.pattern}[^\\d]+(\\d{1,2})[:\\.](\\d{2})[^\\d]+(\\d{1,2})[:\\.](\\d{2})`,
+          "i"
+        );
+        const match = openingHoursText.match(regex);
+
+        if (match) {
+          const openHour = parseInt(match[1]);
+          const openMinute = parseInt(match[2]);
+          const closeHour = parseInt(match[3]);
+          const closeMinute = parseInt(match[4]);
+
+          const openTime = openHour + openMinute / 60;
+          const closeTime = closeHour + closeMinute / 60;
+
+          return currentTime >= openTime && currentTime < closeTime;
+        }
+      }
+    }
+
+    // If we couldn't determine the status from the text
+    return null;
+  } catch (e) {
+    console.log("Error parsing opening hours:", e);
+    return null;
+  }
+};
+
+// Create a reusable OpenStatusBadge component
+const OpenStatusBadge = ({ isOpen }) => {
+  if (isOpen === null) return null; // Don't show anything if status is unknown
+
+  return (
+    <View
+      style={[
+        styles.statusBadge,
+        isOpen ? styles.openBadge : styles.closedBadge,
+      ]}
+    >
+      <Text style={styles.statusText}>{isOpen ? "Odprto" : "Zaprto"}</Text>
+    </View>
+  );
+};
+
 const PetrolStationsScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const [stations, setStations] = useState([]);
@@ -121,43 +232,50 @@ const StationListScreen = ({ stations, loading, error, navigation }) => {
     navigation.navigate("PetrolStationDetails", { station });
   };
 
-  const renderStationItem = ({ item }) => (
-    <Card style={styles.stationCard} onPress={() => handleStationPress(item)}>
-      <Card.Content>
-        <Title>{item.name}</Title>
-        <Paragraph>
-          {item.address}, {item.zip_code}
-        </Paragraph>
-        <Divider style={styles.divider} />
-        <View style={styles.pricesContainer}>
-          {item.prices["95"] && (
-            <View style={styles.priceItem}>
-              <Text style={styles.priceLabel}>95</Text>
-              <Text style={styles.priceValue}>{item.prices["95"]} €</Text>
-            </View>
-          )}
-          {item.prices["dizel"] && (
-            <View style={styles.priceItem}>
-              <Text style={styles.priceLabel}>Dizel</Text>
-              <Text style={styles.priceValue}>{item.prices["dizel"]} €</Text>
-            </View>
-          )}
-          {item.prices["98"] && (
-            <View style={styles.priceItem}>
-              <Text style={styles.priceLabel}>98</Text>
-              <Text style={styles.priceValue}>{item.prices["98"]} €</Text>
-            </View>
-          )}
-          {item.prices["100"] && (
-            <View style={styles.priceItem}>
-              <Text style={styles.priceLabel}>100</Text>
-              <Text style={styles.priceValue}>{item.prices["100"]} €</Text>
-            </View>
-          )}
-        </View>
-      </Card.Content>
-    </Card>
-  );
+  const renderStationItem = ({ item }) => {
+    const stationIsOpen = isStationOpen(item);
+
+    return (
+      <Card style={styles.stationCard} onPress={() => handleStationPress(item)}>
+        <Card.Content>
+          <View style={styles.cardHeader}>
+            <Title style={styles.stationTitle}>{item.name}</Title>
+            <OpenStatusBadge isOpen={stationIsOpen} />
+          </View>
+          <Paragraph>
+            {item.address}, {item.zip_code}
+          </Paragraph>
+          <Divider style={styles.divider} />
+          <View style={styles.pricesContainer}>
+            {item.prices["95"] && (
+              <View style={styles.priceItem}>
+                <Text style={styles.priceLabel}>95</Text>
+                <Text style={styles.priceValue}>{item.prices["95"]} €</Text>
+              </View>
+            )}
+            {item.prices["dizel"] && (
+              <View style={styles.priceItem}>
+                <Text style={styles.priceLabel}>Dizel</Text>
+                <Text style={styles.priceValue}>{item.prices["dizel"]} €</Text>
+              </View>
+            )}
+            {item.prices["98"] && (
+              <View style={styles.priceItem}>
+                <Text style={styles.priceLabel}>98</Text>
+                <Text style={styles.priceValue}>{item.prices["98"]} €</Text>
+              </View>
+            )}
+            {item.prices["100"] && (
+              <View style={styles.priceItem}>
+                <Text style={styles.priceLabel}>100</Text>
+                <Text style={styles.priceValue}>{item.prices["100"]} €</Text>
+              </View>
+            )}
+          </View>
+        </Card.Content>
+      </Card>
+    );
+  };
 
   if (loading) {
     return (
@@ -318,50 +436,60 @@ const StationMapScreen = ({ stations, loading, error, navigation }) => {
         onRegionChangeComplete={setRegion}
         showsUserLocation={true}
       >
-        {stations.map((station) => (
-          <Marker
-            key={station.pk}
-            coordinate={{
-              latitude: station.lat,
-              longitude: station.lng,
-            }}
-            title={station.name}
-            description={`95: ${station.prices["95"] || "N/A"} € | Dizel: ${
-              station.prices["dizel"] || "N/A"
-            } €`}
-          >
-            <Callout tooltip onPress={() => navigateToStationDetails(station)}>
-              <View style={styles.calloutContainer}>
-                <Text style={styles.calloutTitle}>{station.name}</Text>
-                <Text style={styles.calloutAddress}>
-                  {station.address}, {station.zip_code}
-                </Text>
-                <View style={styles.calloutPrices}>
-                  {station.prices["95"] && (
-                    <Text style={styles.calloutPrice}>
-                      95: {station.prices["95"]} €
-                    </Text>
-                  )}
-                  {station.prices["dizel"] && (
-                    <Text style={styles.calloutPrice}>
-                      Dizel: {station.prices["dizel"]} €
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.calloutButton}>
-                  <MaterialIcons
-                    name="info-outline"
-                    size={20}
-                    color="#2e7d32"
-                  />
-                  <Text style={styles.calloutButtonText}>
-                    {t("petrolStations.viewDetails")}
+        {stations.map((station) => {
+          const stationIsOpen = isStationOpen(station);
+
+          return (
+            <Marker
+              key={station.pk}
+              coordinate={{
+                latitude: station.lat,
+                longitude: station.lng,
+              }}
+              title={station.name}
+              description={`95: ${station.prices["95"] || "N/A"} € | Dizel: ${
+                station.prices["dizel"] || "N/A"
+              } €`}
+            >
+              <Callout
+                tooltip
+                onPress={() => navigateToStationDetails(station)}
+              >
+                <View style={styles.calloutContainer}>
+                  <View style={styles.calloutHeader}>
+                    <Text style={styles.calloutTitle}>{station.name}</Text>
+                    <OpenStatusBadge isOpen={stationIsOpen} />
+                  </View>
+                  <Text style={styles.calloutAddress}>
+                    {station.address}, {station.zip_code}
                   </Text>
+                  <View style={styles.calloutPrices}>
+                    {station.prices["95"] && (
+                      <Text style={styles.calloutPrice}>
+                        95: {station.prices["95"]} €
+                      </Text>
+                    )}
+                    {station.prices["dizel"] && (
+                      <Text style={styles.calloutPrice}>
+                        Dizel: {station.prices["dizel"]} €
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.calloutButton}>
+                    <MaterialIcons
+                      name="info-outline"
+                      size={20}
+                      color="#2e7d32"
+                    />
+                    <Text style={styles.calloutButtonText}>
+                      {t("petrolStations.viewDetails")}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </Callout>
-          </Marker>
-        ))}
+              </Callout>
+            </Marker>
+          );
+        })}
       </MapView>
 
       {/* Custom location button */}
@@ -473,10 +601,16 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  calloutHeader: {
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
   calloutTitle: {
     fontWeight: "bold",
     fontSize: 16,
-    marginBottom: 4,
+    marginRight: 8,
   },
   calloutAddress: {
     fontSize: 12,
@@ -527,6 +661,34 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: "#000",
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    marginTop: 4,
+  },
+  openBadge: {
+    backgroundColor: "#2e7d32", // Green
+  },
+  closedBadge: {
+    backgroundColor: "#d32f2f", // Red
+  },
+  statusText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  stationTitle: {
+    flex: 1,
+    marginRight: 8,
   },
 });
 
