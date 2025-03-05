@@ -128,7 +128,7 @@ function PetrolStationsStack() {
       }}
     >
       <Stack.Screen
-        name="PetrolStations"
+        name="PetrolStationsMain"
         component={PetrolStationsScreen}
         options={{
           title: t("navigation.petrolStations"),
@@ -161,7 +161,7 @@ function SettingsStack() {
       }}
     >
       <Stack.Screen
-        name="Settings"
+        name="SettingsMain"
         component={SettingsScreen}
         options={{
           title: t("navigation.settings"),
@@ -233,7 +233,7 @@ export default function MainAppNavigator() {
         }}
       />
       <Tab.Screen
-        name="PetrolStations"
+        name="PetrolStationsTab"
         component={PetrolStationsStack}
         options={{
           title: t("navigation.petrolStations"),
@@ -247,7 +247,7 @@ export default function MainAppNavigator() {
         }}
       />
       <Tab.Screen
-        name="Settings"
+        name="SettingsTab"
         component={SettingsStack}
         options={{
           title: t("navigation.settings"),

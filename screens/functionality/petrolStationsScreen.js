@@ -1,5 +1,5 @@
-// petrolStationsScreen.js
-import React, { useState, useEffect, useRef } from "react";
+// petrolStationsScreen.js - Using react-native-tab-view
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -8,58 +8,31 @@ import {
   ActivityIndicator,
   Platform,
   TouchableOpacity,
+  Dimensions,
 } from "react-native";
 import { Card, Title, Paragraph, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import { TabView, TabBar } from "react-native-tab-view";
 import MapView, { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import axios from "axios";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
-
-const Tab = createMaterialTopTabNavigator();
+import petrolStationsData from "../../utils/petrolStationsData";
 
 // API URL for petrol stations
 const PETROL_STATIONS_API = "https://goriva.si/api/v1/search/?format=json";
 
-const PetrolStationsScreen = () => {
-  const { t } = useTranslation();
+// Get screen width
+const initialLayout = { width: Dimensions.get("window").width };
 
-  return (
-    <Tab.Navigator
-      initialRouteName="Seznam" // Explicitly set initial tab
-      screenOptions={{
-        tabBarLabelStyle: {
-          fontSize: 14,
-          fontWeight: "bold",
-          textTransform: "none",
-        },
-        tabBarStyle: { backgroundColor: "#fff" },
-        tabBarIndicatorStyle: { backgroundColor: "#000" },
-        lazy: true, // This ensures components are only rendered when tab is active
-      }}
-    >
-      <Tab.Screen
-        name="Seznam"
-        component={StationListScreen}
-        options={{ title: t("petrolStations.list") }}
-      />
-      <Tab.Screen
-        name="Zemljevid"
-        component={StationMapScreen}
-        options={{ title: t("petrolStations.map") }}
-      />
-    </Tab.Navigator>
-  );
-};
-
-// List view component
-const StationListScreen = ({ navigation }) => {
+const PetrolStationsScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("map"); // 'map' or 'list'
 
+  // Fetch data once at the parent level
   useEffect(() => {
     fetchPetrolStations();
   }, []);
@@ -67,15 +40,82 @@ const StationListScreen = ({ navigation }) => {
   const fetchPetrolStations = async () => {
     try {
       setLoading(true);
+
+      // For testing, use the local data instead of making an API call
+      setStations(petrolStationsData.results);
+      setLoading(false);
+
+      // Uncomment this when you want to use the real API
+      /*
       const response = await axios.get(PETROL_STATIONS_API);
       setStations(response.data.results);
       setLoading(false);
+      */
     } catch (err) {
       console.error("Error fetching petrol stations:", err);
       setError(t("petrolStations.fetchError"));
       setLoading(false);
     }
   };
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Custom Tab Bar */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "map" && styles.activeTab]}
+          onPress={() => setActiveTab("map")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "map" && styles.activeTabText,
+            ]}
+          >
+            {t("petrolStations.map")}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "list" && styles.activeTab]}
+          onPress={() => setActiveTab("list")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "list" && styles.activeTabText,
+            ]}
+          >
+            {t("petrolStations.list")}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Content */}
+      <View style={{ flex: 1 }}>
+        {activeTab === "map" ? (
+          <StationMapScreen
+            stations={stations}
+            loading={loading}
+            error={error}
+            navigation={navigation}
+          />
+        ) : (
+          <StationListScreen
+            stations={stations}
+            loading={loading}
+            error={error}
+            navigation={navigation}
+          />
+        )}
+      </View>
+    </View>
+  );
+};
+
+// List view component
+const StationListScreen = ({ stations, loading, error, navigation }) => {
+  const { t } = useTranslation();
 
   const handleStationPress = (station) => {
     navigation.navigate("PetrolStationDetails", { station });
@@ -146,11 +186,8 @@ const StationListScreen = ({ navigation }) => {
 };
 
 // Map view component
-const StationMapScreen = ({ navigation }) => {
+const StationMapScreen = ({ stations, loading, error, navigation }) => {
   const { t } = useTranslation();
-  const [stations, setStations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const mapRef = useRef(null);
   const [region, setRegion] = useState({
@@ -161,22 +198,8 @@ const StationMapScreen = ({ navigation }) => {
   });
 
   useEffect(() => {
-    fetchPetrolStations();
     getUserLocation();
   }, []);
-
-  const fetchPetrolStations = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(PETROL_STATIONS_API);
-      setStations(response.data.results);
-      setLoading(false);
-    } catch (err) {
-      console.error("Error fetching petrol stations:", err);
-      setError(t("petrolStations.fetchError"));
-      setLoading(false);
-    }
-  };
 
   const getUserLocation = async () => {
     try {
@@ -203,7 +226,7 @@ const StationMapScreen = ({ navigation }) => {
 
       setUserLocation(userCoords);
 
-      // Only update region if we got a valid location (not 0,0 or San Francisco)
+      // Only update region if we got a valid location
       if (
         location.coords.latitude !== 0 &&
         location.coords.longitude !== 0 &&
@@ -478,6 +501,32 @@ const styles = StyleSheet.create({
     color: "#2e7d32",
     marginLeft: 4,
     fontWeight: "500",
+  },
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: "#000",
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  activeTabText: {
+    color: "#000",
   },
 });
 

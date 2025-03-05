@@ -112,6 +112,7 @@ const resources = {
         openingHours: "Opening Hours",
         open24Hours: "Open 24 hours",
         closed: "Closed",
+        noOpeningHours: "Opening hours information not available",
       },
     },
   },
@@ -176,6 +177,7 @@ const resources = {
         openingHours: "Delovni Čas",
         open24Hours: "Odprto 24 ur",
         closed: "Zaprto",
+        noOpeningHours: "Informacije o delovnem času niso na voljo",
       },
       settings: {
         title: "Nastavitve",

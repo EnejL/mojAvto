@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -16,6 +16,12 @@ const PetrolStationDetailsScreen = ({ route, navigation }) => {
   const { station } = route.params;
   const { t } = useTranslation();
 
+  useEffect(() => {
+    console.log("Station data:", station);
+    console.log("Opening hours data:", station.opening_hours);
+    console.log("24h flag:", station.open_24h || station.open_24_7);
+  }, [station]);
+
   const openMapsApp = () => {
     const scheme = Platform.select({
       ios: "maps:0,0?q=",
@@ -31,50 +37,138 @@ const PetrolStationDetailsScreen = ({ route, navigation }) => {
     Linking.openURL(url);
   };
 
-  // Helper function to format opening hours
+  // Update the formatOpeningHours function to better handle line breaks
   const formatOpeningHours = () => {
-    if (!station.opening_hours) return null;
+    // Check for different possible property names
+    const openingHoursText = station.opening_hours || station.open_hours;
+
+    if (!openingHoursText) return null;
 
     try {
-      // If opening_hours is a string, try to parse it
-      const hours =
-        typeof station.opening_hours === "string"
-          ? JSON.parse(station.opening_hours)
-          : station.opening_hours;
+      console.log("Raw opening hours:", openingHoursText);
 
-      if (!hours) return null;
+      // If it's a string with line breaks, format it nicely
+      if (typeof openingHoursText === "string") {
+        // Split by line breaks and filter out empty lines
+        const lines = openingHoursText
+          .replace(/\\r/g, "") // Remove escaped \r characters if present
+          .split(/\r?\n/)
+          .filter((line) => line.trim().length > 0);
 
-      // Days of the week in Slovenian
-      const days = [
-        t("days.monday"),
-        t("days.tuesday"),
-        t("days.wednesday"),
-        t("days.thursday"),
-        t("days.friday"),
-        t("days.saturday"),
-        t("days.sunday"),
-      ];
+        // If we have multiple lines, format them nicely
+        if (lines.length > 1) {
+          return (
+            <View style={styles.hoursContainer}>
+              {lines.map((line, index) => {
+                // Determine if this is a header line (all caps or ends with a colon)
+                const isHeader =
+                  line.toUpperCase() === line ||
+                  line.trim().endsWith(":") ||
+                  line.includes("OBRATOVALNI ČAS");
 
+                return (
+                  <Text
+                    key={index}
+                    style={[
+                      styles.hourText,
+                      isHeader ? styles.hourHeader : null,
+                      // Add extra spacing after headers
+                      isHeader && index < lines.length - 1
+                        ? { marginBottom: 8 }
+                        : null,
+                    ]}
+                  >
+                    {line.trim()}
+                  </Text>
+                );
+              })}
+            </View>
+          );
+        }
+      }
+
+      // Try to parse as JSON if it looks like JSON
+      if (
+        typeof openingHoursText === "string" &&
+        (openingHoursText.startsWith("[") || openingHoursText.startsWith("{"))
+      ) {
+        try {
+          const hours = JSON.parse(openingHoursText);
+
+          // Handle array format
+          if (Array.isArray(hours)) {
+            const days = [
+              t("days.monday"),
+              t("days.tuesday"),
+              t("days.wednesday"),
+              t("days.thursday"),
+              t("days.friday"),
+              t("days.saturday"),
+              t("days.sunday"),
+            ];
+
+            return (
+              <View style={styles.hoursContainer}>
+                {days.map((day, index) => (
+                  <View key={index} style={styles.hourRow}>
+                    <Text style={styles.dayName}>{day}</Text>
+                    <Text style={styles.hourText}>
+                      {hours[index] ? hours[index] : t("petrolStations.closed")}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            );
+          }
+          // Handle object format
+          else if (typeof hours === "object") {
+            return (
+              <View style={styles.hoursContainer}>
+                {Object.entries(hours).map(([day, time], index) => (
+                  <View key={index} style={styles.hourRow}>
+                    <Text style={styles.dayName}>{day}</Text>
+                    <Text style={styles.hourText}>
+                      {time || t("petrolStations.closed")}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            );
+          }
+        } catch (e) {
+          // If parsing fails, just display as text
+          return (
+            <View style={styles.hoursContainer}>
+              <Text style={styles.hourText}>{openingHoursText}</Text>
+            </View>
+          );
+        }
+      }
+
+      // Default case: just display the text
       return (
         <View style={styles.hoursContainer}>
-          {days.map((day, index) => (
-            <View key={index} style={styles.hourRow}>
-              <Text style={styles.dayName}>{day}</Text>
-              <Text style={styles.hourText}>
-                {hours[index] ? hours[index] : t("petrolStations.closed")}
-              </Text>
-            </View>
-          ))}
+          <Text style={styles.hourText}>{openingHoursText}</Text>
         </View>
       );
     } catch (error) {
-      console.error("Error parsing opening hours:", error);
+      console.error("Error handling opening hours:", error);
       return null;
     }
   };
 
   // Check if station has 24/7 flag
   const isOpen24Hours = station.open_24h || station.open_24_7;
+
+  // Update the hasOpeningHours check to include open_hours
+  const hasOpeningHours =
+    station.opening_hours ||
+    station.open_hours ||
+    station.hours ||
+    station.working_hours ||
+    station.open_24h ||
+    station.open_24_7 ||
+    station.is_open_24h;
 
   return (
     <ScrollView style={styles.container}>
@@ -113,7 +207,7 @@ const PetrolStationDetailsScreen = ({ route, navigation }) => {
         <Divider style={styles.divider} />
 
         {/* Opening Hours Section */}
-        {(isOpen24Hours || station.opening_hours) && (
+        {hasOpeningHours && (
           <>
             <Title style={styles.sectionTitle}>
               {t("petrolStations.openingHours")}
@@ -130,6 +224,20 @@ const PetrolStationDetailsScreen = ({ route, navigation }) => {
               formatOpeningHours()
             )}
 
+            <Divider style={styles.divider} />
+          </>
+        )}
+
+        {!hasOpeningHours && (
+          <>
+            <Title style={styles.sectionTitle}>
+              {t("petrolStations.openingHours")}
+            </Title>
+            <View style={styles.hoursContainer}>
+              <Text style={styles.hourText}>
+                {t("petrolStations.noOpeningHours")}
+              </Text>
+            </View>
             <Divider style={styles.divider} />
           </>
         )}
@@ -274,6 +382,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: "#2e7d32",
     fontWeight: "bold",
+  },
+  hourHeader: {
+    fontWeight: "bold",
+    marginTop: 8,
+    marginBottom: 4,
+    color: "#333",
   },
 });
 
