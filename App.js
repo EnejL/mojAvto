@@ -20,6 +20,9 @@ import MyAccountScreen from "./screens/functionality/myAccountScreen";
 // Main app
 import MainAppNavigator from "./screens/navigation/mainAppNavigator";
 
+// Import the new screen
+import PetrolStationDetailsScreen from "./screens/functionality/petrolStationDetailsScreen";
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -110,6 +113,18 @@ export default function App() {
                 />
               </>
             )}
+            <Stack.Screen
+              name="PetrolStationDetails"
+              component={PetrolStationDetailsScreen}
+              options={({ route }) => ({
+                title: route.params.station.name,
+                headerBackTitle: t("navigation.back"),
+                headerStyle: {
+                  backgroundColor: "#000000",
+                },
+                headerTintColor: "#fff",
+              })}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
