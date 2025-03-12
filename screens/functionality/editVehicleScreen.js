@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -10,6 +10,8 @@ import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { updateVehicle, deleteVehicle } from "../../utils/firestore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AutocompleteInput from "../../components/AutocompleteInput";
+import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -22,6 +24,52 @@ export default function EditVehicleScreen({ navigation, route }) {
     model: vehicle.model,
     numberPlate: vehicle.numberPlate || "",
   });
+
+  const [carBrands, setCarBrands] = useState([]);
+  const [carModels, setCarModels] = useState([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+
+  useEffect(() => {
+    const loadCarBrands = async () => {
+      setLoadingBrands(true);
+      try {
+        const brands = await fetchCarBrands();
+        setCarBrands(brands);
+      } catch (error) {
+        console.error("Failed to load car brands:", error);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+
+    loadCarBrands();
+  }, []);
+
+  const handleBrandSelection = (brand) => {
+    setVehicleData({ ...vehicleData, make: brand, model: "" });
+
+    // Fetch models for this brand
+    fetchModelsForBrand(brand);
+  };
+
+  const fetchModelsForBrand = async (brand) => {
+    if (!brand) return;
+
+    try {
+      console.log(`Fetching models for selected brand: ${brand}`);
+      const models = await fetchCarModels(brand);
+      if (Array.isArray(models) && models.length > 0) {
+        console.log(`Found ${models.length} models for ${brand}`);
+        setCarModels(models);
+      } else {
+        console.log(`No models found for ${brand}`);
+        setCarModels([]);
+      }
+    } catch (error) {
+      console.error("Failed to load car models:", error);
+      setCarModels([]);
+    }
+  };
 
   const handleSave = async () => {
     // Validate inputs
@@ -79,6 +127,8 @@ export default function EditVehicleScreen({ navigation, route }) {
     ]);
   };
 
+  const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
+
   return (
     <View style={styles.container}>
       <ScrollView>
@@ -110,34 +160,34 @@ export default function EditVehicleScreen({ navigation, route }) {
           <View style={styles.inputContainer}>
             <View style={styles.labelContainer}>
               <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
-              <Text style={styles.requiredLabel}>*</Text>
+              {renderRequiredLabel()}
             </View>
-            <TextInput
-              label={t("vehicles.make")}
+            <AutocompleteInput
               value={vehicleData.make}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, make: text })
-              }
-              style={styles.input}
-              mode="outlined"
-              disabled={saving}
+              onChangeText={handleBrandSelection}
+              onSelectSuggestion={handleBrandSelection}
+              suggestions={carBrands}
+              disabled={saving || loadingBrands}
+              required={true}
+              label=""
+              placeholder={loadingBrands ? "Loading brands..." : ""}
             />
           </View>
 
           <View style={styles.inputContainer}>
             <View style={styles.labelContainer}>
               <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
-              <Text style={styles.requiredLabel}>*</Text>
+              {renderRequiredLabel()}
             </View>
             <TextInput
-              label={t("vehicles.model")}
               value={vehicleData.model}
               onChangeText={(text) =>
                 setVehicleData({ ...vehicleData, model: text })
               }
               style={styles.input}
               mode="outlined"
-              disabled={saving}
+              disabled={saving || !vehicleData.make}
+              placeholder={!vehicleData.make ? "Select a make first" : ""}
             />
           </View>
 

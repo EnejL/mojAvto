@@ -12,6 +12,7 @@ import { Text, Button, Surface, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getFillings, deleteFilling } from "../../utils/firestore";
 import { Swipeable } from "react-native-gesture-handler";
+import BrandLogo from "../../components/BrandLogo";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
@@ -42,6 +43,30 @@ const formatDate = (date) => {
   )
     .toString()
     .padStart(2, "0")}. ${dateObj.getFullYear()}`;
+};
+
+// Fix the helper function for number formatting
+const formatNumber = (value, decimals = 1) => {
+  if (value === null || value === undefined) return "";
+
+  // First convert to string with fixed decimal places
+  const fixed = value.toFixed(decimals);
+
+  // Split into integer and decimal parts
+  const parts = fixed.split(".");
+  const integerPart = parts[0];
+  const decimalPart = parts.length > 1 ? parts[1] : "";
+
+  // Add thousand separators (dots) to integer part
+  const integerWithSeparators = integerPart.replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    "."
+  );
+
+  // Combine with decimal part using comma as separator
+  return decimalPart
+    ? `${integerWithSeparators},${decimalPart}`
+    : integerWithSeparators;
 };
 
 export default function VehicleDetailsScreen({ route, navigation }) {
@@ -94,6 +119,29 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return (totalLiters / totalDistance) * 100;
   }, [fillings]);
 
+  // Calculate average cost per filling
+  const averageCost = useMemo(() => {
+    if (fillings.length === 0) return null;
+    const totalCost = fillings.reduce((sum, filling) => sum + filling.cost, 0);
+    return totalCost / fillings.length;
+  }, [fillings]);
+
+  // Calculate total cost
+  const totalCost = useMemo(() => {
+    if (fillings.length === 0) return null;
+    return fillings.reduce((sum, filling) => sum + filling.cost, 0);
+  }, [fillings]);
+
+  // Calculate average liters per filling
+  const averageLiters = useMemo(() => {
+    if (fillings.length === 0) return null;
+    const totalLiters = fillings.reduce(
+      (sum, filling) => sum + filling.liters,
+      0
+    );
+    return totalLiters / fillings.length;
+  }, [fillings]);
+
   const renderFillingItem = ({ item }) => {
     const renderRightActions = (progress, dragX) => {
       return (
@@ -103,7 +151,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
             color="#fff"
             onPress={() => handleDeleteFilling(item.id)}
             style={styles.deleteActionButton}
-          ></Button>
+          />
         </View>
       );
     };
@@ -162,10 +210,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
               <View style={styles.fillingValues}>
                 <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
-                <Text style={styles.fillingValue}>{item.odometer} km</Text>
-                <Text style={styles.fillingValue}>{item.liters} L</Text>
                 <Text style={styles.fillingValue}>
-                  {item.cost.toFixed(2)} €
+                  {formatNumber(item.odometer, 0)} km
+                </Text>
+                <Text style={styles.fillingValue}>
+                  {formatNumber(item.liters, 2)} L
+                </Text>
+                <Text style={styles.fillingValue}>
+                  {formatNumber(item.cost, 2)} €
                 </Text>
               </View>
             </View>
@@ -180,52 +232,76 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       <ScrollView>
         <Surface style={styles.headerCard}>
           <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.vehicleName}>{vehicle.name}</Text>
-              <Text style={styles.vehicleSubtitle}>
-                {vehicle.make} {vehicle.model}
-              </Text>
-            </View>
-
-            {averageConsumption && (
-              <View style={styles.consumptionContainer}>
-                <Text style={styles.consumptionValue}>
-                  {averageConsumption.toFixed(1)}
-                </Text>
-                <Text style={styles.consumptionUnit}>
-                  {t("fillings.consumptionUnit")}
+            <View style={styles.vehicleInfoContainer}>
+              <BrandLogo brand={vehicle.make} style={styles.brandLogo} />
+              <View style={styles.vehicleTextContainer}>
+                <Text style={styles.vehicleName}>{vehicle.name}</Text>
+                <Text style={styles.vehicleSubtitle}>
+                  {vehicle.make} {vehicle.model}
                 </Text>
               </View>
-            )}
+            </View>
           </View>
         </Surface>
 
-        {/* <Surface style={styles.detailsCard}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t("vehicles.make")}</Text>
-            <Text style={styles.detailValue}>{vehicle.make}</Text>
-          </View>
-          <View style={styles.separator} />
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t("vehicles.model")}</Text>
-            <Text style={styles.detailValue}>{vehicle.model}</Text>
-          </View>
-          {vehicle.numberPlate ? (
-            <>
-              <View style={styles.separator} />
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>
-                  {t("vehicles.numberPlate")}
-                </Text>
-                <Text style={styles.detailValue}>{vehicle.numberPlate}</Text>
-              </View>
-            </>
-          ) : null}
-        </Surface> */}
+        <Surface style={styles.statsCard}>
+          <Text style={styles.sectionTitle}>{t("fillings.statistics")}</Text>
+
+          {fillings.length < 2 ? (
+            <Text style={styles.emptyText}>{t("fillings.notEnoughData")}</Text>
+          ) : (
+            <View style={styles.statsGrid}>
+              {averageConsumption !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>
+                    {t("fillings.avgConsumption")}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(averageConsumption)}{" "}
+                    {t("fillings.consumptionUnit")}
+                  </Text>
+                </View>
+              )}
+
+              {averageCost !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>{t("fillings.avgCost")}</Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(averageCost, 2)} € / {t("fillings.filling")}
+                  </Text>
+                </View>
+              )}
+
+              {averageLiters !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>
+                    {t("fillings.avgLiters")}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(averageLiters)} L
+                  </Text>
+                </View>
+              )}
+
+              {totalCost !== null && (
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>
+                    {t("fillings.totalCost")}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(totalCost, 2)} €
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </Surface>
 
         <Surface style={styles.fillingsCard}>
-          <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
-
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
+            <Text style={styles.fillingCount}>({fillings.length})</Text>
+          </View>
           {fillings.length === 0 ? (
             <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
           ) : (
@@ -268,6 +344,22 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  vehicleInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  vehicleTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  brandLogo: {
+    width: 60,
+    height: 60,
+    borderRadius: 0,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+  },
   vehicleName: {
     fontSize: 24,
     fontWeight: "bold",
@@ -277,44 +369,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  consumptionContainer: {
-    alignItems: "center",
-  },
-  consumptionValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2e7d32",
-  },
-  consumptionUnit: {
-    fontSize: 12,
-    color: "#666",
-  },
-  detailsCard: {
+  statsCard: {
     margin: 16,
     marginTop: 8,
+    marginBottom: 8,
     padding: 16,
     borderRadius: 12,
     elevation: 2,
     backgroundColor: "#fff",
   },
-  detailRow: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  statsGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
+    flexWrap: "wrap",
+    marginTop: 12,
   },
-  detailLabel: {
-    fontSize: 16,
+  statItem: {
+    width: "50%",
+    marginBottom: 16,
+  },
+  statLabel: {
+    fontSize: 12,
     color: "#666",
+    marginBottom: 4,
   },
-  detailValue: {
+  statValue: {
     fontSize: 16,
-    fontWeight: "500",
-  },
-  separator: {
-    height: 1,
-    backgroundColor: "#e0e0e0",
-    marginVertical: 8,
+    fontWeight: "bold",
+    color: "#2e7d32",
   },
   fillingsCard: {
     margin: 16,
@@ -324,10 +409,16 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#fff",
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+  sectionTitleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
+  },
+  fillingCount: {
+    fontSize: 14,
+    color: "#888",
+    fontWeight: "500",
   },
   emptyText: {
     textAlign: "center",
