@@ -14,13 +14,8 @@ const BrandLogo = ({ brand, style }) => {
     .trim()
     .replace(/[-\s]+/g, "-");
 
-  // Handle special cases
-  let logoKey = normalizedBrand;
-  if (normalizedBrand === "mercedes-benz") logoKey = "mercedes";
-  if (normalizedBrand === "vw") logoKey = "volkswagen";
-
   // Construct the URL directly
-  const logoSource = { uri: `${BASE_LOGO_URL}${logoKey}.png` };
+  const logoSource = { uri: `${BASE_LOGO_URL}${normalizedBrand}.png` };
 
   return (
     <View style={[styles.container, style]}>

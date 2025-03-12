@@ -1,12 +1,11 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { IconButton, Button, Avatar } from "react-native-paper";
-import { useNavigation, CommonActions } from "@react-navigation/native";
+import { IconButton } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Alert } from "react-native";
+import { StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { signOut, getCurrentUser } from "../../utils/auth";
 
 // Import screens
 import MyVehiclesScreen from "../functionality/myVehiclesScreen";
@@ -26,7 +25,6 @@ const Stack = createNativeStackNavigator();
 // MyVehicles stack
 function MyVehiclesStack() {
   const { t } = useTranslation();
-  const navigation = useNavigation();
 
   return (
     <Stack.Navigator
@@ -207,7 +205,6 @@ function AccountStack() {
 
 export default function MainAppNavigator() {
   const { t } = useTranslation();
-  const navigation = useNavigation();
 
   return (
     <Tab.Navigator
@@ -246,6 +243,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
+      {/* Temporarily hidden Settings tab
       <Tab.Screen
         name="SettingsTab"
         component={SettingsStack}
@@ -256,6 +254,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
+      */}
       <Tab.Screen
         name="Account"
         component={AccountStack}

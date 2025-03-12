@@ -219,7 +219,7 @@ export default function EditVehicleScreen({ navigation, route }) {
             />
           )}
         >
-          {t("common.delete")}
+          {t("vehicles.deleteVehicle")}
         </Button>
       </ScrollView>
 

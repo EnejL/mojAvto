@@ -46,7 +46,7 @@ const formatDate = (date) => {
 };
 
 // Fix the helper function for number formatting
-const formatNumber = (value, decimals = 1) => {
+const formatNumber = (value, decimals = 2) => {
   if (value === null || value === undefined) return "";
 
   // First convert to string with fixed decimal places
