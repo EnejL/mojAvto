@@ -93,20 +93,16 @@ export default function MyVehiclesScreen({ navigation, route }) {
     );
   };
 
-  const renderRightActions = (vehicleId) => {
-    return (
-      <TouchableOpacity
-        style={styles.deleteAction}
-        onPress={() => handleDeleteVehicle(vehicleId)}
-      >
-        <MaterialCommunityIcons name="trash-can" size={24} color="white" />
-      </TouchableOpacity>
-    );
-  };
-
   const renderItem = ({ item }) => {
-    const renderRightActions = (progress, dragX) => {
-      // ... existing code
+    const renderRightActions = () => {
+      return (
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => handleDeleteVehicle(item.id)}
+        >
+          <MaterialCommunityIcons name="trash-can" size={24} color="white" />
+        </TouchableOpacity>
+      );
     };
 
     return (
@@ -184,6 +180,7 @@ const styles = StyleSheet.create({
   vehicleItem: {
     marginVertical: 5,
     backgroundColor: "#e0e0e0",
+    display: "flex",
     borderRadius: 6,
   },
   vehicleText: {
@@ -227,8 +224,8 @@ const styles = StyleSheet.create({
   brandLogo: {
     width: "auto",
     minWidth: 70,
-    height: "100%",
-    position: "absolute",
+    // height: "100%",
+    // position: "absolute",
     left: 0,
     top: 0,
     marginRight: 0,
@@ -241,9 +238,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   vehicleInfo: {
-    flex: 1,
-    marginLeft: 70,
-    padding: 12,
+    marginLeft: 16,
   },
   vehicleName: {
     fontSize: 16,

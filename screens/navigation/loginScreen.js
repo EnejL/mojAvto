@@ -38,12 +38,27 @@ export default function LoginScreen() {
       setPassword("");
     } catch (error) {
       console.error("Sign in error:", error);
+
+      // Map Firebase error codes to our translation keys
       if (error.message && error.message.includes("auth/")) {
         const errorCode = error.message.replace("auth/", "");
-        console.log("Error code:", errorCode);
-        setError(t(`auth.error.${errorCode}`));
+
+        // Map Firebase error codes to our new camelCase keys
+        const errorMap = {
+          "invalid-email": "invalidCredentials",
+          "user-not-found": "invalidCredentials",
+          "wrong-password": "invalidCredentials",
+          "user-disabled": "userDisabled",
+          "too-many-requests": "tooManyAttempts",
+          "email-already-in-use": "emailTaken",
+          "weak-password": "weakPassword",
+        };
+
+        // Use the mapped key or fallback to unknownError
+        const translationKey = errorMap[errorCode] || "unknownError";
+        setError(t(`auth.error.${translationKey}`));
       } else {
-        setError(t("auth.error.unknown-error"));
+        setError(t("auth.error.unknownError"));
       }
     } finally {
       setLoading(false);

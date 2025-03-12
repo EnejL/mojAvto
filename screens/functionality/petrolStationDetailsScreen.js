@@ -11,6 +11,7 @@ import { Surface, Title, Paragraph, Divider, Button } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { MaterialIcons } from "@expo/vector-icons";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+// import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const PetrolStationDetailsScreen = ({ route, navigation }) => {
   const { station } = route.params;

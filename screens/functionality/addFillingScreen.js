@@ -16,6 +16,10 @@ export default function AddFillingScreen({ route, navigation }) {
     odometer: "",
   });
 
+  const formatDecimal = (value) => {
+    return value.replace(".", ",");
+  };
+
   const handleSave = async () => {
     if (
       !fillingData.date ||
@@ -29,10 +33,16 @@ export default function AddFillingScreen({ route, navigation }) {
 
     setLoading(true);
     try {
+      const litersStr = fillingData.liters.replace(",", ".");
+      const costStr = fillingData.cost.replace(",", ".");
+
+      const liters = parseFloat(parseFloat(litersStr).toFixed(2));
+      const cost = parseFloat(parseFloat(costStr).toFixed(2));
+
       await addFilling(vehicle.id, {
         date: fillingData.date,
-        liters: parseFloat(fillingData.liters),
-        cost: parseFloat(fillingData.cost),
+        liters: liters,
+        cost: cost,
         odometer: parseInt(fillingData.odometer, 10),
       });
 
@@ -69,9 +79,10 @@ export default function AddFillingScreen({ route, navigation }) {
           <TextInput
             label={t("fillings.liters")}
             value={fillingData.liters}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, liters: text })
-            }
+            onChangeText={(text) => {
+              const formattedText = formatDecimal(text);
+              setFillingData({ ...fillingData, liters: formattedText });
+            }}
             keyboardType="numeric"
             style={styles.input}
             mode="outlined"
@@ -80,9 +91,10 @@ export default function AddFillingScreen({ route, navigation }) {
           <TextInput
             label={t("fillings.cost")}
             value={fillingData.cost}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, cost: text })
-            }
+            onChangeText={(text) => {
+              const formattedText = formatDecimal(text);
+              setFillingData({ ...fillingData, cost: formattedText });
+            }}
             keyboardType="numeric"
             style={styles.input}
             mode="outlined"

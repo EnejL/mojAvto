@@ -14,110 +14,133 @@ import { Card, Title, Paragraph, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { TabView, TabBar } from "react-native-tab-view";
 import MapView, { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
-import axios from "axios";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
-import petrolStationsData from "../../utils/petrolStationsData";
-
-// API URL for petrol stations
-const PETROL_STATIONS_API = "https://goriva.si/api/v1/search/?format=json";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 // Get screen width
 const initialLayout = { width: Dimensions.get("window").width };
 
 // Add this utility function at the top of the file, outside any component
 const isStationOpen = (station) => {
-  // If the station is marked as 24h, it's always open
-  if (station.open_24h || station.open_24_7 || station.is_open_24h) {
+  // If no opening hours data is available
+  if (!station.open_hours) return null;
+
+  // Handle 24/7 stations
+  if (
+    station.open_24h ||
+    station.open_24_7 ||
+    station.open_hours.toLowerCase().includes("24/7") ||
+    station.open_hours.toLowerCase().includes("00:00-24:00") ||
+    station.open_hours.toLowerCase().includes("0-24") ||
+    station.open_hours.toLowerCase().includes("non stop")
+  ) {
     return true;
   }
 
-  // Get current day and time
   const now = new Date();
   const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
 
-  // Convert to 24-hour format time as decimal for comparison (e.g., 14:30 = 14.5)
-  const currentTime = currentHour + currentMinute / 60;
+  // Convert current time to minutes for easier comparison
+  const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-  // Check if the station has opening hours text
-  const openingHoursText = station.opening_hours || station.open_hours;
+  // Handle multi-line format with days of the week
+  const openingHoursText = station.open_hours.toLowerCase();
 
-  if (!openingHoursText) {
-    return null; // Unknown status
-  }
+  // Check for specific day patterns
+  const dayPatterns = {
+    0: ["nedelj", "ned"], // Sunday
+    1: ["ponedelj", "pon"], // Monday
+    2: ["torek", "tor"], // Tuesday
+    3: ["sreda", "sre"], // Wednesday
+    4: ["četrtek", "čet"], // Thursday
+    5: ["petek", "pet"], // Friday
+    6: ["sobota", "sob"], // Saturday
+  };
 
-  // Simple check for common patterns in the text
-  const lowerText = openingHoursText.toLowerCase();
+  // Check for "delavnik" (workday) which is Monday-Friday
+  const isWorkday = currentDay >= 1 && currentDay <= 5;
 
-  // Check if it mentions being open 24 hours
-  if (
-    lowerText.includes("24 ur") ||
-    lowerText.includes("00:00-24:00") ||
-    lowerText.includes("00.00-24.00") ||
-    lowerText.includes("24/7")
-  ) {
-    return true;
-  }
+  // Split by lines to handle multi-line formats
+  const lines = openingHoursText.split(/\n|\\n/);
 
-  // Check if it mentions being closed today
-  const dayNames = ["ned", "pon", "tor", "sre", "čet", "pet", "sob"];
-  const todayName = dayNames[currentDay];
+  for (const line of lines) {
+    // Check if this line applies to the current day
+    let isRelevantLine = false;
 
-  if (lowerText.includes(todayName + ".") && lowerText.includes("zaprto")) {
-    return false;
-  }
-
-  // Try to extract opening hours for today
-  // This is a simplified approach - for a more robust solution,
-  // you would need more complex parsing logic
-  try {
-    // Look for patterns like "PON - PET: 08:00-20:00"
-    const dayRanges = [
-      { pattern: "pon.*?-.*?pet", days: [1, 2, 3, 4, 5] }, // Monday-Friday
-      { pattern: "pon.*?-.*?sob", days: [1, 2, 3, 4, 5, 6] }, // Monday-Saturday
-      { pattern: "pon.*?-.*?ned", days: [1, 2, 3, 4, 5, 6, 0] }, // Monday-Sunday
-      { pattern: "sob.*?-.*?ned", days: [6, 0] }, // Saturday-Sunday
-      // Individual days
-      { pattern: "pon", days: [1] },
-      { pattern: "tor", days: [2] },
-      { pattern: "sre", days: [3] },
-      { pattern: "čet", days: [4] },
-      { pattern: "pet", days: [5] },
-      { pattern: "sob", days: [6] },
-      { pattern: "ned", days: [0] },
-    ];
-
-    // Find a day range that includes today
-    for (const range of dayRanges) {
-      if (range.days.includes(currentDay)) {
-        const regex = new RegExp(
-          `${range.pattern}[^\\d]+(\\d{1,2})[:\\.](\\d{2})[^\\d]+(\\d{1,2})[:\\.](\\d{2})`,
-          "i"
-        );
-        const match = openingHoursText.match(regex);
-
-        if (match) {
-          const openHour = parseInt(match[1]);
-          const openMinute = parseInt(match[2]);
-          const closeHour = parseInt(match[3]);
-          const closeMinute = parseInt(match[4]);
-
-          const openTime = openHour + openMinute / 60;
-          const closeTime = closeHour + closeMinute / 60;
-
-          return currentTime >= openTime && currentTime < closeTime;
+    // Check for workday
+    if (line.includes("delavnik") && isWorkday) {
+      isRelevantLine = true;
+    }
+    // Check for weekend
+    else if (
+      (line.includes("vikend") || line.includes("konec tedna")) &&
+      (currentDay === 0 || currentDay === 6)
+    ) {
+      isRelevantLine = true;
+    }
+    // Check for specific day
+    else {
+      const dayPatternKeys = Object.keys(dayPatterns);
+      for (const dayKey of dayPatternKeys) {
+        const patterns = dayPatterns[dayKey];
+        if (
+          patterns.some((pattern) => line.includes(pattern)) &&
+          parseInt(dayKey) === currentDay
+        ) {
+          isRelevantLine = true;
+          break;
         }
       }
     }
 
-    // If we couldn't determine the status from the text
-    return null;
-  } catch (e) {
-    console.log("Error parsing opening hours:", e);
-    return null;
+    // If this line is relevant for today, check the hours
+    if (isRelevantLine) {
+      // Extract time ranges using regex
+      const timeRanges = line.match(/(\d{1,2}):?(\d{2})?-(\d{1,2}):?(\d{2})?/g);
+
+      if (timeRanges && timeRanges.length > 0) {
+        for (const timeRange of timeRanges) {
+          const [startTime, endTime] = timeRange.split("-");
+
+          // Parse start time
+          let startHour = 0;
+          let startMinute = 0;
+          if (startTime.includes(":")) {
+            [startHour, startMinute] = startTime.split(":").map(Number);
+          } else {
+            startHour = parseInt(startTime);
+          }
+
+          // Parse end time
+          let endHour = 0;
+          let endMinute = 0;
+          if (endTime.includes(":")) {
+            [endHour, endMinute] = endTime.split(":").map(Number);
+          } else {
+            endHour = parseInt(endTime);
+          }
+
+          // Convert to minutes for comparison
+          const startTimeInMinutes = startHour * 60 + startMinute;
+          const endTimeInMinutes = endHour * 60 + endMinute;
+
+          // Check if current time is within range
+          if (
+            currentTimeInMinutes >= startTimeInMinutes &&
+            currentTimeInMinutes <= endTimeInMinutes
+          ) {
+            return true;
+          }
+        }
+      }
+    }
   }
+
+  // If no matching time range was found, assume closed
+  return false;
 };
 
 // Create a reusable OpenStatusBadge component
@@ -136,38 +159,73 @@ const OpenStatusBadge = ({ isOpen }) => {
   );
 };
 
+// Add this function after the imports and before the component
+const fetchPetrolStations = async () => {
+  try {
+    const db = getFirestore();
+    const petrolStationsRef = doc(db, "data", "petrolStations");
+    const petrolStationsDoc = await getDoc(petrolStationsRef);
+
+    if (petrolStationsDoc.exists()) {
+      const petrolStationsData = petrolStationsDoc.data();
+      return petrolStationsData.data; // Return the data field which contains the API response
+    } else {
+      console.log("No petrol stations data found in Firestore");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching petrol stations from Firestore:", error);
+    throw error;
+  }
+};
+
 const PetrolStationsScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("map"); // 'map' or 'list'
+  const [userLocation, setUserLocation] = useState(null);
 
-  // Fetch data once at the parent level
   useEffect(() => {
-    fetchPetrolStations();
-  }, []);
-
-  const fetchPetrolStations = async () => {
-    try {
+    const loadPetrolStations = async () => {
       setLoading(true);
+      setError(null);
 
-      // For testing, use the local data instead of making an API call
-      setStations(petrolStationsData.results);
-      setLoading(false);
+      try {
+        // Get user location first
+        const { status } = await Location.requestForegroundPermissionsAsync();
 
-      // Uncomment this when you want to use the real API
-      /*
-      const response = await axios.get(PETROL_STATIONS_API);
-      setStations(response.data.results);
-      setLoading(false);
-      */
-    } catch (err) {
-      console.error("Error fetching petrol stations:", err);
-      setError(t("petrolStations.fetchError"));
-      setLoading(false);
-    }
-  };
+        if (status !== "granted") {
+          setError(t("petrolStations.locationPermissionDenied"));
+          setLoading(false);
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        // Fetch petrol stations from Firestore
+        const data = await fetchPetrolStations();
+
+        if (data && data.results) {
+          setStations(data.results);
+        } else {
+          setError(t("petrolStations.fetchError"));
+        }
+      } catch (error) {
+        console.error("Error loading petrol stations:", error);
+        setError(t("petrolStations.fetchError"));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPetrolStations();
+  }, [t]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -240,7 +298,7 @@ const StationListScreen = ({ stations, loading, error, navigation }) => {
         <Card.Content>
           <View style={styles.cardHeader}>
             <Title style={styles.stationTitle}>{item.name}</Title>
-            <OpenStatusBadge isOpen={stationIsOpen} />
+            {/* <OpenStatusBadge isOpen={stationIsOpen} /> */}
           </View>
           <Paragraph>
             {item.address}, {item.zip_code}
@@ -410,6 +468,58 @@ const StationMapScreen = ({ stations, loading, error, navigation }) => {
     navigation.navigate("PetrolStationDetails", { station });
   };
 
+  const renderMarkers = () => {
+    return stations.map((station) => {
+      const isOpen = isStationOpen(station);
+
+      return (
+        <Marker
+          key={station.pk}
+          coordinate={{
+            latitude: station.lat,
+            longitude: station.lng,
+          }}
+          title={station.name}
+          description={station.address}
+          pinColor="green" // Always green pins
+        >
+          <Callout
+            tooltip
+            onPress={() =>
+              navigation.navigate("PetrolStationDetails", { station })
+            }
+          >
+            <View style={styles.calloutContainer}>
+              <View style={styles.calloutHeader}>
+                <Text style={styles.calloutTitle}>{station.name}</Text>
+                {/* <OpenStatusBadge isOpen={isOpen} /> */}
+              </View>
+              <Text style={styles.calloutAddress}>{station.address}</Text>
+              <View style={styles.calloutPrices}>
+                {station.prices["95"] && (
+                  <Text style={styles.calloutPrice}>
+                    95: {station.prices["95"]} €
+                  </Text>
+                )}
+                {station.prices["dizel"] && (
+                  <Text style={styles.calloutPrice}>
+                    Dizel: {station.prices["dizel"]} €
+                  </Text>
+                )}
+              </View>
+              <View style={styles.calloutButton}>
+                <MaterialIcons name="info-outline" size={20} color="#2e7d32" />
+                <Text style={styles.calloutButtonText}>
+                  {t("petrolStations.viewDetails")}
+                </Text>
+              </View>
+            </View>
+          </Callout>
+        </Marker>
+      );
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -436,60 +546,7 @@ const StationMapScreen = ({ stations, loading, error, navigation }) => {
         onRegionChangeComplete={setRegion}
         showsUserLocation={true}
       >
-        {stations.map((station) => {
-          const stationIsOpen = isStationOpen(station);
-
-          return (
-            <Marker
-              key={station.pk}
-              coordinate={{
-                latitude: station.lat,
-                longitude: station.lng,
-              }}
-              title={station.name}
-              description={`95: ${station.prices["95"] || "N/A"} € | Dizel: ${
-                station.prices["dizel"] || "N/A"
-              } €`}
-            >
-              <Callout
-                tooltip
-                onPress={() => navigateToStationDetails(station)}
-              >
-                <View style={styles.calloutContainer}>
-                  <View style={styles.calloutHeader}>
-                    <Text style={styles.calloutTitle}>{station.name}</Text>
-                    <OpenStatusBadge isOpen={stationIsOpen} />
-                  </View>
-                  <Text style={styles.calloutAddress}>
-                    {station.address}, {station.zip_code}
-                  </Text>
-                  <View style={styles.calloutPrices}>
-                    {station.prices["95"] && (
-                      <Text style={styles.calloutPrice}>
-                        95: {station.prices["95"]} €
-                      </Text>
-                    )}
-                    {station.prices["dizel"] && (
-                      <Text style={styles.calloutPrice}>
-                        Dizel: {station.prices["dizel"]} €
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.calloutButton}>
-                    <MaterialIcons
-                      name="info-outline"
-                      size={20}
-                      color="#2e7d32"
-                    />
-                    <Text style={styles.calloutButtonText}>
-                      {t("petrolStations.viewDetails")}
-                    </Text>
-                  </View>
-                </View>
-              </Callout>
-            </Marker>
-          );
-        })}
+        {renderMarkers()}
       </MapView>
 
       {/* Custom location button */}
@@ -602,9 +659,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   calloutHeader: {
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   calloutTitle: {

@@ -10,6 +10,10 @@ export default function EditFillingScreen({ route, navigation }) {
   const { filling, vehicleId } = route.params;
   const [loading, setLoading] = useState(false);
 
+  const formatDecimal = (value) => {
+    return value.replace(".", ",");
+  };
+
   const [fillingData, setFillingData] = useState({
     date:
       filling.date instanceof Date
@@ -17,8 +21,8 @@ export default function EditFillingScreen({ route, navigation }) {
         : filling.date.seconds
         ? new Date(filling.date.seconds * 1000).toISOString().split("T")[0]
         : filling.date,
-    liters: filling.liters.toString(),
-    cost: filling.cost.toString(),
+    liters: filling.liters.toString().replace(".", ","),
+    cost: filling.cost.toString().replace(".", ","),
     odometer: filling.odometer.toString(),
   });
 
@@ -35,10 +39,16 @@ export default function EditFillingScreen({ route, navigation }) {
 
     setLoading(true);
     try {
+      const litersStr = fillingData.liters.replace(",", ".");
+      const costStr = fillingData.cost.replace(",", ".");
+
+      const liters = parseFloat(parseFloat(litersStr).toFixed(2));
+      const cost = parseFloat(parseFloat(costStr).toFixed(2));
+
       await updateFilling(vehicleId, filling.id, {
         date: fillingData.date,
-        liters: parseFloat(fillingData.liters),
-        cost: parseFloat(fillingData.cost),
+        liters: liters,
+        cost: cost,
         odometer: parseInt(fillingData.odometer, 10),
       });
 
@@ -93,9 +103,10 @@ export default function EditFillingScreen({ route, navigation }) {
           <TextInput
             label={t("fillings.liters")}
             value={fillingData.liters}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, liters: text })
-            }
+            onChangeText={(text) => {
+              const formattedText = formatDecimal(text);
+              setFillingData({ ...fillingData, liters: formattedText });
+            }}
             keyboardType="numeric"
             style={styles.input}
             mode="outlined"
@@ -104,9 +115,10 @@ export default function EditFillingScreen({ route, navigation }) {
           <TextInput
             label={t("fillings.cost")}
             value={fillingData.cost}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, cost: text })
-            }
+            onChangeText={(text) => {
+              const formattedText = formatDecimal(text);
+              setFillingData({ ...fillingData, cost: formattedText });
+            }}
             keyboardType="numeric"
             style={styles.input}
             mode="outlined"
@@ -139,7 +151,7 @@ export default function EditFillingScreen({ route, navigation }) {
             />
           )}
         >
-          {t("common.delete")}
+          {t("fillings.delete")}
         </Button>
 
         <View style={styles.buttonContainer}>

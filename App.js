@@ -82,7 +82,6 @@ export default function App() {
                   }}
                   listeners={({ navigation }) => ({
                     beforeRemove: (e) => {
-                      // Only allow going back to Welcome
                       if (e.data.action.type === "GO_BACK") {
                         e.preventDefault();
                         navigation.navigate("Welcome");
@@ -103,7 +102,6 @@ export default function App() {
                   }}
                   listeners={({ navigation }) => ({
                     beforeRemove: (e) => {
-                      // Only allow going back to Welcome
                       if (e.data.action.type === "GO_BACK") {
                         e.preventDefault();
                         navigation.navigate("Welcome");
