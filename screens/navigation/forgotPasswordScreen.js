@@ -94,7 +94,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
             loading={loading}
             disabled={loading}
           >
-            {t("auth.submit")}
+            {t("common.submit")}
           </Button>
 
           <TouchableOpacity
