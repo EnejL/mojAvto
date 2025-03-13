@@ -13,7 +13,6 @@ import { TextInput, Button } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../utils/firebase";
-import BrandLogo from "../../components/BrandLogo";
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const { t } = useTranslation();

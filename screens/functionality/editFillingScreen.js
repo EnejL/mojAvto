@@ -1,30 +1,77 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Alert } from "react-native";
+import React, { useState, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { updateFilling, deleteFilling } from "../../utils/firestore";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function EditFillingScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { filling, vehicleId } = route.params;
   const [loading, setLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const scrollViewRef = useRef(null);
 
   const formatDecimal = (value) => {
     return value.replace(".", ",");
   };
 
+  // Parse the date from the filling object
+  const parseDate = (dateValue) => {
+    if (dateValue instanceof Date) {
+      return dateValue;
+    } else if (dateValue.seconds) {
+      return new Date(dateValue.seconds * 1000);
+    } else {
+      return new Date(dateValue);
+    }
+  };
+
+  const formatDate = (date) => {
+    return date.toISOString().split("T")[0];
+  };
+
   const [fillingData, setFillingData] = useState({
-    date:
-      filling.date instanceof Date
-        ? filling.date.toISOString().split("T")[0]
-        : filling.date.seconds
-        ? new Date(filling.date.seconds * 1000).toISOString().split("T")[0]
-        : filling.date,
+    date: parseDate(filling.date),
     liters: filling.liters.toString().replace(".", ","),
     cost: filling.cost.toString().replace(".", ","),
     odometer: filling.odometer.toString(),
   });
+
+  const handleDateChange = (event, selectedDate) => {
+    // Only update the date if a date was actually selected (user didn't cancel)
+    if (selectedDate) {
+      setFillingData({ ...fillingData, date: selectedDate });
+    }
+
+    // Note: We're not closing the picker here anymore
+    // The picker will stay open until the user taps elsewhere
+  };
+
+  // Toggle date picker visibility
+  const toggleDatePicker = () => {
+    // Close keyboard if open
+    Keyboard.dismiss();
+    setShowDatePicker(!showDatePicker);
+  };
+
+  // Handle tapping outside of inputs to dismiss keyboard and date picker
+  const handleOutsidePress = () => {
+    Keyboard.dismiss();
+    if (showDatePicker) {
+      setShowDatePicker(false);
+    }
+  };
 
   const handleSave = async () => {
     if (
@@ -46,7 +93,7 @@ export default function EditFillingScreen({ route, navigation }) {
       const cost = parseFloat(parseFloat(costStr).toFixed(2));
 
       await updateFilling(vehicleId, filling.id, {
-        date: fillingData.date,
+        date: formatDate(fillingData.date),
         liters: liters,
         cost: cost,
         odometer: parseInt(fillingData.odometer, 10),
@@ -87,94 +134,113 @@ export default function EditFillingScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Surface style={styles.formCard}>
-          <TextInput
-            label={t("fillings.date")}
-            value={fillingData.date}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, date: text })
-            }
-            style={styles.input}
-            mode="outlined"
-          />
+    <TouchableWithoutFeedback onPress={handleOutsidePress}>
+      <View style={styles.container}>
+        <ScrollView ref={scrollViewRef}>
+          <Surface style={styles.formCard}>
+            {/* Date Picker Button */}
+            <TouchableOpacity
+              style={styles.datePickerButton}
+              onPress={toggleDatePicker}
+            >
+              <Text style={styles.datePickerLabel}>{t("fillings.date")}</Text>
+              <View style={styles.datePickerValueContainer}>
+                <Text style={styles.datePickerValue}>
+                  {formatDate(fillingData.date)}
+                </Text>
+                <MaterialIcons name="calendar-today" size={20} color="#666" />
+              </View>
+            </TouchableOpacity>
 
-          <TextInput
-            label={t("fillings.liters")}
-            value={fillingData.liters}
-            onChangeText={(text) => {
-              const formattedText = formatDecimal(text);
-              setFillingData({ ...fillingData, liters: formattedText });
-            }}
-            keyboardType="numeric"
-            style={styles.input}
-            mode="outlined"
-          />
+            {/* Date Picker */}
+            {showDatePicker && (
+              <DateTimePicker
+                value={fillingData.date}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={handleDateChange}
+              />
+            )}
 
-          <TextInput
-            label={t("fillings.cost")}
-            value={fillingData.cost}
-            onChangeText={(text) => {
-              const formattedText = formatDecimal(text);
-              setFillingData({ ...fillingData, cost: formattedText });
-            }}
-            keyboardType="numeric"
-            style={styles.input}
-            mode="outlined"
-          />
-
-          <TextInput
-            label={t("fillings.odometer")}
-            value={fillingData.odometer}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, odometer: text })
-            }
-            keyboardType="numeric"
-            style={styles.input}
-            mode="outlined"
-          />
-        </Surface>
-      </ScrollView>
-
-      <View style={styles.bottomContainer}>
-        <Button
-          mode="outlined"
-          onPress={handleDelete}
-          style={styles.deleteButton}
-          labelStyle={styles.deleteButtonLabel}
-          icon={({ size, color }) => (
-            <MaterialCommunityIcons
-              name="trash-can"
-              size={size}
-              color={color}
+            <TextInput
+              label={t("fillings.liters")}
+              value={fillingData.liters}
+              onChangeText={(text) => {
+                const formattedText = formatDecimal(text);
+                setFillingData({ ...fillingData, liters: formattedText });
+              }}
+              keyboardType="numeric"
+              style={styles.input}
+              mode="outlined"
+              onFocus={() => setShowDatePicker(false)}
             />
-          )}
-        >
-          {t("fillings.delete")}
-        </Button>
 
-        <View style={styles.buttonContainer}>
+            <TextInput
+              label={t("fillings.cost")}
+              value={fillingData.cost}
+              onChangeText={(text) => {
+                const formattedText = formatDecimal(text);
+                setFillingData({ ...fillingData, cost: formattedText });
+              }}
+              keyboardType="numeric"
+              style={styles.input}
+              mode="outlined"
+              onFocus={() => setShowDatePicker(false)}
+            />
+
+            <TextInput
+              label={t("fillings.odometer")}
+              value={fillingData.odometer}
+              onChangeText={(text) =>
+                setFillingData({ ...fillingData, odometer: text })
+              }
+              keyboardType="numeric"
+              style={styles.input}
+              mode="outlined"
+              onFocus={() => setShowDatePicker(false)}
+            />
+          </Surface>
+        </ScrollView>
+
+        <View style={styles.bottomContainer}>
           <Button
             mode="outlined"
-            onPress={() => navigation.goBack()}
-            style={[styles.button, styles.cancelButton]}
-            disabled={loading}
+            onPress={handleDelete}
+            style={styles.deleteButton}
+            labelStyle={styles.deleteButtonLabel}
+            icon={({ size, color }) => (
+              <MaterialCommunityIcons
+                name="trash-can"
+                size={size}
+                color={color}
+              />
+            )}
           >
-            {t("common.cancel")}
+            {t("fillings.delete")}
           </Button>
-          <Button
-            mode="contained"
-            onPress={handleSave}
-            style={[styles.button, styles.saveButton]}
-            loading={loading}
-            disabled={loading}
-          >
-            {t("common.save")}
-          </Button>
+
+          <View style={styles.buttonContainer}>
+            <Button
+              mode="outlined"
+              onPress={() => navigation.goBack()}
+              style={[styles.button, styles.cancelButton]}
+              disabled={loading}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleSave}
+              style={[styles.button, styles.saveButton]}
+              loading={loading}
+              disabled={loading}
+            >
+              {t("common.save")}
+            </Button>
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -224,5 +290,30 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: "#6c757d",
+  },
+  datePickerButton: {
+    borderWidth: 1,
+    borderColor: "#666",
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: "#fff",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+  },
+  datePickerLabel: {
+    alignSelf: "center",
+  },
+  datePickerValueContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flex: 1,
+    paddingLeft: 15,
+  },
+  datePickerValue: {
+    fontSize: 16,
   },
 });
