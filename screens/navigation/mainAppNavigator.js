@@ -18,6 +18,7 @@ import AuthScreen from "../navigation/authScreen";
 import MyAccountScreen from "../functionality/myAccountScreen";
 import AddFillingScreen from "../functionality/addFillingScreen";
 import EditFillingScreen from "../functionality/editFillingScreen";
+import ForgotPasswordScreen from "../navigation/forgotPasswordScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -43,7 +44,7 @@ function MyVehiclesStack() {
         component={MyVehiclesScreen}
         options={{
           title: t("vehicles.title"),
-          headerLeft: () => null, // Remove back button
+          headerLeft: () => null,
         }}
       />
       <Stack.Screen
@@ -104,6 +105,14 @@ function MyVehiclesStack() {
         name="Auth"
         component={AuthScreen}
         options={{ title: t("auth.title") }}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{
+          title: t("auth.forgotPassword"),
+          headerBackTitle: t("navigation.back"),
+        }}
       />
     </Stack.Navigator>
   );
@@ -197,6 +206,14 @@ function AccountStack() {
         options={{
           title: t("auth.title"),
           headerLeft: () => null, // Remove back button
+        }}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{
+          title: t("auth.forgotPassword"),
+          headerBackTitle: t("navigation.back"),
         }}
       />
     </Stack.Navigator>

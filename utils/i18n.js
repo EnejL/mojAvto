@@ -233,6 +233,9 @@ const resources = {
         resetError: "Napaka pri ponastavitvi gesla",
         confirmPassword: "Potrdi Geslo",
         "passwords-dont-match": "Gesli se ne ujemata",
+        forgotPasswordInstructions:
+          "Prosimo, vnesite svoj e-poštni naslov, da dobite navodila za ponastavitev gesla.",
+        submit: "Potrdi",
       },
       welcome: {
         message: "Enostavno sledite porabi goriva vaših vozil.",
