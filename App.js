@@ -16,6 +16,7 @@ import WelcomeScreen from "./screens/navigation/welcomeScreen";
 import LoginScreen from "./screens/navigation/loginScreen";
 import SignUpScreen from "./screens/navigation/signUpScreen";
 import MyAccountScreen from "./screens/functionality/myAccountScreen";
+import ForgotPasswordScreen from "./screens/navigation/forgotPasswordScreen";
 
 // Main app
 import MainAppNavigator from "./screens/navigation/mainAppNavigator";
@@ -108,6 +109,18 @@ export default function App() {
                       }
                     },
                   })}
+                />
+                <Stack.Screen
+                  name="ForgotPassword"
+                  component={ForgotPasswordScreen}
+                  options={{
+                    title: t("auth.forgotPassword"),
+                    headerStyle: {
+                      backgroundColor: "#000000",
+                    },
+                    headerTintColor: "#fff",
+                    headerBackTitle: t("navigation.back"),
+                  }}
                 />
               </>
             )}

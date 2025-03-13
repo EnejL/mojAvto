@@ -19,8 +19,15 @@ import { useTranslation } from "react-i18next";
 import { createAccount, signIn, logOut } from "../../utils/auth";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../utils/firebase";
+import ForgotPasswordScreen from "./forgotPasswordScreen";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import LoginScreen from "./loginScreen";
+import SignUpScreen from "./signUpScreen";
+import WelcomeScreen from "./welcomeScreen";
 
-export default function AuthScreen({ navigation }) {
+const AuthStack = createNativeStackNavigator();
+
+export default function AuthScreen() {
   const { t } = useTranslation();
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSignIn, setIsSignIn] = useState(false);
@@ -204,15 +211,39 @@ export default function AuthScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      {isAnonymous && user?.isAnonymous ? (
-        <Surface style={styles.infoCard}>
-          <Text style={styles.infoText}>{t("auth.anonymousInfo")}</Text>
-        </Surface>
-      ) : null}
-
-      {renderAuthForm()}
-    </View>
+    <AuthStack.Navigator
+      initialRouteName="Welcome"
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
+      }}
+    >
+      <AuthStack.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+        options={{ headerShown: false }}
+      />
+      <AuthStack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ title: t("auth.signIn") }}
+      />
+      <AuthStack.Screen
+        name="SignUp"
+        component={SignUpScreen}
+        options={{ title: t("auth.signUp") }}
+      />
+      <AuthStack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{ title: t("auth.forgotPassword") }}
+      />
+    </AuthStack.Navigator>
   );
 }
 

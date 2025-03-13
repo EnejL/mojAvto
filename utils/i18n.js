@@ -198,6 +198,8 @@ const resources = {
           required: "Prosim izpolnite vsa polja",
           delete: "Brisanje ni uspelo",
         },
+        submit: "Potrdi",
+        ok: "V redu",
         delete: "Izbriši",
       },
       auth: {
@@ -233,6 +235,10 @@ const resources = {
         resetError: "Napaka pri ponastavitvi gesla",
         confirmPassword: "Potrdi Geslo",
         "passwords-dont-match": "Gesli se ne ujemata",
+        forgotPasswordInstructions:
+          "Prosimo, vnesite svoj e-poštni naslov, da dobite navodila za ponastavitev gesla.",
+        resetEmailInstructions:
+          "V kolikor obstaja račun z vnešenim e-poštnim naslovom, boste v kratkem prejeli povezavo za ponastavitev gesla. Ne pozabite preveriti tudi mape z neželeno pošto.",
       },
       welcome: {
         message: "Enostavno sledite porabi goriva vaših vozil.",
