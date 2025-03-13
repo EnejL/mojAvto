@@ -1,16 +1,28 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import React, { useState, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { TextInput, Button, Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { addFilling } from "../../utils/firestore";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function AddFillingScreen({ route, navigation }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const { vehicle } = route.params;
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const scrollViewRef = useRef(null);
 
   const [fillingData, setFillingData] = useState({
-    date: new Date().toISOString().split("T")[0],
+    date: new Date(),
     liters: "",
     cost: "",
     odometer: "",
@@ -18,6 +30,35 @@ export default function AddFillingScreen({ route, navigation }) {
 
   const formatDecimal = (value) => {
     return value.replace(".", ",");
+  };
+
+  const formatDate = (date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    // Only update the date if a date was actually selected (user didn't cancel)
+    if (selectedDate) {
+      setFillingData({ ...fillingData, date: selectedDate });
+    }
+
+    // Note: We're not closing the picker here anymore
+    // The picker will stay open until the user taps elsewhere
+  };
+
+  // Toggle date picker visibility
+  const toggleDatePicker = () => {
+    // Close keyboard if open
+    Keyboard.dismiss();
+    setShowDatePicker(!showDatePicker);
+  };
+
+  // Handle tapping outside of inputs to dismiss keyboard and date picker
+  const handleOutsidePress = () => {
+    Keyboard.dismiss();
+    if (showDatePicker) {
+      setShowDatePicker(false);
+    }
   };
 
   const handleSave = async () => {
@@ -40,7 +81,7 @@ export default function AddFillingScreen({ route, navigation }) {
       const cost = parseFloat(parseFloat(costStr).toFixed(2));
 
       await addFilling(vehicle.id, {
-        date: fillingData.date,
+        date: formatDate(fillingData.date),
         liters: liters,
         cost: cost,
         odometer: parseInt(fillingData.odometer, 10),
@@ -56,84 +97,105 @@ export default function AddFillingScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Surface style={styles.vehicleInfoCard}>
-          <Text style={styles.vehicleInfoTitle}>{t("vehicles.selected")}:</Text>
-          <Text style={styles.vehicleInfoText}>
-            {vehicle.name} ({vehicle.make} {vehicle.model})
-          </Text>
-        </Surface>
+    <TouchableWithoutFeedback onPress={handleOutsidePress}>
+      <View style={styles.container}>
+        <ScrollView ref={scrollViewRef}>
+          <Surface style={styles.vehicleInfoCard}>
+            <Text style={styles.vehicleInfoTitle}>
+              {t("vehicles.selected")}:
+            </Text>
+            <Text style={styles.vehicleInfoText}>
+              {vehicle.name} ({vehicle.make} {vehicle.model})
+            </Text>
+          </Surface>
 
-        <Surface style={styles.formCard}>
-          <TextInput
-            label={t("fillings.date")}
-            value={fillingData.date}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, date: text })
-            }
-            style={styles.input}
-            mode="outlined"
-          />
+          <Surface style={styles.formCard}>
+            {/* Date Picker Button */}
+            <TouchableOpacity
+              style={styles.datePickerButton}
+              onPress={toggleDatePicker}
+            >
+              <Text style={styles.datePickerLabel}>{t("fillings.date")}</Text>
+              <View style={styles.datePickerValueContainer}>
+                <Text style={styles.datePickerValue}>
+                  {formatDate(fillingData.date)}
+                </Text>
+                <MaterialIcons name="calendar-today" size={20} color="#666" />
+              </View>
+            </TouchableOpacity>
 
-          <TextInput
-            label={t("fillings.liters")}
-            value={fillingData.liters}
-            onChangeText={(text) => {
-              const formattedText = formatDecimal(text);
-              setFillingData({ ...fillingData, liters: formattedText });
-            }}
-            keyboardType="numeric"
-            style={styles.input}
-            mode="outlined"
-          />
+            {/* Date Picker */}
+            {showDatePicker && (
+              <DateTimePicker
+                value={fillingData.date}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={handleDateChange}
+              />
+            )}
 
-          <TextInput
-            label={t("fillings.cost")}
-            value={fillingData.cost}
-            onChangeText={(text) => {
-              const formattedText = formatDecimal(text);
-              setFillingData({ ...fillingData, cost: formattedText });
-            }}
-            keyboardType="numeric"
-            style={styles.input}
-            mode="outlined"
-          />
-
-          <TextInput
-            label={t("fillings.odometer")}
-            value={fillingData.odometer}
-            onChangeText={(text) =>
-              setFillingData({ ...fillingData, odometer: text })
-            }
-            keyboardType="numeric"
-            style={styles.input}
-            mode="outlined"
-          />
-
-          <View style={styles.buttonContainer}>
-            <Button
+            <TextInput
+              label={t("fillings.liters")}
+              value={fillingData.liters}
+              onChangeText={(text) => {
+                const formattedText = formatDecimal(text);
+                setFillingData({ ...fillingData, liters: formattedText });
+              }}
+              keyboardType="numeric"
+              style={styles.input}
               mode="outlined"
-              onPress={() => navigation.goBack()}
-              style={styles.button}
-              disabled={loading}
-            >
-              {t("common.cancel")}
-            </Button>
+              onFocus={() => setShowDatePicker(false)}
+            />
 
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={styles.button}
-              loading={loading}
-              disabled={loading}
-            >
-              {t("common.save")}
-            </Button>
-          </View>
-        </Surface>
-      </ScrollView>
-    </View>
+            <TextInput
+              label={t("fillings.cost")}
+              value={fillingData.cost}
+              onChangeText={(text) => {
+                const formattedText = formatDecimal(text);
+                setFillingData({ ...fillingData, cost: formattedText });
+              }}
+              keyboardType="numeric"
+              style={styles.input}
+              mode="outlined"
+              onFocus={() => setShowDatePicker(false)}
+            />
+
+            <TextInput
+              label={t("fillings.odometer")}
+              value={fillingData.odometer}
+              onChangeText={(text) =>
+                setFillingData({ ...fillingData, odometer: text })
+              }
+              keyboardType="numeric"
+              style={styles.input}
+              mode="outlined"
+              onFocus={() => setShowDatePicker(false)}
+            />
+
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="outlined"
+                onPress={() => navigation.goBack()}
+                style={styles.button}
+                disabled={loading}
+              >
+                {t("common.cancel")}
+              </Button>
+
+              <Button
+                mode="contained"
+                onPress={handleSave}
+                style={styles.button}
+                loading={loading}
+                disabled={loading}
+              >
+                {t("common.save")}
+              </Button>
+            </View>
+          </Surface>
+        </ScrollView>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -174,5 +236,30 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "48%",
+  },
+  datePickerButton: {
+    borderWidth: 1,
+    borderColor: "#666",
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: "#fff",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+  },
+  datePickerLabel: {
+    alignSelf: "center",
+  },
+  datePickerValueContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flex: 1,
+    paddingLeft: 15,
+  },
+  datePickerValue: {
+    fontSize: 16,
   },
 });
