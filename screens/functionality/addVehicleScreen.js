@@ -169,7 +169,9 @@ const AddVehicleScreen = ({ navigation }) => {
             disabled={saving || !vehicleData.make}
             required={true}
             label=""
-            placeholder={!vehicleData.make ? "Select a make first" : ""}
+            placeholder={
+              !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+            }
           />
         ) : (
           <TextInput
@@ -180,7 +182,9 @@ const AddVehicleScreen = ({ navigation }) => {
             style={styles.input}
             mode="outlined"
             disabled={saving || !vehicleData.make}
-            placeholder={!vehicleData.make ? "Select a make first" : ""}
+            placeholder={
+              !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+            }
           />
         )}
       </View>

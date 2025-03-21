@@ -13,7 +13,8 @@ import {
 import { Card, Title, Paragraph, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { TabView, TabBar } from "react-native-tab-view";
-import MapView, { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
+import ClusteredMapView from "react-native-map-clustering";
+import { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
@@ -364,14 +365,14 @@ const StationListScreen = ({ stations, loading, error, navigation }) => {
 // Map view component
 const StationMapScreen = ({ stations, loading, error, navigation }) => {
   const { t } = useTranslation();
-  const [userLocation, setUserLocation] = useState(null);
   const mapRef = useRef(null);
   const [region, setRegion] = useState({
-    latitude: 46.056, // Ljubljana center (Slovenia)
-    longitude: 14.505,
-    latitudeDelta: 0.5,
-    longitudeDelta: 0.5,
+    latitude: 46.056946, // Center of Slovenia
+    longitude: 14.505751,
+    latitudeDelta: 1.5,
+    longitudeDelta: 1.5,
   });
+  const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
     getUserLocation();
@@ -538,16 +539,27 @@ const StationMapScreen = ({ stations, loading, error, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <MapView
+      <ClusteredMapView
         ref={mapRef}
         provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
         style={styles.map}
         initialRegion={region}
         onRegionChangeComplete={setRegion}
         showsUserLocation={true}
+        clusterColor="#2e7d32"
+        clusterTextColor="#ffffff"
+        clusterBorderColor="#ffffff"
+        clusterBorderWidth={4}
+        radius={50}
+        maxZoom={15}
+        minZoom={1}
+        extent={512}
+        nodeSize={64}
+        animationEnabled={true}
+        spiralEnabled={true}
       >
         {renderMarkers()}
-      </MapView>
+      </ClusteredMapView>
 
       {/* Custom location button */}
       <TouchableOpacity style={styles.myLocationButton} onPress={centerOnUser}>
