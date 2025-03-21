@@ -76,10 +76,10 @@ const fetchFuelDataLogic = async () => {
   }
 };
 
-// Scheduled Cloud Function: runs every day at midnight in Ljubljana time
+// Scheduled Cloud Function: runs every day at midnight in UTC + 1 time
 exports.fetchFuelData = onSchedule(
   {
-    schedule: "0 0 * * *", // every day at midnight
+    schedule: "0 4 * * 2",
     timeZone: "Europe/Ljubljana",
   },
   async (event) => {
