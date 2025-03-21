@@ -154,6 +154,7 @@ export default function EditVehicleScreen({ navigation, route }) {
               style={styles.input}
               mode="outlined"
               disabled={saving}
+              placeholder={t("vehicles.namePlaceholder")}
             />
           </View>
 
@@ -164,13 +165,15 @@ export default function EditVehicleScreen({ navigation, route }) {
             </View>
             <AutocompleteInput
               value={vehicleData.make}
-              onChangeText={handleBrandSelection}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, make: text, model: "" })
+              }
               onSelectSuggestion={handleBrandSelection}
               suggestions={carBrands}
               disabled={saving || loadingBrands}
               required={true}
               label=""
-              placeholder={loadingBrands ? "Loading brands..." : ""}
+              placeholder={t("vehicles.makePlaceholder")}
             />
           </View>
 
@@ -187,7 +190,9 @@ export default function EditVehicleScreen({ navigation, route }) {
               style={styles.input}
               mode="outlined"
               disabled={saving || !vehicleData.make}
-              placeholder={!vehicleData.make ? "Select a make first" : ""}
+              placeholder={
+                !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+              }
             />
           </View>
 
@@ -202,6 +207,7 @@ export default function EditVehicleScreen({ navigation, route }) {
               style={styles.input}
               mode="outlined"
               disabled={saving}
+              placeholder={t("vehicles.numberPlate")}
             />
           </View>
         </Surface>
