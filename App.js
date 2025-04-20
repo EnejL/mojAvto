@@ -57,11 +57,7 @@ export default function App() {
                   name="Welcome"
                   component={WelcomeScreen}
                   options={{
-                    title: "",
-                    headerStyle: {
-                      backgroundColor: "#000000",
-                    },
-                    headerTintColor: "#fff",
+                    headerShown: false
                   }}
                 />
                 <Stack.Screen
