@@ -98,6 +98,9 @@ const resources = {
         resetError: "Error Resetting Password",
         confirmPassword: "Confirm Password",
         "passwords-dont-match": "Passwords don't match",
+        signInWithGoogle: "Sign in with Google",
+        or: "or",
+        googleSignInFailed: "Google Sign-In failed. Please try again.",
       },
       welcome: {
         message:
@@ -243,6 +246,9 @@ const resources = {
           "Prosimo, vnesite svoj e-poštni naslov, da dobite navodila za ponastavitev gesla.",
         resetEmailInstructions:
           "V kolikor obstaja račun z vnešenim e-poštnim naslovom, boste v kratkem prejeli povezavo za ponastavitev gesla. Ne pozabite preveriti tudi mape z neželeno pošto.",
+        signInWithGoogle: "Prijava z Google",
+        or: "ali",
+        googleSignInFailed: "Prijava z Google ni uspela. Poskusite ponovno.",
       },
       welcome: {
         message: "Enostavno sledite porabi goriva vaših vozil.",

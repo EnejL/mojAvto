@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MojAvto",
-    "slug": "MojAvto",
+    "name": "NaPoti",
+    "slug": "NaPoti",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,9 +14,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourusername.mojavto",
+      "bundleIdentifier": "com.enejlicina.napoti",
       "config": {
-        "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
+        "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA",
+        "googleSignIn": {
+          "reservedClientId": "com.googleusercontent.apps.YOUR_CLIENT_ID"
+        }
       }
     },
     "android": {
@@ -24,7 +27,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourusername.mojavto",
+      "package": "com.yourusername.napoti",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
@@ -39,7 +42,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow MojAvto to use your location."
+          "locationAlwaysAndWhenInUsePermission": "Allow NaPoti to use your location."
         }
       ]
     ]
