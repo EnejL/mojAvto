@@ -21,7 +21,6 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../utils/firebase";
 import ForgotPasswordScreen from "./forgotPasswordScreen";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import LoginScreen from "./loginScreen";
 import SignUpScreen from "./signUpScreen";
 import WelcomeScreen from "./welcomeScreen";
 

@@ -1,102 +1,159 @@
 # MojAvto
 
-MojAvto is a React Native app built with Expo that helps users track fuel consumption and manage vehicle data. The app uses Firebase for data storage (Cloud Firestore) and authentication (anonymous, email, and Google). It leverages React Native Paper for UI components and theming, providing seamless dark/light mode support.
+MojAvto is a React Native application for managing and tracking your vehicle-related activities.
 
-## Features
+## Prerequisites
 
-- **Vehicle Management:**  
-  Add, edit, and list vehicles with details such as make, model, and number plate.
-- **Fuel Consumption Tracking:**  
-  Record fuel fillings for each vehicle including date, liters, cost, and odometer readings.
-- **Firebase Integration:**  
-  Uses Cloud Firestore to store vehicles and filling data. Authentication is implemented with anonymous, email, and Google sign-in, with support for upgrading anonymous accounts.
-- **Theming:**  
-  Built with React Native Paper, the app supports dark and light themes based on the system settings.
-- **Cross-Platform:**  
-  Developed using Expo for easy deployment on both iOS and Android.
+- Node.js (LTS version recommended)
+- npm or yarn
+- Xcode (for iOS development)
+- Android Studio (for Android development)
+- CocoaPods (for iOS dependencies)
 
-## Getting Started
-
-### Prerequisites
-
-- **Node.js:** [Download Node.js](https://nodejs.org/en/) (LTS version recommended)
-- **npm or Yarn:** Package manager for dependencies
-- **Expo CLI:**  
-  Install globally using:
-
-  ```bash
-  npm install -g expo-cli
-
-  ```
-
-### Installation
+## Installation
 
 1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/EnejL/MojAvto.git
-   cd MojAvto
-   ```
+```bash
+git clone [repository-url]
+cd mojAvto
+```
 
 2. Install dependencies:
+```bash
+npm install
+```
 
-   ```bash
-   npm install
-   ```
+3. Install iOS dependencies:
+```bash
+cd ios && pod install && cd ..
+```
 
-3. Firebase Setup:
+## Development
 
-   - Create a Firebase Project:
-     - Visit the Firebase Console, sign in, and create a new project.
-   - Enable Firestore and Authentication:
-     - In the Firebase Console, navigate to the Firestore and Authentication sections.
-     - Enable Firestore and follow the instructions to set it up.
-     - Enable Authentication and select the sign-in method(s) you want to use (e.g., Email/Password, Google, etc.).
-   - Enable Authentication:
-     - Navigate to Authentication in the Firebase Console.
-     - Under Sign-in method, enable:
-       - Anonymous
-       - Email/Password
-       - Google (if desired)
-   - Configure Firebase in Your App:
-   - In the Firebase Console, go to Project Settings > General > Your apps.
-   - Click the web icon (</>) to register a new app if you haven’t already.
-   - Copy the Firebase configuration snippet provided.
-   - Update your firebase.js file with the copied configuration:
+### Running the App
 
-     ```javascript
-     // firebase.js
-     import { initializeApp } from "firebase/app";
-     import { getFirestore } from "firebase/firestore";
+#### iOS
+```bash
+# Using npm script
+npm run ios
 
-     const firebaseConfig = {
-       apiKey: "YOUR_API_KEY",
-       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-       projectId: "YOUR_PROJECT_ID",
-       storageBucket: "YOUR_PROJECT_ID.appspot.com",
-       messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-       appId: "YOUR_APP_ID",
-     };
+# Using React Native CLI directly
+npx react-native run-ios
+```
 
-     const app = initializeApp(firebaseConfig);
-     const db = getFirestore(app);
+#### Android
+```bash
+# Using npm script
+npm run android
 
-     export { db };
-     ```
+# Using React Native CLI directly
+npx react-native run-android
+```
 
-#### Run the app:
+### Development Workflow
 
-1. Start the Expo development server:
+1. Start Metro bundler (in one terminal):
+```bash
+npx react-native start
+```
 
-   ```bash
-   expo start
-   ```
+2. Run the app (in another terminal):
+```bash
+# For iOS
+npm run ios
+# or
+npx react-native run-ios
 
-2. Run the app on your device or simulator:
-   • iOS: Use the Expo Go app or an iOS simulator.
-   • Android: Use the Expo Go app or an Android emulator.
-   • Follow the instructions displayed by Expo (scan the QR code or choose a simulator option).
+# For Android
+npm run android
+# or
+npx react-native run-android
+```
 
-##### License
+### Common Development Commands
 
-This project is licensed under the MIT License.
+```bash
+# Clear Metro bundler cache
+npx react-native start --reset-cache
+
+# Clean build (if you encounter build issues)
+# For iOS
+cd ios && rm -rf build/ && pod install && cd .. && npx react-native run-ios
+
+# For Android
+cd android && ./gradlew clean && cd .. && npx react-native run-android
+```
+
+### Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+```
+
+### Debugging
+
+```bash
+# Open React Native Debugger
+npx react-native-debugger
+
+# Enable remote debugging in the app
+# Shake your device or press Cmd+D (iOS) / Cmd+M (Android) in the simulator
+```
+
+### Troubleshooting
+
+```bash
+# Clear watchman watches
+watchman watch-del-all
+
+# Clear npm cache
+npm cache clean --force
+
+# Reinstall node modules
+rm -rf node_modules
+npm install
+```
+
+### Updating Dependencies
+
+```bash
+# Update all dependencies
+npm update
+
+# Update specific package
+npm update package-name
+
+# Check for outdated packages
+npm outdated
+```
+
+## Project Structure
+
+```
+mojAvto/
+├── android/          # Android native code
+├── ios/             # iOS native code
+├── src/             # Source code
+│   ├── components/  # Reusable components
+│   ├── screens/     # Screen components
+│   ├── navigation/  # Navigation configuration
+│   ├── services/    # API and other services
+│   ├── utils/       # Utility functions
+│   └── assets/      # Images, fonts, etc.
+├── App.js           # Main application component
+└── package.json     # Project dependencies
+```
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Make your changes
+3. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

@@ -11,17 +11,11 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./utils/firebase";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-// Auth screens
 import WelcomeScreen from "./screens/navigation/welcomeScreen";
-import LoginScreen from "./screens/navigation/loginScreen";
 import SignUpScreen from "./screens/navigation/signUpScreen";
-import MyAccountScreen from "./screens/functionality/myAccountScreen";
 import ForgotPasswordScreen from "./screens/navigation/forgotPasswordScreen";
 
-// Main app
 import MainAppNavigator from "./screens/navigation/mainAppNavigator";
-
-// Import the new screen
 import PetrolStationDetailsScreen from "./screens/functionality/petrolStationDetailsScreen";
 
 const Stack = createNativeStackNavigator();
@@ -69,26 +63,6 @@ export default function App() {
                     },
                     headerTintColor: "#fff",
                   }}
-                />
-                <Stack.Screen
-                  name="Login"
-                  component={LoginScreen}
-                  options={{
-                    title: t("auth.signIn"),
-                    headerStyle: {
-                      backgroundColor: "#000000",
-                    },
-                    headerTintColor: "#fff",
-                    headerBackTitle: t("navigation.back"),
-                  }}
-                  listeners={({ navigation }) => ({
-                    beforeRemove: (e) => {
-                      if (e.data.action.type === "GO_BACK") {
-                        e.preventDefault();
-                        navigation.navigate("Welcome");
-                      }
-                    },
-                  })}
                 />
                 <Stack.Screen
                   name="SignUp"

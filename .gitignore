@@ -30,6 +30,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -37,3 +38,24 @@ yarn-error.*
 
 # Firebase
 firestore-debug.log
+
+# iOS
+ios/Pods/
+ios/build/
+*.xcuserdata
+*.xcworkspace/xcuserdata
+*.xcodeproj/xcuserdata
+*.xcodeproj/project.xcworkspace/xcuserdata
+*.xcworkspace/xcshareddata
+*.xcodeproj/xcshareddata
+*.xcodeproj/project.xcworkspace/xcshareddata
+*.xcworkspace/contents.xcworkspacedata
+*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+*.xcworkspace/xcuserdata
+*.xcodeproj/xcuserdata
+*.xcodeproj/project.xcworkspace/xcuserdata
+*.xcworkspace/xcshareddata
+*.xcodeproj/xcshareddata
+*.xcodeproj/project.xcworkspace/xcshareddata
+*.xcworkspace/contents.xcworkspacedata
+*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
