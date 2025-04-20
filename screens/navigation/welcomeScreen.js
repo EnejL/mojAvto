@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert, Image } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Alert, Image, StatusBar } from "react-native";
 import { TextInput, Button, Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { signIn } from "../../utils/auth";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../utils/firebase";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { signInWithGoogle } from "../../utils/googleSignIn";
 
 export default function WelcomeScreen() {
@@ -16,6 +16,13 @@ export default function WelcomeScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      StatusBar.setBarStyle('dark-content');
+      StatusBar.setBackgroundColor('#ffffff');
+    }, [])
+  );
 
   const handleSignIn = async () => {
     if (!email || !password) {
