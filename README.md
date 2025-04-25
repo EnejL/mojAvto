@@ -37,7 +37,7 @@ cd ios && pod install && cd ..
 # Using npm script
 npm run ios
 
-# Using React Native CLI directly
+# Using React Native CLI directly (this is the preffered method)
 npx react-native run-ios
 ```
 

@@ -224,8 +224,6 @@ const styles = StyleSheet.create({
   brandLogo: {
     width: "auto",
     minWidth: 70,
-    // height: "100%",
-    // position: "absolute",
     left: 0,
     top: 0,
     marginRight: 0,
