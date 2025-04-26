@@ -9,8 +9,9 @@ import {
   Platform,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from "react-native";
-import { Card, Title, Paragraph, Divider } from "react-native-paper";
+import { Card, Title, Paragraph, Divider, Surface, Searchbar } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { TabView, TabBar } from "react-native-tab-view";
 import ClusteredMapView from "react-native-map-clustering";
@@ -18,6 +19,11 @@ import { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getPetrolStations } from "../../utils/firestore";
+import { getCurrentUser } from "../../utils/auth";
+import { Swipeable } from "react-native-gesture-handler";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { useFocusEffect } from "@react-navigation/native";
 
 // Get screen width
 const initialLayout = { width: Dimensions.get("window").width };
@@ -187,6 +193,8 @@ const PetrolStationsScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("map"); // 'map' or 'list'
   const [userLocation, setUserLocation] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredStations, setFilteredStations] = useState([]);
 
   useEffect(() => {
     const loadPetrolStations = async () => {
@@ -214,6 +222,7 @@ const PetrolStationsScreen = ({ navigation }) => {
 
         if (data && data.results) {
           setStations(data.results);
+          setFilteredStations(data.results);
         } else {
           setError(t("petrolStations.fetchError"));
         }
@@ -227,6 +236,67 @@ const PetrolStationsScreen = ({ navigation }) => {
 
     loadPetrolStations();
   }, [t]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadStations();
+    }, [])
+  );
+
+  const loadStations = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchPetrolStations();
+      if (data && data.results) {
+        setStations(data.results);
+        setFilteredStations(data.results);
+      }
+    } catch (error) {
+      console.error("Error loading stations:", error);
+      Alert.alert(t("common.error"), t("common.error.load"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filtered = stations.filter(station =>
+        station.name.toLowerCase().includes(query.toLowerCase()) ||
+        station.address.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredStations(filtered);
+    } else {
+      setFilteredStations(stations);
+    }
+  };
+
+  const handleDeleteStation = (stationId) => {
+    Alert.alert(
+      t("common.delete"),
+      t("stations.deleteConfirmMessage"),
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteStation(stationId);
+              loadStations();
+            } catch (error) {
+              console.error("Error deleting station:", error);
+              Alert.alert(t("common.error"), t("common.error.delete"));
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -273,9 +343,12 @@ const PetrolStationsScreen = ({ navigation }) => {
         ) : (
           <StationListScreen
             stations={stations}
+            filteredStations={filteredStations}
             loading={loading}
             error={error}
             navigation={navigation}
+            searchQuery={searchQuery}
+            onSearch={handleSearch}
           />
         )}
       </View>
@@ -284,55 +357,49 @@ const PetrolStationsScreen = ({ navigation }) => {
 };
 
 // List view component
-const StationListScreen = ({ stations, loading, error, navigation }) => {
+const StationListScreen = ({ 
+  stations, 
+  filteredStations,
+  loading, 
+  error, 
+  navigation,
+  searchQuery,
+  onSearch
+}) => {
   const { t } = useTranslation();
 
   const handleStationPress = (station) => {
     navigation.navigate("PetrolStationDetails", { station });
   };
 
-  const renderStationItem = ({ item }) => {
-    const stationIsOpen = isStationOpen(item);
+  const renderItem = ({ item }) => {
+    const renderRightActions = () => {
+      return (
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => handleDeleteStation(item.pk)}
+        >
+          <MaterialCommunityIcons name="trash-can" size={24} color="white" />
+        </TouchableOpacity>
+      );
+    };
 
     return (
-      <Card style={styles.stationCard} onPress={() => handleStationPress(item)}>
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Title style={styles.stationTitle}>{item.name}</Title>
-            {/* <OpenStatusBadge isOpen={stationIsOpen} /> */}
+      <Swipeable renderRightActions={renderRightActions}>
+        <TouchableOpacity
+          style={styles.stationItem}
+          onPress={() =>
+            navigation.navigate("PetrolStationDetails", { station: item })
+          }
+        >
+          <View style={styles.stationContent}>
+            <View style={styles.stationInfo}>
+              <Text style={styles.stationName}>{item.name}</Text>
+              <Text style={styles.stationAddress}>{item.address}</Text>
+            </View>
           </View>
-          <Paragraph>
-            {item.address}, {item.zip_code}
-          </Paragraph>
-          <Divider style={styles.divider} />
-          <View style={styles.pricesContainer}>
-            {item.prices["95"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>95</Text>
-                <Text style={styles.priceValue}>{item.prices["95"]} €</Text>
-              </View>
-            )}
-            {item.prices["dizel"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>Dizel</Text>
-                <Text style={styles.priceValue}>{item.prices["dizel"]} €</Text>
-              </View>
-            )}
-            {item.prices["98"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>98</Text>
-                <Text style={styles.priceValue}>{item.prices["98"]} €</Text>
-              </View>
-            )}
-            {item.prices["100"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>100</Text>
-                <Text style={styles.priceValue}>{item.prices["100"]} €</Text>
-              </View>
-            )}
-          </View>
-        </Card.Content>
-      </Card>
+        </TouchableOpacity>
+      </Swipeable>
     );
   };
 
@@ -353,12 +420,33 @@ const StationListScreen = ({ stations, loading, error, navigation }) => {
   }
 
   return (
-    <FlatList
-      data={stations}
-      renderItem={renderStationItem}
-      keyExtractor={(item) => item.pk.toString()}
-      contentContainerStyle={styles.listContainer}
-    />
+    <View style={styles.container}>
+      <Surface style={styles.searchContainer}>
+        <Searchbar
+          placeholder={t("petrolStations.searchPlaceholder")}
+          onChangeText={onSearch}
+          value={searchQuery}
+          style={styles.searchBar}
+        />
+      </Surface>
+
+      {filteredStations.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            {searchQuery
+              ? t("petrolStations.noSearchResults")
+              : t("petrolStations.empty")}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredStations}
+          keyExtractor={(item) => item.pk.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
+    </View>
   );
 };
 
@@ -739,10 +827,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   openBadge: {
-    backgroundColor: "#2e7d32", // Green
+    backgroundColor: "#2e7d32",
   },
   closedBadge: {
-    backgroundColor: "#d32f2f", // Red
+    backgroundColor: "#d32f2f",
   },
   statusText: {
     color: "white",
@@ -758,6 +846,56 @@ const styles = StyleSheet.create({
   stationTitle: {
     flex: 1,
     marginRight: 8,
+  },
+  searchContainer: {
+    padding: 16,
+    elevation: 2,
+    backgroundColor: "#fff",
+  },
+  searchBar: {
+    elevation: 0,
+    backgroundColor: "#f8f9fa",
+  },
+  stationItem: {
+    marginVertical: 5,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    elevation: 2,
+  },
+  stationContent: {
+    flexDirection: "row",
+    padding: 16,
+    alignItems: "center",
+  },
+  stationInfo: {
+    flex: 1,
+  },
+  stationName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  stationAddress: {
+    fontSize: 14,
+    color: "#666",
+  },
+  deleteAction: {
+    backgroundColor: "#f44336",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
   },
 });
 

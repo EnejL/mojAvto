@@ -188,6 +188,9 @@ const resources = {
         open24Hours: "Odprto 24 ur",
         closed: "Zaprto",
         noOpeningHours: "Informacije o delovnem času niso na voljo",
+        searchPlaceholder: "Išči po imenu ali naslovu",
+        noSearchResults: "Ni rezultatov iskanja",
+        empty: "Ni črpalk na voljo",
       },
       settings: {
         title: "Nastavitve",
