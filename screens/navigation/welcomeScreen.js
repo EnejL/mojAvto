@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert, Image, StatusBar } from "react-native";
+import React, { useState, useRef } from "react";
+import { View, StyleSheet, TouchableOpacity, Alert, Image, StatusBar, InputAccessoryView, Platform, Keyboard } from "react-native";
 import { TextInput, Button, Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { signIn } from "../../utils/auth";
@@ -16,6 +16,10 @@ export default function WelcomeScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
+  const emailAccessoryID = 'emailInputAccessory';
+  const passwordAccessoryID = 'passwordInputAccessory';
 
   useFocusEffect(
     React.useCallback(() => {
@@ -112,6 +116,24 @@ export default function WelcomeScreen() {
     }
   };
 
+  const renderInputAccessoryView = (id) => {
+    if (Platform.OS !== 'ios') return null;
+    
+    return (
+      <InputAccessoryView nativeID={id}>
+        <View style={styles.inputAccessoryView}>
+          <Button
+            mode="text"
+            onPress={() => Keyboard.dismiss()}
+            style={styles.doneButton}
+          >
+            {t("common.done")}
+          </Button>
+        </View>
+      </InputAccessoryView>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Surface style={styles.headerCard}>
@@ -123,20 +145,28 @@ export default function WelcomeScreen() {
 
       <Surface style={styles.formCard}>
         <TextInput
+          ref={emailInputRef}
           label={t("auth.email")}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
           style={styles.input}
+          inputAccessoryViewID={emailAccessoryID}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordInputRef.current?.focus()}
         />
 
         <TextInput
+          ref={passwordInputRef}
           label={t("auth.password")}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!passwordVisible}
           style={styles.input}
+          inputAccessoryViewID={passwordAccessoryID}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
           right={
             <TextInput.Icon
               icon={passwordVisible ? "eye-off" : "eye"}
@@ -194,6 +224,9 @@ export default function WelcomeScreen() {
           </TouchableOpacity>
         </View>
       </Surface>
+
+      {renderInputAccessoryView(emailAccessoryID)}
+      {renderInputAccessoryView(passwordAccessoryID)}
     </View>
   );
 }
@@ -211,6 +244,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     elevation: 4,
+    backgroundColor: "orange",
   },
   appName: {
     fontSize: 42,
@@ -286,6 +320,19 @@ const styles = StyleSheet.create({
   googleIcon: {
     width: 24,
     height: 24,
+    marginRight: 8,
+  },
+  inputAccessoryView: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  doneButton: {
     marginRight: 8,
   },
 });

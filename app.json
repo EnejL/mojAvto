@@ -33,7 +33,12 @@
           "apiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
         }
       },
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -45,6 +50,11 @@
           "locationAlwaysAndWhenInUsePermission": "Allow NaPoti to use your location."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9049abbc-1ba0-443b-aa02-c71be3a3d337"
+      }
+    }
   }
 }

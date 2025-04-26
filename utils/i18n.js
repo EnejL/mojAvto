@@ -208,6 +208,7 @@ const resources = {
         submit: "Potrdi",
         ok: "V redu",
         delete: "Izbriši",
+        done: "Končano",
       },
       auth: {
         title: "Račun",
