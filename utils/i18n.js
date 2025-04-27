@@ -212,6 +212,9 @@ const resources = {
         ok: "V redu",
         delete: "Izbriši",
         done: "Končano",
+        version: "Različica",
+        privacyPolicy: "Politika zasebnosti",
+        terms: "Pogoji uporabe",
       },
       auth: {
         title: "Račun",
@@ -226,7 +229,6 @@ const resources = {
           signIn: "Prijava ni uspela",
           signOut: "Odjava ni uspela",
           invalidCredentials: "Napačen email ali geslo",
-          // invalidEmail: "Napačen email naslov",
           userDisabled: "Ta račun je onemogočen",
           tooManyAttempts: "Preveč poskusov. Prosimo poskusite kasneje",
           unknownError: "Prišlo je do napake. Prosimo poskusite ponovno",
@@ -272,7 +274,7 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: "sl", // default language changed to Slovenian
+  lng: "sl",
   fallbackLng: "en",
   interpolation: {
     escapeValue: false,

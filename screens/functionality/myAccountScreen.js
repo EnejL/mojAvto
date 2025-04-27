@@ -1,6 +1,6 @@
 import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
-import { Text, Button, Surface, Avatar } from "react-native-paper";
+import { View, StyleSheet, ScrollView, Linking } from "react-native";
+import { Text, Button, Surface, Avatar, List, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { signOut, getCurrentUser } from "../../utils/auth";
 import { useNavigation } from "@react-navigation/native";
@@ -19,6 +19,14 @@ export default function MyAccountScreen() {
     }
   };
 
+  const handleOpenPrivacyPolicy = () => {
+    Linking.openURL("https://your-privacy-policy-url.com");
+  };
+
+  const handleOpenTerms = () => {
+    Linking.openURL("https://your-terms-url.com");
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -34,6 +42,26 @@ export default function MyAccountScreen() {
               email: currentUser?.email || t("auth.anonymous"),
             })}
           </Text>
+        </Surface>
+
+        <Surface style={styles.section}>
+          <List.Item
+            title={t("common.privacyPolicy")}
+            left={props => <List.Icon {...props} icon="shield-account" />}
+            onPress={handleOpenPrivacyPolicy}
+          />
+          <Divider />
+          <List.Item
+            title={t("common.terms")}
+            left={props => <List.Icon {...props} icon="file-document" />}
+            onPress={handleOpenTerms}
+          />
+          <Divider />
+          <List.Item
+            title={t("common.version")}
+            description="1.0.0"
+            left={props => <List.Icon {...props} icon="information" />}
+          />
         </Surface>
       </ScrollView>
 
@@ -54,17 +82,17 @@ export default function MyAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#f5f5f5",
   },
   scrollView: {
     flex: 1,
   },
   headerCard: {
-    padding: 24,
     margin: 16,
+    padding: 16,
     borderRadius: 8,
+    elevation: 2,
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   avatar: {
     backgroundColor: "#000",
@@ -73,17 +101,30 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 18,
     textAlign: "center",
-    marginTop: 8,
+  },
+  section: {
+    margin: 16,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#666",
+    padding: 16,
+    paddingBottom: 8,
   },
   bottomContainer: {
     padding: 16,
-    paddingBottom: 24,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
   },
   signOutButton: {
     backgroundColor: "#f44336",
   },
   buttonLabel: {
     fontSize: 16,
-    paddingVertical: 4,
+    fontWeight: "bold",
   },
 });
