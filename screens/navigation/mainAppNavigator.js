@@ -15,10 +15,12 @@ import VehicleDetailsScreen from "../functionality/vehicleDetailsScreen";
 import AddVehicleScreen from "../functionality/addVehicleScreen";
 import EditVehicleScreen from "../functionality/editVehicleScreen";
 import AuthScreen from "../navigation/authScreen";
-import MyAccountScreen from "../functionality/myAccountScreen";
+import MyAccountScreen from "../account/myAccountScreen";
 import AddFillingScreen from "../functionality/addFillingScreen";
 import EditFillingScreen from "../functionality/editFillingScreen";
 import ForgotPasswordScreen from "../navigation/forgotPasswordScreen";
+import PrivacyPolicyScreen from "../account/privacyPolicy";
+import TermsOfUseScreen from "../account/termsOfUse";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -176,6 +178,20 @@ function SettingsStack() {
         }}
       />
       <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{
+          title: t("common.privacyPolicy"),
+        }}
+      />
+      <Stack.Screen
+        name="TermsOfUse"
+        component={TermsOfUseScreen}
+        options={{
+          title: t("common.terms"),
+        }}
+      />
+      <Stack.Screen
         name="Auth"
         component={AuthScreen}
         options={{ title: t("auth.title") }}
@@ -206,6 +222,20 @@ function AccountStack() {
         options={{
           title: t("auth.title"),
           headerLeft: () => null, // Remove back button
+        }}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{
+          title: t("common.privacyPolicy"),
+        }}
+      />
+      <Stack.Screen
+        name="TermsOfUse"
+        component={TermsOfUseScreen}
+        options={{
+          title: t("common.terms"),
         }}
       />
       <Stack.Screen

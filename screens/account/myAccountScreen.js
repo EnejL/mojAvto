@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ScrollView, Linking } from "react-native";
+import { View, StyleSheet, ScrollView } from "react-native";
 import { Text, Button, Surface, Avatar, List, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { signOut, getCurrentUser } from "../../utils/auth";
@@ -17,14 +17,6 @@ export default function MyAccountScreen() {
     } catch (error) {
       console.error("Error signing out:", error);
     }
-  };
-
-  const handleOpenPrivacyPolicy = () => {
-    Linking.openURL("https://your-privacy-policy-url.com");
-  };
-
-  const handleOpenTerms = () => {
-    Linking.openURL("https://your-terms-url.com");
   };
 
   return (
@@ -48,13 +40,13 @@ export default function MyAccountScreen() {
           <List.Item
             title={t("common.privacyPolicy")}
             left={props => <List.Icon {...props} icon="shield-account" />}
-            onPress={handleOpenPrivacyPolicy}
+            onPress={() => navigation.navigate("PrivacyPolicy")}
           />
           <Divider />
           <List.Item
             title={t("common.terms")}
             left={props => <List.Icon {...props} icon="file-document" />}
-            onPress={handleOpenTerms}
+            onPress={() => navigation.navigate("TermsOfUse")}
           />
           <Divider />
           <List.Item
@@ -106,13 +98,6 @@ const styles = StyleSheet.create({
     margin: 16,
     borderRadius: 8,
     elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#666",
-    padding: 16,
-    paddingBottom: 8,
   },
   bottomContainer: {
     padding: 16,
