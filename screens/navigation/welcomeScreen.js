@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert, Image, StatusBar, InputAccessoryView, Platform, Keyboard } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Alert, Image, StatusBar, InputAccessoryView, Platform, Keyboard, ScrollView } from "react-native";
 import { TextInput, Button, Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { signIn } from "../../utils/auth";
@@ -135,10 +135,13 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+    >
       <Surface style={styles.headerCard}>
         <Text style={styles.appName}>Na Poti</Text>
-        <Text style={styles.tagline}>Fuel Tracking Made Simple</Text>
       </Surface>
 
       <Text style={styles.welcomeText}>{t("welcome.message")}</Text>
@@ -227,16 +230,18 @@ export default function WelcomeScreen() {
 
       {renderInputAccessoryView(emailAccessoryID)}
       {renderInputAccessoryView(passwordAccessoryID)}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    padding: 24,
-    justifyContent: "center",
     backgroundColor: "#f8f9fa",
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: "15%",
   },
   headerCard: {
     padding: 24,
@@ -328,8 +333,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     borderTopWidth: 1,
     borderTopColor: '#ddd',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    padding: 8,
   },
   doneButton: {
     marginRight: 8,
