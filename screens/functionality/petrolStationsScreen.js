@@ -18,12 +18,13 @@ import ClusteredMapView from "react-native-map-clustering";
 import { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { getPetrolStations } from "../../utils/firestore";
 import { getCurrentUser } from "../../utils/auth";
 import { Swipeable } from "react-native-gesture-handler";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
+import { addToFavorites, removeFromFavorites, isStationFavorited } from "../../utils/favorites";
 
 // Get screen width
 const initialLayout = { width: Dimensions.get("window").width };
@@ -191,10 +192,11 @@ const PetrolStationsScreen = ({ navigation }) => {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("map"); // 'map' or 'list'
+  const [activeTab, setActiveTab] = useState("map"); // 'map', 'list', or 'favorites'
   const [userLocation, setUserLocation] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredStations, setFilteredStations] = useState([]);
+  const [favoriteStations, setFavoriteStations] = useState([]);
 
   useEffect(() => {
     const loadPetrolStations = async () => {
@@ -250,6 +252,7 @@ const PetrolStationsScreen = ({ navigation }) => {
       if (data && data.results) {
         setStations(data.results);
         setFilteredStations(data.results);
+        await fetchFavoriteStations(); // Fetch favorites after loading stations
       }
     } catch (error) {
       console.error("Error loading stations:", error);
@@ -298,6 +301,27 @@ const PetrolStationsScreen = ({ navigation }) => {
     );
   };
 
+  // Add new function to fetch favorite stations
+  const fetchFavoriteStations = async () => {
+    try {
+      const currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      const db = getFirestore();
+      const favoritesRef = collection(db, `users/${currentUser.uid}/favorites`);
+      const favoritesSnapshot = await getDocs(favoritesRef);
+      
+      const favoriteIds = favoritesSnapshot.docs.map(doc => doc.id);
+      const favoriteStations = stations.filter(station => 
+        favoriteIds.includes(station.pk.toString())
+      );
+      
+      setFavoriteStations(favoriteStations);
+    } catch (error) {
+      console.error("Error fetching favorite stations:", error);
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       {/* Custom Tab Bar */}
@@ -329,6 +353,20 @@ const PetrolStationsScreen = ({ navigation }) => {
             {t("petrolStations.list")}
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "favorites" && styles.activeTab]}
+          onPress={() => setActiveTab("favorites")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "favorites" && styles.activeTabText,
+            ]}
+          >
+            {t("petrolStations.favorites")}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Tab Content */}
@@ -340,7 +378,7 @@ const PetrolStationsScreen = ({ navigation }) => {
             error={error}
             navigation={navigation}
           />
-        ) : (
+        ) : activeTab === "list" ? (
           <StationListScreen
             stations={stations}
             filteredStations={filteredStations}
@@ -349,6 +387,17 @@ const PetrolStationsScreen = ({ navigation }) => {
             navigation={navigation}
             searchQuery={searchQuery}
             onSearch={handleSearch}
+          />
+        ) : (
+          <StationListScreen
+            stations={favoriteStations}
+            filteredStations={favoriteStations}
+            loading={loading}
+            error={error}
+            navigation={navigation}
+            searchQuery={searchQuery}
+            onSearch={handleSearch}
+            isFavorites={true}
           />
         )}
       </View>
@@ -364,42 +413,74 @@ const StationListScreen = ({
   error, 
   navigation,
   searchQuery,
-  onSearch
+  onSearch,
+  isFavorites = false
 }) => {
   const { t } = useTranslation();
+  const [favoriteStatus, setFavoriteStatus] = useState({});
+
+  useEffect(() => {
+    // Load favorite status for all stations
+    const loadFavoriteStatus = async () => {
+      const status = {};
+      for (const station of stations) {
+        status[station.pk] = await isStationFavorited(station.pk.toString());
+      }
+      setFavoriteStatus(status);
+    };
+
+    loadFavoriteStatus();
+  }, [stations]);
 
   const handleStationPress = (station) => {
     navigation.navigate("PetrolStationDetails", { station });
   };
 
+  const toggleFavorite = async (stationId) => {
+    try {
+      const isFavorited = favoriteStatus[stationId];
+      if (isFavorited) {
+        await removeFromFavorites(stationId.toString());
+      } else {
+        await addToFavorites(stationId.toString());
+      }
+      
+      // Update local state
+      setFavoriteStatus(prev => ({
+        ...prev,
+        [stationId]: !isFavorited
+      }));
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      Alert.alert(t("common.error"), t("common.error.favorite"));
+    }
+  };
+
   const renderItem = ({ item }) => {
-    const renderRightActions = () => {
-      return (
-        <TouchableOpacity
-          style={styles.deleteAction}
-          onPress={() => handleDeleteStation(item.pk)}
-        >
-          <MaterialCommunityIcons name="trash-can" size={24} color="white" />
-        </TouchableOpacity>
-      );
-    };
+    const isFavorited = favoriteStatus[item.pk];
 
     return (
-      <Swipeable renderRightActions={renderRightActions}>
-        <TouchableOpacity
-          style={styles.stationItem}
-          onPress={() =>
-            navigation.navigate("PetrolStationDetails", { station: item })
-          }
-        >
-          <View style={styles.stationContent}>
-            <View style={styles.stationInfo}>
-              <Text style={styles.stationName}>{item.name}</Text>
-              <Text style={styles.stationAddress}>{item.address}</Text>
-            </View>
+      <TouchableOpacity
+        style={styles.stationItem}
+        onPress={() => handleStationPress(item)}
+      >
+        <View style={styles.stationContent}>
+          <View style={styles.stationInfo}>
+            <Text style={styles.stationName}>{item.name}</Text>
+            <Text style={styles.stationAddress}>{item.address}</Text>
           </View>
-        </TouchableOpacity>
-      </Swipeable>
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={() => toggleFavorite(item.pk)}
+          >
+            <MaterialCommunityIcons
+              name={isFavorited ? "heart" : "heart-outline"}
+              size={24}
+              color={isFavorited ? "#ff4081" : "#666"}
+            />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -423,7 +504,7 @@ const StationListScreen = ({
     <View style={styles.container}>
       <Surface style={styles.searchContainer}>
         <Searchbar
-          placeholder={t("petrolStations.searchPlaceholder")}
+          placeholder={isFavorites ? t("petrolStations.searchFavorites") : t("petrolStations.searchPlaceholder")}
           onChangeText={onSearch}
           value={searchQuery}
           style={styles.searchBar}
@@ -433,9 +514,11 @@ const StationListScreen = ({
       {filteredStations.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {searchQuery
-              ? t("petrolStations.noSearchResults")
-              : t("petrolStations.empty")}
+            {isFavorites 
+              ? t("petrolStations.noFavorites")
+              : searchQuery
+                ? t("petrolStations.noSearchResults")
+                : t("petrolStations.empty")}
           </Text>
         </View>
       ) : (
@@ -879,12 +962,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
-  deleteAction: {
-    backgroundColor: "#f44336",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
+  favoriteButton: {
+    padding: 8,
   },
   emptyContainer: {
     flex: 1,
