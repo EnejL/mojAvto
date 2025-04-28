@@ -21,6 +21,7 @@ import EditFillingScreen from "../functionality/editFillingScreen";
 import ForgotPasswordScreen from "../navigation/forgotPasswordScreen";
 import PrivacyPolicyScreen from "../account/privacyPolicy";
 import TermsOfUseScreen from "../account/termsOfUse";
+import FrequentlyAskedQuestionsScreen from "../account/frequentlyAskedQuestions";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -236,6 +237,13 @@ function AccountStack() {
         component={TermsOfUseScreen}
         options={{
           title: t("common.terms"),
+        }}
+      />
+      <Stack.Screen
+        name="FrequentlyAskedQuestions"
+        component={FrequentlyAskedQuestionsScreen}
+        options={{
+          title: t("common.faq"),
         }}
       />
       <Stack.Screen

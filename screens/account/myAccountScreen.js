@@ -50,6 +50,12 @@ export default function MyAccountScreen() {
           />
           <Divider />
           <List.Item
+            title={t("common.faq")}
+            left={props => <List.Icon {...props} icon="frequently-asked-questions" />}
+            onPress={() => navigation.navigate("FrequentlyAskedQuestions")}
+          />
+          <Divider />
+          <List.Item
             title={t("common.version")}
             description="1.0.0"
             left={props => <List.Icon {...props} icon="information" />}

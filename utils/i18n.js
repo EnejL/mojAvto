@@ -215,6 +215,7 @@ const resources = {
         version: "Različica",
         privacyPolicy: "Politika zasebnosti",
         terms: "Pogoji uporabe",
+        faq: "Pogosto zastavljena vprašanja",
       },
       auth: {
         title: "Račun",

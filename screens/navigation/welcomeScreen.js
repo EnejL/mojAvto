@@ -244,7 +244,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     elevation: 4,
-    backgroundColor: "orange",
   },
   appName: {
     fontSize: 42,
