@@ -2,7 +2,7 @@
   "expo": {
     "name": "Na Poti",
     "slug": "NaPoti",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
