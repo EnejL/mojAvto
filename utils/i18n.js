@@ -191,7 +191,7 @@ const resources = {
         searchPlaceholder: "Išči po imenu ali naslovu",
         noSearchResults: "Ni rezultatov iskanja",
         empty: "Ni črpalk na voljo",
-        favorites: "Moje črpalke",
+        favorites: "Priljubljene",
         noFavorites: "Ni črpalk na voljo",
       },
       settings: {

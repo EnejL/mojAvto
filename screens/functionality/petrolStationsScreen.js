@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { Card, Title, Paragraph, Divider, Surface, Searchbar } from "react-native-paper";
 import { useTranslation } from "react-i18next";
@@ -28,6 +29,9 @@ import { addToFavorites, removeFromFavorites, isStationFavorited } from "../../u
 
 // Get screen width
 const initialLayout = { width: Dimensions.get("window").width };
+
+// Update cache duration to 24 hours
+const CACHE_DURATION = 1000 * 60 * 60 * 24; // 24 hours in milliseconds
 
 // Add this utility function at the top of the file, outside any component
 const isStationOpen = (station) => {
@@ -167,8 +171,8 @@ const OpenStatusBadge = ({ isOpen }) => {
   );
 };
 
-// Add this function after the imports and before the component
-const fetchPetrolStations = async () => {
+// Modify the fetchPetrolStations function
+const fetchPetrolStations = async (forceRefresh = false) => {
   try {
     const db = getFirestore();
     const petrolStationsRef = doc(db, "data", "petrolStations");
@@ -176,7 +180,19 @@ const fetchPetrolStations = async () => {
 
     if (petrolStationsDoc.exists()) {
       const petrolStationsData = petrolStationsDoc.data();
-      return petrolStationsData.data; // Return the data field which contains the API response
+      
+      // Check if we need to refresh the data
+      const lastUpdated = petrolStationsData.lastUpdated?.toDate() || new Date(0);
+      const now = new Date();
+      const shouldRefresh = forceRefresh || (now - lastUpdated) > CACHE_DURATION;
+
+      if (shouldRefresh) {
+        // Fetch fresh data from your API here
+        // For now, we'll just return the cached data
+        console.log("Data is stale, but using cached data for now");
+      }
+
+      return petrolStationsData.data;
     } else {
       console.log("No petrol stations data found in Firestore");
       return null;
@@ -197,6 +213,7 @@ const PetrolStationsScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredStations, setFilteredStations] = useState([]);
   const [favoriteStations, setFavoriteStations] = useState([]);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
   useEffect(() => {
     const loadPetrolStations = async () => {
@@ -239,20 +256,16 @@ const PetrolStationsScreen = ({ navigation }) => {
     loadPetrolStations();
   }, [t]);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      loadStations();
-    }, [])
-  );
-
-  const loadStations = async () => {
+  // Modify the loadStations function
+  const loadStations = async (forceRefresh = false) => {
     try {
       setLoading(true);
-      const data = await fetchPetrolStations();
+      const data = await fetchPetrolStations(forceRefresh);
       if (data && data.results) {
         setStations(data.results);
         setFilteredStations(data.results);
-        await fetchFavoriteStations(); // Fetch favorites after loading stations
+        await fetchFavoriteStations();
+        setLastRefresh(new Date());
       }
     } catch (error) {
       console.error("Error loading stations:", error);
@@ -261,6 +274,19 @@ const PetrolStationsScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
+
+  // Modify the useFocusEffect
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only refresh if data is stale or doesn't exist
+      const now = new Date();
+      const shouldRefresh = !lastRefresh || (now - lastRefresh) > CACHE_DURATION;
+      
+      if (shouldRefresh) {
+        loadStations();
+      }
+    }, [lastRefresh])
+  );
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -387,6 +413,8 @@ const PetrolStationsScreen = ({ navigation }) => {
             navigation={navigation}
             searchQuery={searchQuery}
             onSearch={handleSearch}
+            onRefresh={loadStations}
+            fetchFavorites={fetchFavoriteStations}
           />
         ) : (
           <StationListScreen
@@ -398,6 +426,8 @@ const PetrolStationsScreen = ({ navigation }) => {
             searchQuery={searchQuery}
             onSearch={handleSearch}
             isFavorites={true}
+            onRefresh={loadStations}
+            fetchFavorites={fetchFavoriteStations}
           />
         )}
       </View>
@@ -414,10 +444,13 @@ const StationListScreen = ({
   navigation,
   searchQuery,
   onSearch,
-  isFavorites = false
+  isFavorites = false,
+  onRefresh,
+  fetchFavorites
 }) => {
   const { t } = useTranslation();
   const [favoriteStatus, setFavoriteStatus] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     // Load favorite status for all stations
@@ -431,6 +464,19 @@ const StationListScreen = ({
 
     loadFavoriteStatus();
   }, [stations]);
+
+  const handleRefresh = React.useCallback(async () => {
+    if (!isFavorites) return; // Only allow refresh in favorites tab
+    
+    setRefreshing(true);
+    try {
+      await fetchFavorites();
+    } catch (error) {
+      console.error("Error refreshing favorites:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchFavorites, isFavorites]);
 
   const handleStationPress = (station) => {
     navigation.navigate("PetrolStationDetails", { station });
@@ -450,6 +496,11 @@ const StationListScreen = ({
         ...prev,
         [stationId]: !isFavorited
       }));
+
+      // If we're in favorites tab, refresh the list
+      if (isFavorites) {
+        await fetchFavorites();
+      }
     } catch (error) {
       console.error("Error toggling favorite:", error);
       Alert.alert(t("common.error"), t("common.error.favorite"));
@@ -502,14 +553,15 @@ const StationListScreen = ({
 
   return (
     <View style={styles.container}>
-      <Surface style={styles.searchContainer}>
+      {/* Search bar to be added later */}
+      {/* <Surface style={styles.searchContainer}>
         <Searchbar
           placeholder={isFavorites ? t("petrolStations.searchFavorites") : t("petrolStations.searchPlaceholder")}
           onChangeText={onSearch}
           value={searchQuery}
           style={styles.searchBar}
         />
-      </Surface>
+      </Surface> */}
 
       {filteredStations.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -527,6 +579,16 @@ const StationListScreen = ({
           keyExtractor={(item) => item.pk.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
+          refreshControl={
+            isFavorites ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={["#000"]}
+                tintColor="#000"
+              />
+            ) : null
+          }
         />
       )}
     </View>

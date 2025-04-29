@@ -1,4 +1,4 @@
-import { getFirestore, doc, setDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { getFirestore, doc, setDoc, deleteDoc, collection, getDocs, getDoc } from "firebase/firestore";
 import { getCurrentUser } from "./auth";
 
 // Add a station to favorites
@@ -47,7 +47,7 @@ export const isStationFavorited = async (stationId) => {
 
     const db = getFirestore();
     const favoriteRef = doc(db, `users/${currentUser.uid}/favorites/${stationId}`);
-    const favoriteDoc = await getDocs(favoriteRef);
+    const favoriteDoc = await getDoc(favoriteRef);
 
     return favoriteDoc.exists();
   } catch (error) {
