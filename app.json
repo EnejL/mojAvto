@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "NaPoti",
+    "name": "Na Poti",
     "slug": "NaPoti",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -47,7 +47,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow NaPoti to use your location."
+          "locationAlwaysAndWhenInUsePermission": "Allow Na Poti to use your location."
         }
       ]
     ],
