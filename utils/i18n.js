@@ -188,6 +188,11 @@ const resources = {
         open24Hours: "Odprto 24 ur",
         closed: "Zaprto",
         noOpeningHours: "Informacije o delovnem času niso na voljo",
+        searchPlaceholder: "Išči po imenu ali naslovu",
+        noSearchResults: "Ni rezultatov iskanja",
+        empty: "Ni črpalk na voljo",
+        favorites: "Priljubljene",
+        noFavorites: "Ni črpalk na voljo",
       },
       settings: {
         title: "Nastavitve",
@@ -208,6 +213,11 @@ const resources = {
         submit: "Potrdi",
         ok: "V redu",
         delete: "Izbriši",
+        done: "Končano",
+        version: "Različica",
+        privacyPolicy: "Politika zasebnosti",
+        terms: "Pogoji uporabe",
+        faq: "Pogosto zastavljena vprašanja",
       },
       auth: {
         title: "Račun",
@@ -222,7 +232,6 @@ const resources = {
           signIn: "Prijava ni uspela",
           signOut: "Odjava ni uspela",
           invalidCredentials: "Napačen email ali geslo",
-          // invalidEmail: "Napačen email naslov",
           userDisabled: "Ta račun je onemogočen",
           tooManyAttempts: "Preveč poskusov. Prosimo poskusite kasneje",
           unknownError: "Prišlo je do napake. Prosimo poskusite ponovno",
@@ -268,7 +277,7 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: "sl", // default language changed to Slovenian
+  lng: "sl",
   fallbackLng: "en",
   interpolation: {
     escapeValue: false,

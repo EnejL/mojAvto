@@ -4,15 +4,16 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
-  ScrollView,
-  Picker,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { Button, Title, Text, TextInput } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { addVehicle } from "../../utils/firestore";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import AutocompleteInput from "../../components/AutocompleteInput";
-// import TextInput from "react-native-paper/lib/commonjs/components/TextInput";
 
 const AddVehicleScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -116,116 +117,124 @@ const AddVehicleScreen = ({ navigation }) => {
   const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
 
   return (
-    <ScrollView style={styles.container}>
-      <Title style={styles.title}>{t("vehicles.add")}</Title>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <View style={styles.content}>
+        <Title style={styles.title}>{t("vehicles.add")}</Title>
 
-      <View style={styles.inputContainer}>
-        <View style={styles.labelContainer}>
-          <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
-          {renderRequiredLabel()}
-        </View>
-        <TextInput
-          value={vehicleData.name}
-          onChangeText={(text) =>
-            setVehicleData({ ...vehicleData, name: text })
-          }
-          style={styles.input}
-          disabled={saving}
-          mode="outlined"
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <View style={styles.labelContainer}>
-          <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
-          {renderRequiredLabel()}
-        </View>
-        <AutocompleteInput
-          value={vehicleData.make}
-          onChangeText={(text) =>
-            setVehicleData({ ...vehicleData, make: text, model: "" })
-          }
-          onSelectSuggestion={handleBrandSelection}
-          suggestions={carBrands}
-          disabled={saving || loadingBrands}
-          required={true}
-          label=""
-          placeholder={loadingBrands ? "Loading brands..." : ""}
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <View style={styles.labelContainer}>
-          <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
-          {renderRequiredLabel()}
-        </View>
-        {carModels.length > 0 ? (
-          <AutocompleteInput
-            value={vehicleData.model}
-            onChangeText={(text) =>
-              setVehicleData({ ...vehicleData, model: text })
-            }
-            suggestions={carModels}
-            disabled={saving || !vehicleData.make}
-            required={true}
-            label=""
-            placeholder={
-              !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
-            }
-          />
-        ) : (
+        <View style={styles.inputContainer}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
+            {renderRequiredLabel()}
+          </View>
           <TextInput
-            value={vehicleData.model}
+            value={vehicleData.name}
             onChangeText={(text) =>
-              setVehicleData({ ...vehicleData, model: text })
+              setVehicleData({ ...vehicleData, name: text })
             }
             style={styles.input}
+            disabled={saving}
             mode="outlined"
-            disabled={saving || !vehicleData.make}
-            placeholder={
-              !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
-            }
           />
-        )}
-      </View>
+        </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
-        <TextInput
-          value={vehicleData.numberPlate}
-          onChangeText={(text) =>
-            setVehicleData({ ...vehicleData, numberPlate: text })
-          }
-          style={styles.input}
+        <View style={styles.inputContainer}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
+            {renderRequiredLabel()}
+          </View>
+          <AutocompleteInput
+            value={vehicleData.make}
+            onChangeText={(text) =>
+              setVehicleData({ ...vehicleData, make: text, model: "" })
+            }
+            onSelectSuggestion={handleBrandSelection}
+            suggestions={carBrands}
+            disabled={saving || loadingBrands}
+            required={true}
+            label=""
+            placeholder={loadingBrands ? "Loading brands..." : ""}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
+            {renderRequiredLabel()}
+          </View>
+          {carModels.length > 0 ? (
+            <AutocompleteInput
+              value={vehicleData.model}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, model: text })
+              }
+              suggestions={carModels}
+              disabled={saving || !vehicleData.make}
+              required={true}
+              label=""
+              placeholder={
+                !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+              }
+            />
+          ) : (
+            <TextInput
+              value={vehicleData.model}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, model: text })
+              }
+              style={styles.input}
+              mode="outlined"
+              disabled={saving || !vehicleData.make}
+              placeholder={
+                !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+              }
+            />
+          )}
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
+          <TextInput
+            value={vehicleData.numberPlate}
+            onChangeText={(text) =>
+              setVehicleData({ ...vehicleData, numberPlate: text })
+            }
+            style={styles.input}
+            disabled={saving}
+            mode="outlined"
+          />
+        </View>
+
+        <Button
+          mode="contained"
+          onPress={handleAddVehicle}
+          style={styles.button}
           disabled={saving}
-          mode="outlined"
-        />
+        >
+          {saving ? <ActivityIndicator color="white" /> : t("vehicles.add")}
+        </Button>
       </View>
-
-      <Button
-        mode="contained"
-        onPress={handleAddVehicle}
-        style={styles.button}
-        disabled={saving}
-      >
-        {saving ? <ActivityIndicator color="white" /> : t("vehicles.add")}
-      </Button>
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: "#fff",
+  },
+  content: {
+    flex: 1,
+    padding: 16,
   },
   title: {
     marginBottom: 20,
   },
   inputContainer: {
     marginBottom: 16,
-    zIndex: 100, // Ensure autocomplete dropdown shows above other elements
+    zIndex: 1,
   },
   labelContainer: {
     flexDirection: "row",
@@ -245,16 +254,6 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 16,
     marginBottom: 32,
-  },
-  pickerContainer: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 4,
-    padding: 8,
-  },
-  picker: {
-    width: "100%",
   },
 });
 

@@ -9,18 +9,29 @@ import {
   Platform,
   TouchableOpacity,
   Dimensions,
+  Alert,
+  RefreshControl,
 } from "react-native";
-import { Card, Title, Paragraph, Divider } from "react-native-paper";
+import { Card, Title, Paragraph, Divider, Surface, Searchbar } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { TabView, TabBar } from "react-native-tab-view";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { getPetrolStations } from "../../utils/firestore";
+import { getCurrentUser } from "../../utils/auth";
+import { Swipeable } from "react-native-gesture-handler";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { useFocusEffect } from "@react-navigation/native";
+import { addToFavorites, removeFromFavorites, isStationFavorited } from "../../utils/favorites";
 
 // Get screen width
 const initialLayout = { width: Dimensions.get("window").width };
+
+// Update cache duration to 24 hours
+const CACHE_DURATION = 1000 * 60 * 60 * 24; // 24 hours in milliseconds
 
 // Add this utility function at the top of the file, outside any component
 const isStationOpen = (station) => {
@@ -160,8 +171,8 @@ const OpenStatusBadge = ({ isOpen }) => {
   );
 };
 
-// Add this function after the imports and before the component
-const fetchPetrolStations = async () => {
+// Modify the fetchPetrolStations function
+const fetchPetrolStations = async (forceRefresh = false) => {
   try {
     const db = getFirestore();
     const petrolStationsRef = doc(db, "data", "petrolStations");
@@ -169,7 +180,19 @@ const fetchPetrolStations = async () => {
 
     if (petrolStationsDoc.exists()) {
       const petrolStationsData = petrolStationsDoc.data();
-      return petrolStationsData.data; // Return the data field which contains the API response
+      
+      // Check if we need to refresh the data
+      const lastUpdated = petrolStationsData.lastUpdated?.toDate() || new Date(0);
+      const now = new Date();
+      const shouldRefresh = forceRefresh || (now - lastUpdated) > CACHE_DURATION;
+
+      if (shouldRefresh) {
+        // Fetch fresh data from your API here
+        // For now, we'll just return the cached data
+        console.log("Data is stale, but using cached data for now");
+      }
+
+      return petrolStationsData.data;
     } else {
       console.log("No petrol stations data found in Firestore");
       return null;
@@ -185,8 +208,12 @@ const PetrolStationsScreen = ({ navigation }) => {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("map"); // 'map' or 'list'
+  const [activeTab, setActiveTab] = useState("map"); // 'map', 'list', or 'favorites'
   const [userLocation, setUserLocation] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredStations, setFilteredStations] = useState([]);
+  const [favoriteStations, setFavoriteStations] = useState([]);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
   useEffect(() => {
     const loadPetrolStations = async () => {
@@ -214,6 +241,7 @@ const PetrolStationsScreen = ({ navigation }) => {
 
         if (data && data.results) {
           setStations(data.results);
+          setFilteredStations(data.results);
         } else {
           setError(t("petrolStations.fetchError"));
         }
@@ -227,6 +255,98 @@ const PetrolStationsScreen = ({ navigation }) => {
 
     loadPetrolStations();
   }, [t]);
+
+  // Modify the loadStations function
+  const loadStations = async (forceRefresh = false) => {
+    try {
+      setLoading(true);
+      const data = await fetchPetrolStations(forceRefresh);
+      if (data && data.results) {
+        setStations(data.results);
+        setFilteredStations(data.results);
+        await fetchFavoriteStations();
+        setLastRefresh(new Date());
+      }
+    } catch (error) {
+      console.error("Error loading stations:", error);
+      Alert.alert(t("common.error"), t("common.error.load"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Modify the useFocusEffect
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only refresh if data is stale or doesn't exist
+      const now = new Date();
+      const shouldRefresh = !lastRefresh || (now - lastRefresh) > CACHE_DURATION;
+      
+      if (shouldRefresh) {
+        loadStations();
+      }
+    }, [lastRefresh])
+  );
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filtered = stations.filter(station =>
+        station.name.toLowerCase().includes(query.toLowerCase()) ||
+        station.address.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredStations(filtered);
+    } else {
+      setFilteredStations(stations);
+    }
+  };
+
+  const handleDeleteStation = (stationId) => {
+    Alert.alert(
+      t("common.delete"),
+      t("stations.deleteConfirmMessage"),
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteStation(stationId);
+              loadStations();
+            } catch (error) {
+              console.error("Error deleting station:", error);
+              Alert.alert(t("common.error"), t("common.error.delete"));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Add new function to fetch favorite stations
+  const fetchFavoriteStations = async () => {
+    try {
+      const currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      const db = getFirestore();
+      const favoritesRef = collection(db, `users/${currentUser.uid}/favorites`);
+      const favoritesSnapshot = await getDocs(favoritesRef);
+      
+      const favoriteIds = favoritesSnapshot.docs.map(doc => doc.id);
+      const favoriteStations = stations.filter(station => 
+        favoriteIds.includes(station.pk.toString())
+      );
+      
+      setFavoriteStations(favoriteStations);
+    } catch (error) {
+      console.error("Error fetching favorite stations:", error);
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -259,6 +379,20 @@ const PetrolStationsScreen = ({ navigation }) => {
             {t("petrolStations.list")}
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "favorites" && styles.activeTab]}
+          onPress={() => setActiveTab("favorites")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "favorites" && styles.activeTabText,
+            ]}
+          >
+            {t("petrolStations.favorites")}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Tab Content */}
@@ -270,12 +404,30 @@ const PetrolStationsScreen = ({ navigation }) => {
             error={error}
             navigation={navigation}
           />
-        ) : (
+        ) : activeTab === "list" ? (
           <StationListScreen
             stations={stations}
+            filteredStations={filteredStations}
             loading={loading}
             error={error}
             navigation={navigation}
+            searchQuery={searchQuery}
+            onSearch={handleSearch}
+            onRefresh={loadStations}
+            fetchFavorites={fetchFavoriteStations}
+          />
+        ) : (
+          <StationListScreen
+            stations={favoriteStations}
+            filteredStations={favoriteStations}
+            loading={loading}
+            error={error}
+            navigation={navigation}
+            searchQuery={searchQuery}
+            onSearch={handleSearch}
+            isFavorites={true}
+            onRefresh={loadStations}
+            fetchFavorites={fetchFavoriteStations}
           />
         )}
       </View>
@@ -284,55 +436,102 @@ const PetrolStationsScreen = ({ navigation }) => {
 };
 
 // List view component
-const StationListScreen = ({ stations, loading, error, navigation }) => {
+const StationListScreen = ({ 
+  stations, 
+  filteredStations,
+  loading, 
+  error, 
+  navigation,
+  searchQuery,
+  onSearch,
+  isFavorites = false,
+  onRefresh,
+  fetchFavorites
+}) => {
   const { t } = useTranslation();
+  const [favoriteStatus, setFavoriteStatus] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    // Load favorite status for all stations
+    const loadFavoriteStatus = async () => {
+      const status = {};
+      for (const station of stations) {
+        status[station.pk] = await isStationFavorited(station.pk.toString());
+      }
+      setFavoriteStatus(status);
+    };
+
+    loadFavoriteStatus();
+  }, [stations]);
+
+  const handleRefresh = React.useCallback(async () => {
+    if (!isFavorites) return; // Only allow refresh in favorites tab
+    
+    setRefreshing(true);
+    try {
+      await fetchFavorites();
+    } catch (error) {
+      console.error("Error refreshing favorites:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchFavorites, isFavorites]);
 
   const handleStationPress = (station) => {
     navigation.navigate("PetrolStationDetails", { station });
   };
 
-  const renderStationItem = ({ item }) => {
-    const stationIsOpen = isStationOpen(item);
+  const toggleFavorite = async (stationId) => {
+    try {
+      const isFavorited = favoriteStatus[stationId];
+      if (isFavorited) {
+        await removeFromFavorites(stationId.toString());
+      } else {
+        await addToFavorites(stationId.toString());
+      }
+      
+      // Update local state
+      setFavoriteStatus(prev => ({
+        ...prev,
+        [stationId]: !isFavorited
+      }));
+
+      // If we're in favorites tab, refresh the list
+      if (isFavorites) {
+        await fetchFavorites();
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      Alert.alert(t("common.error"), t("common.error.favorite"));
+    }
+  };
+
+  const renderItem = ({ item }) => {
+    const isFavorited = favoriteStatus[item.pk];
 
     return (
-      <Card style={styles.stationCard} onPress={() => handleStationPress(item)}>
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Title style={styles.stationTitle}>{item.name}</Title>
-            {/* <OpenStatusBadge isOpen={stationIsOpen} /> */}
+      <TouchableOpacity
+        style={styles.stationItem}
+        onPress={() => handleStationPress(item)}
+      >
+        <View style={styles.stationContent}>
+          <View style={styles.stationInfo}>
+            <Text style={styles.stationName}>{item.name}</Text>
+            <Text style={styles.stationAddress}>{item.address}</Text>
           </View>
-          <Paragraph>
-            {item.address}, {item.zip_code}
-          </Paragraph>
-          <Divider style={styles.divider} />
-          <View style={styles.pricesContainer}>
-            {item.prices["95"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>95</Text>
-                <Text style={styles.priceValue}>{item.prices["95"]} €</Text>
-              </View>
-            )}
-            {item.prices["dizel"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>Dizel</Text>
-                <Text style={styles.priceValue}>{item.prices["dizel"]} €</Text>
-              </View>
-            )}
-            {item.prices["98"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>98</Text>
-                <Text style={styles.priceValue}>{item.prices["98"]} €</Text>
-              </View>
-            )}
-            {item.prices["100"] && (
-              <View style={styles.priceItem}>
-                <Text style={styles.priceLabel}>100</Text>
-                <Text style={styles.priceValue}>{item.prices["100"]} €</Text>
-              </View>
-            )}
-          </View>
-        </Card.Content>
-      </Card>
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={() => toggleFavorite(item.pk)}
+          >
+            <MaterialCommunityIcons
+              name={isFavorited ? "heart" : "heart-outline"}
+              size={24}
+              color={isFavorited ? "#ff4081" : "#666"}
+            />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -353,12 +552,46 @@ const StationListScreen = ({ stations, loading, error, navigation }) => {
   }
 
   return (
-    <FlatList
-      data={stations}
-      renderItem={renderStationItem}
-      keyExtractor={(item) => item.pk.toString()}
-      contentContainerStyle={styles.listContainer}
-    />
+    <View style={styles.container}>
+      {/* Search bar to be added later */}
+      {/* <Surface style={styles.searchContainer}>
+        <Searchbar
+          placeholder={isFavorites ? t("petrolStations.searchFavorites") : t("petrolStations.searchPlaceholder")}
+          onChangeText={onSearch}
+          value={searchQuery}
+          style={styles.searchBar}
+        />
+      </Surface> */}
+
+      {filteredStations.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            {isFavorites 
+              ? t("petrolStations.noFavorites")
+              : searchQuery
+                ? t("petrolStations.noSearchResults")
+                : t("petrolStations.empty")}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredStations}
+          keyExtractor={(item) => item.pk.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            isFavorites ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={["#000"]}
+                tintColor="#000"
+              />
+            ) : null
+          }
+        />
+      )}
+    </View>
   );
 };
 
@@ -739,10 +972,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   openBadge: {
-    backgroundColor: "#2e7d32", // Green
+    backgroundColor: "#2e7d32",
   },
   closedBadge: {
-    backgroundColor: "#d32f2f", // Red
+    backgroundColor: "#d32f2f",
   },
   statusText: {
     color: "white",
@@ -758,6 +991,52 @@ const styles = StyleSheet.create({
   stationTitle: {
     flex: 1,
     marginRight: 8,
+  },
+  searchContainer: {
+    padding: 16,
+    elevation: 2,
+    backgroundColor: "#fff",
+  },
+  searchBar: {
+    elevation: 0,
+    backgroundColor: "#f8f9fa",
+  },
+  stationItem: {
+    marginVertical: 5,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    elevation: 2,
+  },
+  stationContent: {
+    flexDirection: "row",
+    padding: 16,
+    alignItems: "center",
+  },
+  stationInfo: {
+    flex: 1,
+  },
+  stationName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  stationAddress: {
+    fontSize: 14,
+    color: "#666",
+  },
+  favoriteButton: {
+    padding: 8,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
   },
 });
 

@@ -32,7 +32,9 @@
     "react-dom": "18.3.1",
     "react-i18next": "^15.4.1",
     "react-native": "0.76.7",
+    "react-native-element-dropdown": "^2.12.4",
     "react-native-gesture-handler": "^2.24.0",
+    "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-map-clustering": "^3.4.2",
     "react-native-maps": "^1.20.1",
     "react-native-pager-view": "^6.7.0",
@@ -44,7 +46,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "@react-native-community/cli": "^18.0.0"
+    "@react-native-community/cli": "^18.0.0",
+    "@react-native-community/cli-platform-ios": "^18.0.0"
   },
   "private": true
 }
