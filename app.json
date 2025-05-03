@@ -15,6 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
+      "buildNumber": "2",
       "config": {
         "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA",
         "googleSignIn": {
@@ -28,6 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.yourusername.napoti",
+      "versionCode": 4,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"

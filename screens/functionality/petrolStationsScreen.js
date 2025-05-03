@@ -343,10 +343,17 @@ const PetrolStationsScreen = ({ navigation }) => {
       );
       
       setFavoriteStations(favoriteStations);
+      return favoriteStations; // Return the stations for immediate use
     } catch (error) {
       console.error("Error fetching favorite stations:", error);
+      return []; // Return empty array on error
     }
   };
+
+  // Add useEffect to load favorites when component mounts
+  useEffect(() => {
+    fetchFavoriteStations();
+  }, [stations]); // Re-fetch when stations change
 
   return (
     <View style={{ flex: 1 }}>
@@ -553,15 +560,16 @@ const StationListScreen = ({
 
   return (
     <View style={styles.container}>
-      {/* Search bar to be added later */}
-      {/* <Surface style={styles.searchContainer}>
-        <Searchbar
-          placeholder={isFavorites ? t("petrolStations.searchFavorites") : t("petrolStations.searchPlaceholder")}
-          onChangeText={onSearch}
-          value={searchQuery}
-          style={styles.searchBar}
-        />
-      </Surface> */}
+      {!isFavorites && (
+        <Surface style={styles.searchContainer}>
+          <Searchbar
+            placeholder={t("petrolStations.searchPlaceholder")}
+            onChangeText={onSearch}
+            value={searchQuery}
+            style={styles.searchBar}
+          />
+        </Surface>
+      )}
 
       {filteredStations.length === 0 ? (
         <View style={styles.emptyContainer}>
