@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { addVehicle } from "../../utils/firestore";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import AutocompleteInput from "../../components/AutocompleteInput";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const AddVehicleScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -117,7 +118,7 @@ const AddVehicleScreen = ({ navigation }) => {
   const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
@@ -216,7 +217,7 @@ const AddVehicleScreen = ({ navigation }) => {
           {saving ? <ActivityIndicator color="white" /> : t("vehicles.add")}
         </Button>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 };
 
