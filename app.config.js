@@ -4,7 +4,7 @@ export default {
   "expo": {
     "name": "Na Poti",
     "slug": "NaPoti",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@ export default {
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
-      "buildNumber": "7",
+      "buildNumber": "8",
       "config": {
         "googleMapsApiKey": process.env.GOOGLE_MAPS_API_KEY,
         "googleSignIn": {
