@@ -10,6 +10,7 @@ import { StatusBar } from "react-native";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./utils/firebase";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 import WelcomeScreen from "./screens/navigation/welcomeScreen";
 import SignUpScreen from "./screens/navigation/signUpScreen";
@@ -27,9 +28,22 @@ export default function App() {
 
   // Handle user state changes
   useEffect(() => {
+    console.log("Setting up auth state listener...");
+    
+    // Check if there's persisted auth data
+    ReactNativeAsyncStorage.getItem('firebase:authUser:AIzaSyAgyenYvKy85JCjRb_xkN-XmH90CRtx_pc:[DEFAULT]')
+      .then(persistedUser => {
+        console.log("Persisted auth data found:", persistedUser ? "Yes" : "No");
+      })
+      .catch(error => console.error("Error checking persisted auth:", error));
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Auth state changed:", user ? `User ${user.email} signed in` : "User signed out");
       setUser(user);
-      if (initializing) setInitializing(false);
+      if (initializing) {
+        console.log("App initialization complete");
+        setInitializing(false);
+      }
     });
 
     return unsubscribe;

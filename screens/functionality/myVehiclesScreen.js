@@ -54,9 +54,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
 
   const loadVehicles = async () => {
     try {
-      console.log("Loading vehicles..."); // Debug log
       const loadedVehicles = await getAllVehicles();
-      console.log("Loaded vehicles:", loadedVehicles); // Debug log
       setVehicles(loadedVehicles);
     } catch (error) {
       console.error("Error loading vehicles:", error); // Debug log
