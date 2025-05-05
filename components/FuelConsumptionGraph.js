@@ -107,7 +107,7 @@ const FuelConsumptionGraph = ({ fillings }) => {
                         transform: [
                           { translateY: y1 },
                           { rotate: `${angle}rad` },
-                          { translateY: -y1 },
+                          // { translateY: -y1 },
                         ],
                       },
                     ]}
@@ -216,9 +216,19 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#ccc',
   },
-
-  lineContainer: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
-  dataLine: { position: 'absolute', height: 2, backgroundColor: '#2e7d32' },
+  lineContainer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+  },
+  dataLine: {
+    position: 'absolute',
+    top: 0,
+    height: 2,
+    backgroundColor: '#2e7d32',
+  },
   dataPoint: {
     position: 'absolute',
     width: 8,
@@ -231,8 +241,8 @@ const styles = StyleSheet.create({
 
   xAxisLabels: {
     position: 'absolute',
-    left: 20,
-    bottom: -45,
+    left: 5,
+    bottom: -55,
     flexDirection: 'row',
     height: 40,
   },
@@ -241,7 +251,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     textAlign: 'center',
-    transform: [{ rotate: '-45deg' }],
+    transform: [{ rotate: '-90deg' }],
   },
 
   yAxisTitle: {
