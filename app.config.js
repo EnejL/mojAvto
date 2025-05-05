@@ -1,10 +1,12 @@
-{
+import 'dotenv/config';
+
+export default {
   "expo": {
     "name": "Na Poti",
     "slug": "NaPoti",
     "version": "1.1.0",
     "orientation": "portrait",
-    "icon": "./assets/app-icon.png",
+    "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -17,7 +19,7 @@
       "bundleIdentifier": "com.enejlicina.napoti",
       "buildNumber": "7",
       "config": {
-        "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA",
+        "googleMapsApiKey": process.env.GOOGLE_MAPS_API_KEY,
         "googleSignIn": {
           "reservedClientId": "com.googleusercontent.apps.YOUR_CLIENT_ID"
         }
@@ -32,7 +34,7 @@
       "versionCode": 4,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
+          "apiKey": process.env.GOOGLE_MAPS_API_KEY
         }
       },
       "permissions": [
@@ -59,4 +61,4 @@
       }
     }
   }
-}
+}; 
