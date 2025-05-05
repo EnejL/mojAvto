@@ -11,8 +11,9 @@ import {
 import { Text, Button, Surface, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getFillings, deleteFilling } from "../../utils/firestore";
-import { Swipeable } from "react-native-gesture-handler";
+import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 import BrandLogo from "../../components/BrandLogo";
+import SimpleFuelConsumptionGraph from "../../components/FuelConsumptionGraph";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
@@ -110,6 +111,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     for (let i = 1; i < sortedFillings.length; i++) {
       const distance =
         sortedFillings[i].odometer - sortedFillings[i - 1].odometer;
+      
+      // Skip invalid distances (e.g., negative or zero)
+      if (distance <= 0) continue;
+      
       totalDistance += distance;
       totalLiters += sortedFillings[i].liters;
     }
@@ -183,47 +188,49 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     };
 
     return (
-      <Swipeable
-        renderRightActions={renderRightActions}
-        overshootRight={false}
-        friction={2}
-        rightThreshold={40}
-      >
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate("EditFilling", {
-              filling: item,
-              vehicleId: vehicle.id,
-            })
-          }
+      <GestureHandlerRootView style={styles.gestureContainer}>
+        <Swipeable
+          renderRightActions={renderRightActions}
+          overshootRight={false}
+          friction={2}
+          rightThreshold={40}
         >
-          <Surface style={styles.fillingItem}>
-            <View style={styles.fillingContent}>
-              <View style={styles.fillingLabels}>
-                <Text style={styles.fillingLabel}>{t("fillings.date")}:</Text>
-                <Text style={styles.fillingLabel}>
-                  {t("fillings.odometer")}:
-                </Text>
-                <Text style={styles.fillingLabel}>{t("fillings.liters")}:</Text>
-                <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
-              </View>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("EditFilling", {
+                filling: item,
+                vehicleId: vehicle.id,
+              })
+            }
+          >
+            <Surface style={styles.fillingItem}>
+              <View style={styles.fillingContent}>
+                <View style={styles.fillingLabels}>
+                  <Text style={styles.fillingLabel}>{t("fillings.date")}:</Text>
+                  <Text style={styles.fillingLabel}>
+                    {t("fillings.odometer")}:
+                  </Text>
+                  <Text style={styles.fillingLabel}>{t("fillings.liters")}:</Text>
+                  <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
+                </View>
 
-              <View style={styles.fillingValues}>
-                <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
-                <Text style={styles.fillingValue}>
-                  {formatNumber(item.odometer, 0)} km
-                </Text>
-                <Text style={styles.fillingValue}>
-                  {formatNumber(item.liters, 2)} L
-                </Text>
-                <Text style={styles.fillingValue}>
-                  {formatNumber(item.cost, 2)} €
-                </Text>
+                <View style={styles.fillingValues}>
+                  <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
+                  <Text style={styles.fillingValue}>
+                    {formatNumber(item.odometer, 0)} km
+                  </Text>
+                  <Text style={styles.fillingValue}>
+                    {formatNumber(item.liters, 2)} L
+                  </Text>
+                  <Text style={styles.fillingValue}>
+                    {formatNumber(item.cost, 2)} €
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Surface>
-        </TouchableOpacity>
-      </Swipeable>
+            </Surface>
+          </TouchableOpacity>
+        </Swipeable>
+      </GestureHandlerRootView>
     );
   };
 
@@ -296,6 +303,9 @@ export default function VehicleDetailsScreen({ route, navigation }) {
             </View>
           )}
         </Surface>
+
+        {/* Replace the old FuelConsumptionGraph component with our new SimpleFuelConsumptionGraph */}
+        <SimpleFuelConsumptionGraph fillings={fillings} />
 
         <Surface style={styles.fillingsCard}>
           <View style={styles.sectionTitleContainer}>
@@ -467,5 +477,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: 80,
     height: "100%",
+  },
+  gestureContainer: {
+    flex: 1,
   },
 });

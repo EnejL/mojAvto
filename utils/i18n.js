@@ -3,125 +3,6 @@ import { initReactI18next } from "react-i18next";
 
 // Import all translations
 const resources = {
-  en: {
-    translation: {
-      navigation: {
-        home: "Home",
-        myVehicles: "My Vehicles",
-        fuelConsumption: "Fuel Consumption",
-        petrolStations: "Petrol Stations",
-        settings: "Settings",
-        back: "Back",
-      },
-      vehicles: {
-        title: "My Vehicles",
-        add: "Add Vehicle",
-        empty: "No vehicles added yet",
-        name: "Vehicle Name",
-        namePlaceholder: "Enter a display name for your vehicle",
-        make: "Vehicle Make",
-        makePlaceholder: "Select vehicle manufacturer",
-        model: "Vehicle Model",
-        modelPlaceholder: "Select make first",
-        edit: "Edit Vehicle",
-        numberPlate: "Number Plate",
-        addFirst: "Add Your First Vehicle",
-        select: "Select Vehicle",
-        selectPrompt: "Choose a vehicle",
-      },
-      fillings: {
-        title: "Fuel Fillings",
-        date: "Date",
-        liters: "Liters",
-        cost: "Cost",
-        odometer: "Odometer Reading",
-        add: "Add Filling",
-        consumption: "Fuel Consumption",
-        consumptionUnit: "l/100 km",
-        notEnoughData: "Not enough fuel entries",
-        distanceSince: "Distance since last filling",
-        noVehiclesWarning:
-          "You need to add a vehicle before you can record fuel fillings.",
-        noFillings:
-          "There are currently no fillings to be displayed. Please enter your first filling.",
-        edit: "Edit Filling",
-        deleteConfirmMessage: "Are you sure you want to delete this filling?",
-        filling: "filling",
-        statistics: "Statistics",
-        avgConsumption: "Average Consumption",
-        avgCost: "Average Cost",
-        avgLiters: "Average Fuel Amount",
-        totalCost: "Total Cost",
-      },
-      common: {
-        loading: "Loading...",
-        save: "Save",
-        cancel: "Cancel",
-        error: {
-          save: "Failed to save",
-          load: "Failed to load",
-          required: "Please fill in all fields",
-          delete: "Brisanje ni uspelo",
-        },
-      },
-      auth: {
-        title: "Account",
-        email: "Email",
-        password: "Password",
-        signIn: "Sign In",
-        createAccount: "Create Account",
-        anonymousInfo:
-          "You're currently using the app anonymously. Create an account to save your data across devices.",
-        error: {
-          createAccount: "Failed to create account",
-          signIn: "Failed to sign in",
-          signOut: "Failed to sign out",
-          "invalid-credentials": "Invalid email or password",
-          "invalid-email": "Invalid email address",
-          "user-disabled": "This account has been disabled",
-          "too-many-attempts": "Too many attempts. Please try again later",
-          "unknown-error": "An error occurred. Please try again",
-          "email-taken": "This email is already in use",
-          "weak-password": "Password should be at least 6 characters",
-        },
-        haveAccount: "Already have an account? Sign in",
-        needAccount: "Need an account? Create one",
-        signedInAs: "Signed in as {{email}}",
-        signOut: "Sign Out",
-        greeting: "Hello, {{email}}",
-        accountManage: "Manage Account",
-        forgotPassword: "Forgot Password?",
-        enterEmailFirst: "Please enter your email address first",
-        resetEmailSent: "Password Reset Email Sent",
-        checkEmail:
-          "Please check your email for instructions to reset your password",
-        resetError: "Error Resetting Password",
-        confirmPassword: "Confirm Password",
-        "passwords-dont-match": "Passwords don't match",
-        signInWithGoogle: "Sign in with Google",
-        or: "or",
-        googleSignInFailed: "Google Sign-In failed. Please try again.",
-      },
-      welcome: {
-        message:
-          "Track your vehicle's fuel consumption and maintenance with ease.",
-      },
-      petrolStations: {
-        title: "Petrol Stations",
-        list: "List",
-        map: "Map",
-        fetchError: "Failed to load petrol stations",
-        description: "Find petrol stations and compare fuel prices",
-        viewDetails: "View Details",
-        prices: "Fuel Prices",
-        getDirections: "Get Directions",
-        openingHours: "Opening Hours",
-        open24Hours: "Open 24 hours",
-        closed: "Closed",
-        noOpeningHours: "Opening hours information not available",
-      },
-    },
-  },
   sl: {
     translation: {
       navigation: {
@@ -162,10 +43,8 @@ const resources = {
         consumptionUnit: "l/100 km",
         notEnoughData: "Ni dovolj podatkov. Vnesite vsaj dve točenji.",
         distanceSince: "Prevoženi kilometri od zadnjega točenja",
-        noVehiclesWarning:
-          "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
-        noFillings:
-          "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
+        noVehiclesWarning: "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
+        noFillings: "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
         edit: "Uredi Točenje",
         deleteConfirmMessage: "Ste prepričani, da želite izbrisati to točenje?",
         filling: "točenje",
@@ -174,6 +53,8 @@ const resources = {
         avgCost: "Povprečni strošek",
         avgLiters: "Povprečno točenje",
         totalCost: "Skupni strošek",
+        showConsumptionGraph: "Prikaži graf porabe",
+        consumptionOverTime: "Poraba goriva skozi čas"
       },
       petrolStations: {
         title: "Bencinske Črpalke",
@@ -218,6 +99,7 @@ const resources = {
         privacyPolicy: "Politika zasebnosti",
         terms: "Pogoji uporabe",
         faq: "Pogosto zastavljena vprašanja",
+        hide: "Skrij"
       },
       auth: {
         title: "Račun",
@@ -225,8 +107,7 @@ const resources = {
         password: "Geslo",
         signIn: "Prijava",
         createAccount: "Ustvari Račun",
-        anonymousInfo:
-          "Trenutno uporabljate aplikacijo anonimno. Ustvarite račun za shranjevanje podatkov med napravami.",
+        anonymousInfo: "Trenutno uporabljate aplikacijo anonimno. Ustvarite račun za shranjevanje podatkov med napravami.",
         error: {
           createAccount: "Ustvarjanje računa ni uspelo",
           signIn: "Prijava ni uspela",
@@ -249,39 +130,26 @@ const resources = {
         resetEmailSent: "E-pošta za ponastavitev gesla poslana",
         checkEmail: "Preverite svojo e-pošto za navodila za ponastavitev gesla",
         resetError: "Napaka pri ponastavitvi gesla",
-        confirmPassword: "Potrdi Geslo",
+        confirmPassword: "Potrdi geslo",
         "passwords-dont-match": "Gesli se ne ujemata",
-        forgotPasswordInstructions:
-          "Prosimo, vnesite svoj e-poštni naslov, da dobite navodila za ponastavitev gesla.",
-        resetEmailInstructions:
-          "V kolikor obstaja račun z vnešenim e-poštnim naslovom, boste v kratkem prejeli povezavo za ponastavitev gesla. Ne pozabite preveriti tudi mape z neželeno pošto.",
-        signInWithGoogle: "Prijava z Google",
+        signInWithGoogle: "Prijava z Google računom",
         or: "ali",
-        googleSignInFailed: "Prijava z Google ni uspela. Poskusite ponovno.",
+        googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
       },
       welcome: {
-        message: "Enostavno sledite porabi goriva vaših vozil.",
-      },
-      days: {
-        monday: "Ponedeljek",
-        tuesday: "Torek",
-        wednesday: "Sreda",
-        thursday: "Četrtek",
-        friday: "Petek",
-        saturday: "Sobota",
-        sunday: "Nedelja",
-      },
-    },
-  },
+        message: "Spremljajte porabo goriva in vzdrževanje vašega vozila."
+      }
+    }
+  }
 };
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: "sl",
-  fallbackLng: "en",
+  lng: "sl", // default language
+  fallbackLng: "sl",
   interpolation: {
-    escapeValue: false,
-  },
+    escapeValue: false
+  }
 });
 
 export default i18n;
