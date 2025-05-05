@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { getFillings, deleteFilling } from "../../utils/firestore";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 import BrandLogo from "../../components/BrandLogo";
-import SimpleFuelConsumptionGraph from "../../components/FuelConsumptionGraph";
+import FuelConsumptionGraph from "../../components/FuelConsumptionGraph";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
@@ -305,7 +305,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         </Surface>
 
         {/* Replace the old FuelConsumptionGraph component with our new SimpleFuelConsumptionGraph */}
-        <SimpleFuelConsumptionGraph fillings={fillings} />
+        <FuelConsumptionGraph fillings={fillings} />
 
         <Surface style={styles.fillingsCard}>
           <View style={styles.sectionTitleContainer}>
