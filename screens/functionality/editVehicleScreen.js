@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
-  ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
@@ -12,6 +14,7 @@ import { updateVehicle, deleteVehicle } from "../../utils/firestore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AutocompleteInput from "../../components/AutocompleteInput";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -130,124 +133,149 @@ export default function EditVehicleScreen({ navigation, route }) {
   const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Surface style={styles.headerCard}>
-          {/* <Text style={styles.headerText}>{t("vehicles.edit")}</Text> */}
-          <Text style={styles.headerSubtext}>
-            {vehicle.make} {vehicle.model}
-          </Text>
-        </Surface>
+    <KeyboardAwareScrollView
+      style={styles.container}
+      enableOnAndroid={true}
+      enableAutomaticScroll={true}
+      extraScrollHeight={Platform.OS === 'ios' ? 120 : 140}
+      keyboardShouldPersistTaps="handled"
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View>
+          <Surface style={styles.headerCard}>
+            <Text style={styles.headerSubtext}>
+              {vehicle.make} {vehicle.model}
+            </Text>
+          </Surface>
 
-        <Surface style={styles.formCard}>
-          <View style={styles.inputContainer}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
-              <Text style={styles.requiredLabel}>*</Text>
+          <Surface style={styles.formCard}>
+            <View style={[styles.inputContainer, { zIndex: 4 }]}>
+              <View style={styles.labelContainer}>
+                <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
+                <Text style={styles.requiredLabel}>*</Text>
+              </View>
+              <TextInput
+                label={t("vehicles.name")}
+                value={vehicleData.name}
+                onChangeText={(text) =>
+                  setVehicleData({ ...vehicleData, name: text })
+                }
+                style={styles.input}
+                mode="outlined"
+                disabled={saving}
+                placeholder={t("vehicles.namePlaceholder")}
+              />
             </View>
-            <TextInput
-              label={t("vehicles.name")}
-              value={vehicleData.name}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, name: text })
-              }
-              style={styles.input}
+
+            <View style={[styles.inputContainer, { zIndex: 3 }]}>
+              <View style={styles.labelContainer}>
+                <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
+                {renderRequiredLabel()}
+              </View>
+              <AutocompleteInput
+                value={vehicleData.make}
+                onChangeText={(text) =>
+                  setVehicleData({ ...vehicleData, make: text, model: "" })
+                }
+                onSelectSuggestion={handleBrandSelection}
+                suggestions={carBrands}
+                disabled={saving || loadingBrands}
+                required={true}
+                label=""
+                placeholder={t("vehicles.makePlaceholder")}
+                containerStyle={{ zIndex: 3 }}
+              />
+            </View>
+
+            <View style={[styles.inputContainer, { zIndex: 2 }]}>
+              <View style={styles.labelContainer}>
+                <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
+                {renderRequiredLabel()}
+              </View>
+              {carModels.length > 0 ? (
+                <AutocompleteInput
+                  value={vehicleData.model}
+                  onChangeText={(text) =>
+                    setVehicleData({ ...vehicleData, model: text })
+                  }
+                  suggestions={carModels}
+                  disabled={saving || !vehicleData.make}
+                  required={true}
+                  label=""
+                  placeholder={
+                    !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+                  }
+                  containerStyle={{ zIndex: 2 }}
+                />
+              ) : (
+                <TextInput
+                  value={vehicleData.model}
+                  onChangeText={(text) =>
+                    setVehicleData({ ...vehicleData, model: text })
+                  }
+                  style={styles.input}
+                  mode="outlined"
+                  disabled={saving || !vehicleData.make}
+                  placeholder={
+                    !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+                  }
+                />
+              )}
+            </View>
+
+            <View style={[styles.inputContainer, { zIndex: 1 }]}>
+              <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
+              <TextInput
+                label={t("vehicles.numberPlate")}
+                value={vehicleData.numberPlate}
+                onChangeText={(text) =>
+                  setVehicleData({ ...vehicleData, numberPlate: text })
+                }
+                style={styles.input}
+                mode="outlined"
+                disabled={saving}
+                placeholder={t("vehicles.numberPlate")}
+              />
+            </View>
+          </Surface>
+
+          <Button
+            mode="outlined"
+            onPress={handleDelete}
+            style={styles.deleteButton}
+            labelStyle={styles.deleteButtonLabel}
+            icon={({ size, color }) => (
+              <MaterialCommunityIcons
+                name="trash-can"
+                size={size}
+                color={color}
+              />
+            )}
+          >
+            {t("vehicles.deleteVehicle")}
+          </Button>
+
+          <View style={styles.buttonContainer}>
+            <Button
               mode="outlined"
+              onPress={() => navigation.goBack()}
+              style={[styles.button, styles.cancelButton]}
               disabled={saving}
-              placeholder={t("vehicles.namePlaceholder")}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
-              {renderRequiredLabel()}
-            </View>
-            <AutocompleteInput
-              value={vehicleData.make}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, make: text, model: "" })
-              }
-              onSelectSuggestion={handleBrandSelection}
-              suggestions={carBrands}
-              disabled={saving || loadingBrands}
-              required={true}
-              label=""
-              placeholder={t("vehicles.makePlaceholder")}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
-              {renderRequiredLabel()}
-            </View>
-            <TextInput
-              value={vehicleData.model}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, model: text })
-              }
-              style={styles.input}
-              mode="outlined"
-              disabled={saving || !vehicleData.make}
-              placeholder={
-                !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
-              }
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
-            <TextInput
-              label={t("vehicles.numberPlate")}
-              value={vehicleData.numberPlate}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, numberPlate: text })
-              }
-              style={styles.input}
-              mode="outlined"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleSave}
+              style={[styles.button, styles.saveButton]}
               disabled={saving}
-              placeholder={t("vehicles.numberPlate")}
-            />
+            >
+              {saving ? <ActivityIndicator color="white" /> : t("common.save")}
+            </Button>
           </View>
-        </Surface>
-
-        <Button
-          mode="outlined"
-          onPress={handleDelete}
-          style={styles.deleteButton}
-          labelStyle={styles.deleteButtonLabel}
-          icon={({ size, color }) => (
-            <MaterialCommunityIcons
-              name="trash-can"
-              size={size}
-              color={color}
-            />
-          )}
-        >
-          {t("vehicles.deleteVehicle")}
-        </Button>
-      </ScrollView>
-
-      <View style={styles.buttonContainer}>
-        <Button
-          mode="outlined"
-          onPress={() => navigation.goBack()}
-          style={[styles.button, styles.cancelButton]}
-          disabled={saving}
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          mode="contained"
-          onPress={handleSave}
-          style={[styles.button, styles.saveButton]}
-          disabled={saving}
-        >
-          {saving ? <ActivityIndicator color="white" /> : t("common.save")}
-        </Button>
-      </View>
-    </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -319,6 +347,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 8,
     backgroundColor: "#f8f9fa",
+    marginBottom: Platform.OS === 'ios' ? 120 : 140,
   },
   button: {
     flex: 1,
