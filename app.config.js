@@ -1,5 +1,3 @@
-import 'dotenv/config';
-
 export default {
   "expo": {
     "name": "Na Poti",
@@ -19,7 +17,7 @@ export default {
       "bundleIdentifier": "com.enejlicina.napoti",
       "buildNumber": "8",
       "config": {
-        "googleMapsApiKey": process.env.GOOGLE_MAPS_API_KEY,
+        "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA",
         "googleSignIn": {
           "reservedClientId": "com.googleusercontent.apps.YOUR_CLIENT_ID"
         }
@@ -31,10 +29,10 @@ export default {
         "backgroundColor": "#ffffff"
       },
       "package": "com.yourusername.napoti",
-      "versionCode": 4,
+      "versionCode": 8,
       "config": {
         "googleMaps": {
-          "apiKey": process.env.GOOGLE_MAPS_API_KEY
+          "apiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
         }
       },
       "permissions": [
