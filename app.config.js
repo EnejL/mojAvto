@@ -9,18 +9,16 @@ export default {
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splashscreen.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
-      "buildNumber": "8",
+      "buildNumber": "9",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "config": {
-        "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA",
-        "googleSignIn": {
-          "reservedClientId": "com.googleusercontent.apps.YOUR_CLIENT_ID"
-        }
+        "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
       }
     },
     "android": {
@@ -37,19 +35,42 @@ export default {
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      '@react-native-firebase/app',
+      '@react-native-firebase/auth',
       [
-        "expo-location",
+        "expo-build-properties",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Na Poti to use your location."
+          "ios": {
+            "useFrameworks": "static",
+            "infoPlist": {
+              "NSLocationWhenInUseUsageDescription": "We need your location to show nearby petrol stations and calculate distances."
+            },
+            "extraPods": [
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              },
+              {
+                "name": "GoogleDataTransport",
+                "modular_headers": true
+              },
+              {
+                "name": "GoogleAppMeasurement",
+                "modular_headers": true
+              },
+              {
+                "name": "nanopb",
+                "modular_headers": true
+              }
+            ]
+          }
         }
       ]
     ],
@@ -59,4 +80,4 @@ export default {
       }
     }
   }
-}; 
+};

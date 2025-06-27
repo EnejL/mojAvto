@@ -142,56 +142,56 @@ export default function EditVehicleScreen({ navigation, route }) {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View>
-          <Surface style={styles.headerCard}>
-            <Text style={styles.headerSubtext}>
-              {vehicle.make} {vehicle.model}
-            </Text>
-          </Surface>
+        <Surface style={styles.headerCard}>
+          <Text style={styles.headerSubtext}>
+            {vehicle.make} {vehicle.model}
+          </Text>
+        </Surface>
 
-          <Surface style={styles.formCard}>
+        <Surface style={styles.formCard}>
             <View style={[styles.inputContainer, { zIndex: 4 }]}>
-              <View style={styles.labelContainer}>
-                <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
-                <Text style={styles.requiredLabel}>*</Text>
-              </View>
-              <TextInput
-                label={t("vehicles.name")}
-                value={vehicleData.name}
-                onChangeText={(text) =>
-                  setVehicleData({ ...vehicleData, name: text })
-                }
-                style={styles.input}
-                mode="outlined"
-                disabled={saving}
-                placeholder={t("vehicles.namePlaceholder")}
-              />
+            <View style={styles.labelContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
+              <Text style={styles.requiredLabel}>*</Text>
             </View>
+            <TextInput
+              label={t("vehicles.name")}
+              value={vehicleData.name}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, name: text })
+              }
+              style={styles.input}
+              mode="outlined"
+              disabled={saving}
+              placeholder={t("vehicles.namePlaceholder")}
+            />
+          </View>
 
             <View style={[styles.inputContainer, { zIndex: 3 }]}>
-              <View style={styles.labelContainer}>
-                <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
-                {renderRequiredLabel()}
-              </View>
-              <AutocompleteInput
-                value={vehicleData.make}
-                onChangeText={(text) =>
-                  setVehicleData({ ...vehicleData, make: text, model: "" })
-                }
-                onSelectSuggestion={handleBrandSelection}
-                suggestions={carBrands}
-                disabled={saving || loadingBrands}
-                required={true}
-                label=""
-                placeholder={t("vehicles.makePlaceholder")}
-                containerStyle={{ zIndex: 3 }}
-              />
+            <View style={styles.labelContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
+              {renderRequiredLabel()}
             </View>
+            <AutocompleteInput
+              value={vehicleData.make}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, make: text, model: "" })
+              }
+              onSelectSuggestion={handleBrandSelection}
+              suggestions={carBrands}
+              disabled={saving || loadingBrands}
+              required={true}
+              label=""
+              placeholder={t("vehicles.makePlaceholder")}
+                containerStyle={{ zIndex: 3 }}
+            />
+          </View>
 
             <View style={[styles.inputContainer, { zIndex: 2 }]}>
-              <View style={styles.labelContainer}>
-                <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
-                {renderRequiredLabel()}
-              </View>
+            <View style={styles.labelContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
+              {renderRequiredLabel()}
+            </View>
               {carModels.length > 0 ? (
                 <AutocompleteInput
                   value={vehicleData.model}
@@ -208,72 +208,72 @@ export default function EditVehicleScreen({ navigation, route }) {
                   containerStyle={{ zIndex: 2 }}
                 />
               ) : (
-                <TextInput
-                  value={vehicleData.model}
-                  onChangeText={(text) =>
-                    setVehicleData({ ...vehicleData, model: text })
-                  }
-                  style={styles.input}
-                  mode="outlined"
-                  disabled={saving || !vehicleData.make}
-                  placeholder={
-                    !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
-                  }
-                />
+            <TextInput
+              value={vehicleData.model}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, model: text })
+              }
+              style={styles.input}
+              mode="outlined"
+              disabled={saving || !vehicleData.make}
+              placeholder={
+                !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
+              }
+            />
               )}
-            </View>
+          </View>
 
             <View style={[styles.inputContainer, { zIndex: 1 }]}>
-              <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
-              <TextInput
-                label={t("vehicles.numberPlate")}
-                value={vehicleData.numberPlate}
-                onChangeText={(text) =>
-                  setVehicleData({ ...vehicleData, numberPlate: text })
-                }
-                style={styles.input}
-                mode="outlined"
-                disabled={saving}
-                placeholder={t("vehicles.numberPlate")}
-              />
-            </View>
-          </Surface>
-
-          <Button
-            mode="outlined"
-            onPress={handleDelete}
-            style={styles.deleteButton}
-            labelStyle={styles.deleteButtonLabel}
-            icon={({ size, color }) => (
-              <MaterialCommunityIcons
-                name="trash-can"
-                size={size}
-                color={color}
-              />
-            )}
-          >
-            {t("vehicles.deleteVehicle")}
-          </Button>
-
-          <View style={styles.buttonContainer}>
-            <Button
+            <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
+            <TextInput
+              label={t("vehicles.numberPlate")}
+              value={vehicleData.numberPlate}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, numberPlate: text })
+              }
+              style={styles.input}
               mode="outlined"
-              onPress={() => navigation.goBack()}
-              style={[styles.button, styles.cancelButton]}
               disabled={saving}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={[styles.button, styles.saveButton]}
-              disabled={saving}
-            >
-              {saving ? <ActivityIndicator color="white" /> : t("common.save")}
-            </Button>
+              placeholder={t("vehicles.numberPlate")}
+            />
           </View>
-        </View>
+        </Surface>
+
+        <Button
+          mode="outlined"
+          onPress={handleDelete}
+          style={styles.deleteButton}
+          labelStyle={styles.deleteButtonLabel}
+          icon={({ size, color }) => (
+            <MaterialCommunityIcons
+              name="trash-can"
+              size={size}
+              color={color}
+            />
+          )}
+        >
+          {t("vehicles.deleteVehicle")}
+        </Button>
+
+      <View style={styles.buttonContainer}>
+        <Button
+          mode="outlined"
+          onPress={() => navigation.goBack()}
+          style={[styles.button, styles.cancelButton]}
+          disabled={saving}
+        >
+          {t("common.cancel")}
+        </Button>
+        <Button
+          mode="contained"
+          onPress={handleSave}
+          style={[styles.button, styles.saveButton]}
+          disabled={saving}
+        >
+          {saving ? <ActivityIndicator color="white" /> : t("common.save")}
+        </Button>
+      </View>
+    </View>
       </TouchableWithoutFeedback>
     </KeyboardAwareScrollView>
   );

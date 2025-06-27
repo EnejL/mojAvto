@@ -19,7 +19,7 @@ import ClusteredMapView from "react-native-map-clustering";
 import { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
-import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../utils/firebase";
 import { getPetrolStations } from "../../utils/firestore";
 import { getCurrentUser } from "../../utils/auth";
 import { Swipeable } from "react-native-gesture-handler";
@@ -174,21 +174,18 @@ const OpenStatusBadge = ({ isOpen }) => {
 // Modify the fetchPetrolStations function
 const fetchPetrolStations = async (forceRefresh = false) => {
   try {
-    const db = getFirestore();
-    const petrolStationsRef = doc(db, "data", "petrolStations");
-    const petrolStationsDoc = await getDoc(petrolStationsRef);
+    // Use the native SDK syntax
+    const petrolStationsRef = db.collection('data').doc('petrolStations');
+    const petrolStationsDoc = await petrolStationsRef.get();
 
-    if (petrolStationsDoc.exists()) {
+    if (petrolStationsDoc.exists) {
       const petrolStationsData = petrolStationsDoc.data();
-      
-      // Check if we need to refresh the data
       const lastUpdated = petrolStationsData.lastUpdated?.toDate() || new Date(0);
       const now = new Date();
+      const CACHE_DURATION = 1000 * 60 * 60 * 24; // 24 hours
       const shouldRefresh = forceRefresh || (now - lastUpdated) > CACHE_DURATION;
 
       if (shouldRefresh) {
-        // Fetch fresh data from your API here
-        // For now, we'll just return the cached data
         console.log("Data is stale, but using cached data for now");
       }
 
@@ -333,20 +330,23 @@ const PetrolStationsScreen = ({ navigation }) => {
       const currentUser = getCurrentUser();
       if (!currentUser) return;
 
-      const db = getFirestore();
-      const favoritesRef = collection(db, `users/${currentUser.uid}/favorites`);
-      const favoritesSnapshot = await getDocs(favoritesRef);
+      // Use the native SDK syntax
+      const favoritesRef = db.collection('users').doc(currentUser.uid).collection('favorites');
+      const favoritesSnapshot = await favoritesRef.get();
       
       const favoriteIds = favoritesSnapshot.docs.map(doc => doc.id);
-      const favoriteStations = stations.filter(station => 
+
+      // We assume 'stations' is available in the component's state
+      const localStations = stations; // or pass stations as an argument
+      const favoriteStationsList = localStations.filter(station => 
         favoriteIds.includes(station.pk.toString())
       );
       
-      setFavoriteStations(favoriteStations);
-      return favoriteStations; // Return the stations for immediate use
+      setFavoriteStations(favoriteStationsList);
+      return favoriteStationsList; 
     } catch (error) {
       console.error("Error fetching favorite stations:", error);
-      return []; // Return empty array on error
+      return []; 
     }
   };
 
