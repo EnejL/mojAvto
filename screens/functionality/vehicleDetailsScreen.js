@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Text, Button, Surface, Divider } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { getFillings, deleteFilling } from "../../utils/firestore";
+import { getVehicleFillings, deleteFilling } from "../../utils/firestore";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 import BrandLogo from "../../components/BrandLogo";
 import FuelConsumptionGraph from "../../components/FuelConsumptionGraph";
@@ -79,7 +79,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   useEffect(() => {
     const loadFillings = async () => {
       try {
-        const vehicleFillings = await getFillings(vehicle.id);
+        const vehicleFillings = await getVehicleFillings(vehicle.id);
         setFillings(vehicleFillings);
       } catch (error) {
         console.error("Error loading fillings:", error);

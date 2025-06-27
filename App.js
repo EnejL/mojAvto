@@ -1,128 +1,80 @@
-// App.js
+import "react-native-gesture-handler";
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
-import "react-native-gesture-handler";
+// Import the auth object
+import { auth } from "./utils/firebase";
 import "./utils/i18n";
 import { useTranslation } from "react-i18next";
-import { StatusBar } from "react-native";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./utils/firebase";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar, ActivityIndicator, View } from "react-native";
 
+// Import your screens
 import WelcomeScreen from "./screens/navigation/welcomeScreen";
 import SignUpScreen from "./screens/navigation/signUpScreen";
 import ForgotPasswordScreen from "./screens/navigation/forgotPasswordScreen";
-
 import MainAppNavigator from "./screens/navigation/mainAppNavigator";
 import PetrolStationDetailsScreen from "./screens/functionality/petrolStationDetailsScreen";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const { t } = useTranslation();
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState(null);
+  const { t } = useTranslation();
 
-  // Handle user state changes
   useEffect(() => {
-    console.log("Setting up auth state listener...");
-    
-    // Check if there's persisted auth data
-    ReactNativeAsyncStorage.getItem('firebase:authUser:AIzaSyAgyenYvKy85JCjRb_xkN-XmH90CRtx_pc:[DEFAULT]')
-      .then(persistedUser => {
-        console.log("Persisted auth data found:", persistedUser ? "Yes" : "No");
-      })
-      .catch(error => console.error("Error checking persisted auth:", error));
-
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed:", user ? `User ${user.email} signed in` : "User signed out");
       setUser(user);
       if (initializing) {
-        console.log("App initialization complete");
         setInitializing(false);
       }
+      console.log("Auth state changed:", user ? user.uid : "No User");
     });
 
+    // 3. Cleanup the listener when the component unmounts
     return unsubscribe;
-  }, [initializing]);
+  }, []); // The empty dependency array ensures this runs only once.
 
+  // While the first onAuthStateChanged check is running, show a spinner.
   if (initializing) {
-    return null; // Or a loading screen
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
+  // Now, render the correct navigator based on the user state.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PaperProvider>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <StatusBar style="auto" />
         <NavigationContainer>
-          <Stack.Navigator>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
             {user ? (
-              <Stack.Screen
-                name="MainApp"
-                component={MainAppNavigator}
-                options={{ headerShown: false }}
-              />
+              <Stack.Screen name="MainApp" component={MainAppNavigator} />
             ) : (
               <>
-                <Stack.Screen
-                  name="Welcome"
-                  component={WelcomeScreen}
-                  options={{
-                    headerShown: false
-                  }}
-                />
-                <Stack.Screen
-                  name="SignUp"
-                  component={SignUpScreen}
-                  options={{
-                    title: t("auth.createAccount"),
-                    headerStyle: {
-                      backgroundColor: "#000000",
-                    },
-                    headerTintColor: "#fff",
-                    headerBackTitle: t("navigation.back"),
-                  }}
-                  listeners={({ navigation }) => ({
-                    beforeRemove: (e) => {
-                      if (e.data.action.type === "GO_BACK") {
-                        e.preventDefault();
-                        navigation.navigate("Welcome");
-                      }
-                    },
-                  })}
-                />
-                <Stack.Screen
-                  name="ForgotPassword"
-                  component={ForgotPasswordScreen}
-                  options={{
-                    title: t("auth.forgotPassword"),
-                    headerStyle: {
-                      backgroundColor: "#000000",
-                    },
-                    headerTintColor: "#fff",
-                    headerBackTitle: t("navigation.back"),
-                  }}
-                />
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="SignUp" component={SignUpScreen} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
               </>
             )}
-            <Stack.Screen
-              name="PetrolStationDetails"
-              component={PetrolStationDetailsScreen}
-              options={({ route }) => ({
-                title: route.params.station.name,
-                headerBackTitle: t("navigation.back"),
-                headerStyle: {
-                  backgroundColor: "#000000",
-                },
-                headerTintColor: "#fff",
-              })}
-            />
+            {/* Common screens can be placed outside the conditional logic if they can be accessed from both states */}
+            {/* Example:
+            <Stack.Screen name="PetrolStationDetails" component={PetrolStationDetailsScreen} />
+            */}
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
     </GestureHandlerRootView>
   );
 }
+
+// NOTE: Your previous setup had PetrolStationDetailsScreen inside the authenticated stack.
+// If you navigate to it from within MainAppNavigator, that's perfect.
+// If it needs to be accessible from anywhere, you might adjust the navigator structure.
+// The structure above is a simplified, common pattern.

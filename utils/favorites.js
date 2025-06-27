@@ -1,17 +1,19 @@
-import { getFirestore, doc, setDoc, deleteDoc, collection, getDocs, getDoc } from "firebase/firestore";
-import { getCurrentUser } from "./auth";
+import { db, auth } from './firebase';
+import firestore from '@react-native-firebase/firestore';
 
 // Add a station to favorites
 export const addToFavorites = async (stationId) => {
   try {
-    const currentUser = getCurrentUser();
+    const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("User not authenticated");
 
-    const db = getFirestore();
-    const favoriteRef = doc(db, `users/${currentUser.uid}/favorites/${stationId}`);
+    // Use the native chained syntax to get a reference to the document
+    const favoriteRef = db.collection('users').doc(currentUser.uid).collection('favorites').doc(stationId);
     
-    await setDoc(favoriteRef, {
-      addedAt: new Date().toISOString(),
+    // Use .set() on the document reference
+    await favoriteRef.set({
+      // Using a server timestamp is best practice
+      addedAt: firestore.FieldValue.serverTimestamp(),
     });
 
     return true;
@@ -24,13 +26,12 @@ export const addToFavorites = async (stationId) => {
 // Remove a station from favorites
 export const removeFromFavorites = async (stationId) => {
   try {
-    const currentUser = getCurrentUser();
+    const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("User not authenticated");
 
-    const db = getFirestore();
-    const favoriteRef = doc(db, `users/${currentUser.uid}/favorites/${stationId}`);
-    
-    await deleteDoc(favoriteRef);
+    // Use the native chained syntax to get a reference and then delete
+    const favoriteRef = db.collection('users').doc(currentUser.uid).collection('favorites').doc(stationId);
+    await favoriteRef.delete();
 
     return true;
   } catch (error) {
@@ -42,14 +43,15 @@ export const removeFromFavorites = async (stationId) => {
 // Check if a station is favorited
 export const isStationFavorited = async (stationId) => {
   try {
-    const currentUser = getCurrentUser();
+    const currentUser = auth.currentUser;
     if (!currentUser) return false;
 
-    const db = getFirestore();
-    const favoriteRef = doc(db, `users/${currentUser.uid}/favorites/${stationId}`);
-    const favoriteDoc = await getDoc(favoriteRef);
+    // Use the native chained syntax and the .get() method
+    const favoriteRef = db.collection('users').doc(currentUser.uid).collection('favorites').doc(stationId);
+    const favoriteDoc = await favoriteRef.get();
 
-    return favoriteDoc.exists();
+    // The .exists property is the same in the native SDK
+    return favoriteDoc.exists;
   } catch (error) {
     console.error("Error checking favorite status:", error);
     return false;
@@ -59,16 +61,17 @@ export const isStationFavorited = async (stationId) => {
 // Get all favorite station IDs for the current user
 export const getFavoriteStationIds = async () => {
   try {
-    const currentUser = getCurrentUser();
+    const currentUser = auth.currentUser;
     if (!currentUser) return [];
 
-    const db = getFirestore();
-    const favoritesRef = collection(db, `users/${currentUser.uid}/favorites`);
-    const favoritesSnapshot = await getDocs(favoritesRef);
+    // Use the native chained syntax and the .get() method
+    const favoritesRef = db.collection('users').doc(currentUser.uid).collection('favorites');
+    const favoritesSnapshot = await favoritesRef.get();
     
+    // The snapshot mapping logic is the same
     return favoritesSnapshot.docs.map(doc => doc.id);
   } catch (error) {
     console.error("Error getting favorite station IDs:", error);
     return [];
   }
-}; 
+};

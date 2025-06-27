@@ -1,28 +1,14 @@
-// firebase.js
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { 
-  getAuth, 
-  initializeAuth,
-  getReactNativePersistence
-} from "firebase/auth";
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+// utils/firebase.js - FINAL CORRECTED VERSION
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAgyenYvKy85JCjRb_xkN-XmH90CRtx_pc",
-  authDomain: "mojavto-c67fe.firebaseapp.com",
-  projectId: "mojavto-c67fe",
-  storageBucket: "mojavto-c67fe.firebasestorage.app",
-  messagingSenderId: "130352948782",
-  appId: "1:130352948782:web:2578faad7e60bf5fe361bf",
-};
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// @react-native-firebase initializes automatically from the native config files.
+// There is no manual initialization step.
 
-// Initialize Auth with AsyncStorage persistence
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
+// Get the service instances by calling the imported modules as functions.
+const authInstance = auth();
+const dbInstance = firestore();
 
-export { db, auth };
+// Export them for use in your app.
+export { authInstance as auth, dbInstance as db };

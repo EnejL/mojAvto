@@ -284,6 +284,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
+      {/* Temporarily hidden Petrol Stations tab
       <Tab.Screen
         name="PetrolStationsTab"
         component={PetrolStationsStack}
@@ -298,6 +299,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
+      */}
       {/* Temporarily hidden Settings tab
       <Tab.Screen
         name="SettingsTab"
