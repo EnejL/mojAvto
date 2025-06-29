@@ -2,20 +2,15 @@ export default {
   "expo": {
     "name": "Na Poti",
     "slug": "NaPoti",
-    "version": "1.1.1",
+    "version": "1.1.2", 
     "orientation": "portrait",
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splashscreen.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "googleServicesFile": "./GoogleService-Info.plist",
       "config": {
         "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
@@ -23,25 +18,23 @@ export default {
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon-android.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.yourusername.napoti",
-      "versionCode": 8,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
-        }
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "We need your location to show nearby petrol stations and calculate distances.",
+          "locationAlwaysPermission": "We need your location to show nearby petrol stations and calculate distances.",
+          "locationWhenInUsePermission": "We need your location to show nearby petrol stations and calculate distances."
+        }
+      ],
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
       [
@@ -50,26 +43,13 @@ export default {
           "ios": {
             "useFrameworks": "static",
             "infoPlist": {
-              "NSLocationWhenInUseUsageDescription": "We need your location to show nearby petrol stations and calculate distances."
-            },
-            "extraPods": [
-              {
-                "name": "GoogleUtilities",
-                "modular_headers": true
-              },
-              {
-                "name": "GoogleDataTransport",
-                "modular_headers": true
-              },
-              {
-                "name": "GoogleAppMeasurement",
-                "modular_headers": true
-              },
-              {
-                "name": "nanopb",
-                "modular_headers": true
-              }
-            ]
+              "NSLocationWhenInUseUsageDescription": "We need your location to show nearby petrol stations and calculate distances.",
+              "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show nearby petrol stations and calculate distances.",
+              "NSLocationUsageDescription": "We need your location to show nearby petrol stations and calculate distances."
+            }
+          },
+          "android": {
+            "minSdkVersion": 21
           }
         }
       ]

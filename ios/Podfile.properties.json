@@ -3,6 +3,5 @@
   "EX_DEV_CLIENT_NETWORK_INSPECTOR": "true",
   "newArchEnabled": "true",
   "ios.useFrameworks": "static",
-  "apple.extraPods": "[{\"name\":\"GoogleUtilities\",\"modular_headers\":true},{\"name\":\"GoogleDataTransport\",\"modular_headers\":true},{\"name\":\"GoogleAppMeasurement\",\"modular_headers\":true},{\"name\":\"nanopb\",\"modular_headers\":true}]",
   "apple.privacyManifestAggregationEnabled": "true"
 }

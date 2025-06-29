@@ -6,10 +6,7 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "cache": {
-        "key": "ios-development-1.1.1"
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal"
