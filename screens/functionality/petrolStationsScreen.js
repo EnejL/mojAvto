@@ -15,8 +15,7 @@ import {
 import { Card, Title, Paragraph, Divider, Surface, Searchbar } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { TabView, TabBar } from "react-native-tab-view";
-import ClusteredMapView from "react-native-map-clustering";
-import { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
 import { db } from "../../utils/firebase";
@@ -239,6 +238,7 @@ const PetrolStationsScreen = ({ navigation }) => {
         if (data && data.results) {
           setStations(data.results);
           setFilteredStations(data.results);
+          setLastRefresh(new Date());
         } else {
           setError(t("petrolStations.fetchError"));
         }
@@ -251,7 +251,7 @@ const PetrolStationsScreen = ({ navigation }) => {
     };
 
     loadPetrolStations();
-  }, [t]);
+  }, []);
 
   // Modify the loadStations function
   const loadStations = async (forceRefresh = false) => {
@@ -778,47 +778,84 @@ const StationMapScreen = ({ stations, loading, error, navigation }) => {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <ClusteredMapView
-        ref={mapRef}
-        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-        style={styles.map}
-        initialRegion={region}
-        onRegionChangeComplete={setRegion}
-        showsUserLocation={true}
-        clusterColor="#2e7d32"
-        clusterTextColor="#ffffff"
-        clusterBorderColor="#ffffff"
-        clusterBorderWidth={4}
-        radius={50}
-        maxZoom={15}
-        minZoom={1}
-        extent={512}
-        nodeSize={64}
-        animationEnabled={true}
-        spiralEnabled={true}
-      >
-        {renderMarkers()}
-      </ClusteredMapView>
+  // In StationMapScreen, replace the entire return block with this:
 
-      {/* Custom location button */}
-      <TouchableOpacity style={styles.myLocationButton} onPress={centerOnUser}>
-        <MaterialIcons name="my-location" size={24} color="#000" />
+return (
+  <View style={styles.container}>
+    <MapView
+      ref={mapRef}
+      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+      style={styles.map}
+      initialRegion={region}
+      onRegionChangeComplete={setRegion}
+      showsUserLocation={true}
+    >
+      {/*
+        THIS IS THE FIX: We loop over the 'stations' array, and for each
+        'station' object in the array, we render a unique Marker.
+      */}
+      {stations.map((station) => (
+        <Marker
+          key={station.pk}
+          coordinate={{ latitude: station.lat, longitude: station.lng }}
+          // This prop enables built-in clustering for each marker
+          clustering={{
+            enabled: true,
+            clusterColor: '#2e7d32', // Optional: customize cluster color
+          }}
+        >
+          {/* Your existing Callout code goes here */}
+          <Callout
+            tooltip
+            onPress={() =>
+              navigation.navigate("PetrolStationDetails", { station })
+            }
+          >
+            <View style={styles.calloutContainer}>
+              <View style={styles.calloutHeader}>
+                <Text style={styles.calloutTitle}>{station.name}</Text>
+              </View>
+              <Text style={styles.calloutAddress}>{station.address}</Text>
+              <View style={styles.calloutPrices}>
+                {station.prices["95"] && (
+                  <Text style={styles.calloutPrice}>
+                    95: {station.prices["95"]} €
+                  </Text>
+                )}
+                {station.prices["dizel"] && (
+                  <Text style={styles.calloutPrice}>
+                    Dizel: {station.prices["dizel"]} €
+                  </Text>
+                )}
+              </View>
+              <View style={styles.calloutButton}>
+                <MaterialIcons name="info-outline" size={20} color="#2e7d32" />
+                <Text style={styles.calloutButtonText}>
+                  {t("petrolStations.viewDetails")}
+                </Text>
+              </View>
+            </View>
+          </Callout>
+        </Marker>
+      ))}
+    </MapView>
+
+    {/* Your map control buttons remain the same */}
+    <TouchableOpacity style={styles.myLocationButton} onPress={centerOnUser}>
+      <MaterialIcons name="my-location" size={24} color="#000" />
+    </TouchableOpacity>
+
+    <View style={styles.zoomControlsContainer}>
+      <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
+        <MaterialIcons name="add" size={24} color="#000" />
       </TouchableOpacity>
-
-      {/* Zoom controls */}
-      <View style={styles.zoomControlsContainer}>
-        <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
-          <MaterialIcons name="add" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
-          <MaterialIcons name="remove" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
+        <MaterialIcons name="remove" size={24} color="#000" />
+      </TouchableOpacity>
     </View>
-  );
-};
+  </View>
+);
+}
 
 const styles = StyleSheet.create({
   container: {
