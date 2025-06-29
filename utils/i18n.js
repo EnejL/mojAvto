@@ -118,6 +118,7 @@ const resources = {
           unknownError: "Prišlo je do napake. Prosimo poskusite ponovno",
           emailTaken: "Ta email je že v uporabi",
           weakPassword: "Geslo mora vsebovati vsaj 6 znakov",
+          googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite kasneje.",
         },
         haveAccount: "Že imate račun? Prijavite se",
         needAccount: "Potrebujete račun?",

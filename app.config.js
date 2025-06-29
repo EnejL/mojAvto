@@ -35,6 +35,14 @@ export default {
           "locationWhenInUsePermission": "We need your location to show nearby petrol stations and calculate distances."
         }
       ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "ios": {
+            "reversedClientId": "com.googleusercontent.apps.130352948782-s3sa4o899noegmhnjh6sofe898ieqgaf"
+          }
+        }
+      ],
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
       [
