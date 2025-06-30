@@ -1,7 +1,7 @@
 {
   "name": "napoti",
   "license": "0BSD",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -16,7 +16,7 @@
     "@react-native-firebase/app": "^22.2.1",
     "@react-native-firebase/auth": "^22.2.1",
     "@react-native-firebase/firestore": "^22.2.1",
-    "@react-native-google-signin/google-signin": "^11.0.0",
+    "@react-native-google-signin/google-signin": "^11.0.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/drawer": "^7.1.1",
     "@react-navigation/material-top-tabs": "^7.1.1",
@@ -40,7 +40,6 @@
     "react-native-element-dropdown": "^2.12.4",
     "react-native-gesture-handler": "^2.24.0",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
-    "react-native-map-clustering": "^3.4.2",
     "react-native-maps": "1.20.1",
     "react-native-pager-view": "6.7.1",
     "react-native-paper": "^5.13.1",

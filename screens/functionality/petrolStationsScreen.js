@@ -15,8 +15,7 @@ import {
 import { Card, Title, Paragraph, Divider, Surface, Searchbar } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { TabView, TabBar } from "react-native-tab-view";
-import ClusteredMapView from "react-native-map-clustering";
-import { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
 import { db } from "../../utils/firebase";
@@ -212,6 +211,30 @@ const PetrolStationsScreen = ({ navigation }) => {
   const [favoriteStations, setFavoriteStations] = useState([]);
   const [lastRefresh, setLastRefresh] = useState(null);
 
+  const [favoriteStationIds, setFavoriteStationIds] = useState(new Set()); 
+
+  const fetchFavoriteIds = useCallback(async () => {
+      try {
+        const currentUser = getCurrentUser();
+        if (!currentUser) return;
+        
+        const favoritesSnapshot = await db.collection('users').doc(currentUser.uid).collection('favorites').get();
+        const ids = favoritesSnapshot.docs.map(doc => doc.id);
+        
+        // Store the IDs in a Set for O(1) lookup performance
+        setFavoriteStationIds(new Set(ids)); 
+      } catch (error) {
+        console.error("Error fetching favorite IDs:", error);
+      }
+  }, []);
+
+  useEffect(() => {
+    const initialLoad = async () => {
+        await fetchFavoriteIds();
+    };
+    initialLoad();
+  }, [fetchFavoriteIds]);
+
   useEffect(() => {
     const loadPetrolStations = async () => {
       setLoading(true);
@@ -239,6 +262,7 @@ const PetrolStationsScreen = ({ navigation }) => {
         if (data && data.results) {
           setStations(data.results);
           setFilteredStations(data.results);
+          setLastRefresh(new Date());
         } else {
           setError(t("petrolStations.fetchError"));
         }
@@ -251,10 +275,10 @@ const PetrolStationsScreen = ({ navigation }) => {
     };
 
     loadPetrolStations();
-  }, [t]);
+  }, []);
 
   // Modify the loadStations function
-  const loadStations = async (forceRefresh = false) => {
+  const loadStations = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       const data = await fetchPetrolStations(forceRefresh);
@@ -270,7 +294,7 @@ const PetrolStationsScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchFavoriteStations, t]);
 
   // Modify the useFocusEffect
   useFocusEffect(
@@ -285,7 +309,7 @@ const PetrolStationsScreen = ({ navigation }) => {
     }, [lastRefresh])
   );
 
-  const handleSearch = (query) => {
+  const handleSearch = useCallback((query) => {
     setSearchQuery(query);
     if (query) {
       const filtered = stations.filter(station =>
@@ -296,7 +320,7 @@ const PetrolStationsScreen = ({ navigation }) => {
     } else {
       setFilteredStations(stations);
     }
-  };
+  }, [stations]);
 
   const handleDeleteStation = (stationId) => {
     Alert.alert(
@@ -325,7 +349,7 @@ const PetrolStationsScreen = ({ navigation }) => {
   };
 
   // Add new function to fetch favorite stations
-  const fetchFavoriteStations = async () => {
+  const fetchFavoriteStations = useCallback(async () => {
     try {
       const currentUser = getCurrentUser();
       if (!currentUser) return;
@@ -348,7 +372,7 @@ const PetrolStationsScreen = ({ navigation }) => {
       console.error("Error fetching favorite stations:", error);
       return []; 
     }
-  };
+  }, [stations]);
 
   // Add useEffect to load favorites when component mounts
   useEffect(() => {
@@ -421,6 +445,8 @@ const PetrolStationsScreen = ({ navigation }) => {
             searchQuery={searchQuery}
             onSearch={handleSearch}
             onRefresh={loadStations}
+            favoriteStationIds={favoriteStationIds}
+            onFavoriteChange={fetchFavoriteIds}
             fetchFavorites={fetchFavoriteStations}
           />
         ) : (
@@ -434,6 +460,8 @@ const PetrolStationsScreen = ({ navigation }) => {
             onSearch={handleSearch}
             isFavorites={true}
             onRefresh={loadStations}
+            favoriteStationIds={favoriteStationIds}
+            onFavoriteChange={fetchFavoriteIds}
             fetchFavorites={fetchFavoriteStations}
           />
         )}
@@ -444,7 +472,6 @@ const PetrolStationsScreen = ({ navigation }) => {
 
 // List view component
 const StationListScreen = ({ 
-  stations, 
   filteredStations,
   loading, 
   error, 
@@ -452,28 +479,17 @@ const StationListScreen = ({
   searchQuery,
   onSearch,
   isFavorites = false,
-  onRefresh,
-  fetchFavorites
+  onRefresh,  
+  fetchFavorites,
+  favoriteStationIds,
+  onFavoritesChange,
 }) => {
   const { t } = useTranslation();
-  const [favoriteStatus, setFavoriteStatus] = useState({});
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Load favorite status for all stations
-    const loadFavoriteStatus = async () => {
-      const status = {};
-      for (const station of stations) {
-        status[station.pk] = await isStationFavorited(station.pk.toString());
-      }
-      setFavoriteStatus(status);
-    };
-
-    loadFavoriteStatus();
-  }, [stations]);
 
   const handleRefresh = React.useCallback(async () => {
-    if (!isFavorites) return; // Only allow refresh in favorites tab
+    if (!isFavorites) return;
     
     setRefreshing(true);
     try {
@@ -489,33 +505,28 @@ const StationListScreen = ({
     navigation.navigate("PetrolStationDetails", { station });
   };
 
-  const toggleFavorite = async (stationId) => {
-    try {
-      const isFavorited = favoriteStatus[stationId];
-      if (isFavorited) {
-        await removeFromFavorites(stationId.toString());
-      } else {
-        await addToFavorites(stationId.toString());
-      }
-      
-      // Update local state
-      setFavoriteStatus(prev => ({
-        ...prev,
-        [stationId]: !isFavorited
-      }));
+const toggleFavorite = useCallback(async (stationId) => {
+  try {
+    const isFavorited = favoriteStationIds.has(stationId.toString());
 
-      // If we're in favorites tab, refresh the list
-      if (isFavorites) {
-        await fetchFavorites();
-      }
-    } catch (error) {
-      console.error("Error toggling favorite:", error);
-      Alert.alert(t("common.error"), t("common.error.favorite"));
+    if (isFavorited) {
+      await removeFromFavorites(stationId.toString());
+    } else {
+      await addToFavorites(stationId.toString());
     }
-  };
+    
+    if (onFavoritesChange) {
+      await onFavoritesChange();
+    }
 
-  const renderItem = ({ item }) => {
-    const isFavorited = favoriteStatus[item.pk];
+  } catch (error) {
+    console.error("Error toggling favorite:", error);
+    Alert.alert(t("common.error"), t("common.error.favorite"));
+  }
+}, [favoriteStationIds, onFavoritesChange, t]);
+
+  const renderItem = useCallback(({ item }) => {
+    const isFavorited = favoriteStationIds.has(item.pk.toString());
 
     return (
       <TouchableOpacity
@@ -540,7 +551,7 @@ const StationListScreen = ({
         </View>
       </TouchableOpacity>
     );
-  };
+  }, [favoriteStationIds, navigation, toggleFavorite]);
 
   if (loading) {
     return (
@@ -778,47 +789,84 @@ const StationMapScreen = ({ stations, loading, error, navigation }) => {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <ClusteredMapView
-        ref={mapRef}
-        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-        style={styles.map}
-        initialRegion={region}
-        onRegionChangeComplete={setRegion}
-        showsUserLocation={true}
-        clusterColor="#2e7d32"
-        clusterTextColor="#ffffff"
-        clusterBorderColor="#ffffff"
-        clusterBorderWidth={4}
-        radius={50}
-        maxZoom={15}
-        minZoom={1}
-        extent={512}
-        nodeSize={64}
-        animationEnabled={true}
-        spiralEnabled={true}
-      >
-        {renderMarkers()}
-      </ClusteredMapView>
+  // In StationMapScreen, replace the entire return block with this:
 
-      {/* Custom location button */}
-      <TouchableOpacity style={styles.myLocationButton} onPress={centerOnUser}>
-        <MaterialIcons name="my-location" size={24} color="#000" />
+return (
+  <View style={styles.container}>
+    <MapView
+      ref={mapRef}
+      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+      style={styles.map}
+      initialRegion={region}
+      onRegionChangeComplete={setRegion}
+      showsUserLocation={true}
+    >
+      {/*
+        THIS IS THE FIX: We loop over the 'stations' array, and for each
+        'station' object in the array, we render a unique Marker.
+      */}
+      {stations.map((station) => (
+        <Marker
+          key={station.pk}
+          coordinate={{ latitude: station.lat, longitude: station.lng }}
+          // This prop enables built-in clustering for each marker
+          clustering={{
+            enabled: true,
+            clusterColor: '#2e7d32', // Optional: customize cluster color
+          }}
+        >
+          {/* Your existing Callout code goes here */}
+          <Callout
+            tooltip
+            onPress={() =>
+              navigation.navigate("PetrolStationDetails", { station })
+            }
+          >
+            <View style={styles.calloutContainer}>
+              <View style={styles.calloutHeader}>
+                <Text style={styles.calloutTitle}>{station.name}</Text>
+              </View>
+              <Text style={styles.calloutAddress}>{station.address}</Text>
+              <View style={styles.calloutPrices}>
+                {station.prices["95"] && (
+                  <Text style={styles.calloutPrice}>
+                    95: {station.prices["95"]} €
+                  </Text>
+                )}
+                {station.prices["dizel"] && (
+                  <Text style={styles.calloutPrice}>
+                    Dizel: {station.prices["dizel"]} €
+                  </Text>
+                )}
+              </View>
+              <View style={styles.calloutButton}>
+                <MaterialIcons name="info-outline" size={20} color="#2e7d32" />
+                <Text style={styles.calloutButtonText}>
+                  {t("petrolStations.viewDetails")}
+                </Text>
+              </View>
+            </View>
+          </Callout>
+        </Marker>
+      ))}
+    </MapView>
+
+    {/* Your map control buttons remain the same */}
+    <TouchableOpacity style={styles.myLocationButton} onPress={centerOnUser}>
+      <MaterialIcons name="my-location" size={24} color="#000" />
+    </TouchableOpacity>
+
+    <View style={styles.zoomControlsContainer}>
+      <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
+        <MaterialIcons name="add" size={24} color="#000" />
       </TouchableOpacity>
-
-      {/* Zoom controls */}
-      <View style={styles.zoomControlsContainer}>
-        <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
-          <MaterialIcons name="add" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
-          <MaterialIcons name="remove" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
+        <MaterialIcons name="remove" size={24} color="#000" />
+      </TouchableOpacity>
     </View>
-  );
-};
+  </View>
+);
+}
 
 const styles = StyleSheet.create({
   container: {

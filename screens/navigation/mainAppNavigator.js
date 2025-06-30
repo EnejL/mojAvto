@@ -10,6 +10,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 // Import screens
 import MyVehiclesScreen from "../functionality/myVehiclesScreen";
 import PetrolStationsScreen from "../functionality/petrolStationsScreen";
+import PetrolStationDetailsScreen from "../functionality/petrolStationDetailsScreen";
 import SettingsScreen from "../functionality/settingsScreen";
 import VehicleDetailsScreen from "../functionality/vehicleDetailsScreen";
 import AddVehicleScreen from "../functionality/addVehicleScreen";
@@ -150,6 +151,14 @@ function PetrolStationsStack() {
         component={AuthScreen}
         options={{ title: t("auth.title") }}
       />
+      <Stack.Screen
+        name="PetrolStationDetails"
+        component={PetrolStationDetailsScreen}
+        options={({ route }) => ({
+          title: route.params.station.name,
+          headerShown: true,
+        })}
+      />
     </Stack.Navigator>
   );
 }
@@ -284,7 +293,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
-      {/* Temporarily hidden Petrol Stations tab
+      {
       <Tab.Screen
         name="PetrolStationsTab"
         component={PetrolStationsStack}
@@ -299,7 +308,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
-      */}
+      }
       {/* Temporarily hidden Settings tab
       <Tab.Screen
         name="SettingsTab"
