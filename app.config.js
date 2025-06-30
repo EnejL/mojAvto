@@ -26,6 +26,7 @@ export default {
         "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
+
     "plugins": [
       [
         "expo-location",
@@ -50,11 +51,17 @@ export default {
         {
           "ios": {
             "useFrameworks": "static",
-            "infoPlist": {
-              "NSLocationWhenInUseUsageDescription": "We need your location to show nearby petrol stations and calculate distances.",
-              "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show nearby petrol stations and calculate distances.",
-              "NSLocationUsageDescription": "We need your location to show nearby petrol stations and calculate distances."
-            }
+            "extraPods": [
+              { "name": "FirebaseAuth", "modular_headers": true },
+              { "name": "FirebaseAuthInterop", "modular_headers": true },
+              { "name": "FirebaseAppCheckInterop", "modular_headers": true },
+              { "name": "FirebaseCore", "modular_headers": true },
+              { "name": "FirebaseCoreExtension", "modular_headers": true },
+              { "name": "GoogleUtilities", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true },
+              { "name": "FirebaseFirestore", "modular_headers": true },
+              { "name": "FirebaseFirestoreInternal", "modular_headers": true }
+            ]
           },
           "android": {
             "minSdkVersion": 21
