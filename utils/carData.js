@@ -31,7 +31,7 @@ const carData = {
     "Chrysler": [
       "300", "Pacifica", "Voyager", "PT Cruiser", "Sebring", "Concorde", "LHS", "Town & Country", "Aspen", "Crossfire"
     ],
-    "Citroën": [
+    "Citroen": [
       "C1", "C3", "C4", "C5", "C6", "C-Crosser", "DS3", "DS4", "DS5", "Berlingo", "Picasso", "Xsara", "Saxo", "2CV", "Jumper", "Jumpy"
     ],
     "Dodge": [

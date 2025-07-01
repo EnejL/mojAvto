@@ -49,7 +49,6 @@ const AddVehicleScreen = ({ navigation }) => {
   const handleAddVehicle = async () => {
     // Validate required inputs
     if (
-      !vehicleData.name.trim() ||
       !vehicleData.make.trim() ||
       !vehicleData.model.trim()
     ) {
@@ -62,7 +61,7 @@ const AddVehicleScreen = ({ navigation }) => {
     try {
       // Create new vehicle object
       const newVehicle = {
-        name: vehicleData.name.trim(),
+        name: vehicleData.name.trim() || vehicleData.make.trim(),
         make: vehicleData.make.trim(),
         model: vehicleData.model.trim(),
         numberPlate: vehicleData.numberPlate.trim(),
@@ -128,7 +127,6 @@ const AddVehicleScreen = ({ navigation }) => {
         <View style={styles.inputContainer}>
           <View style={styles.labelContainer}>
             <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
-            {renderRequiredLabel()}
           </View>
           <TextInput
             value={vehicleData.name}
@@ -138,6 +136,7 @@ const AddVehicleScreen = ({ navigation }) => {
             style={styles.input}
             disabled={saving}
             mode="outlined"
+            // placeholder={t("vehicles.namePlaceholder") || "Optional - will use brand name if empty"}
           />
         </View>
 

@@ -51,7 +51,6 @@ export default function EditVehicleScreen({ navigation, route }) {
   const handleBrandSelection = (brand) => {
     setVehicleData({ ...vehicleData, make: brand, model: "" });
 
-    // Fetch models for this brand
     fetchModelsForBrand(brand);
   };
 
@@ -77,7 +76,6 @@ export default function EditVehicleScreen({ navigation, route }) {
   const handleSave = async () => {
     // Validate inputs
     if (
-      !vehicleData.name.trim() ||
       !vehicleData.make.trim() ||
       !vehicleData.model.trim()
     ) {
@@ -89,7 +87,7 @@ export default function EditVehicleScreen({ navigation, route }) {
     try {
       // Update vehicle in Firestore
       await updateVehicle(vehicle.id, {
-        name: vehicleData.name.trim(),
+        name: vehicleData.name.trim() || vehicleData.make.trim(),
         make: vehicleData.make.trim(),
         model: vehicleData.model.trim(),
         numberPlate: vehicleData.numberPlate.trim(),
@@ -152,10 +150,8 @@ export default function EditVehicleScreen({ navigation, route }) {
             <View style={[styles.inputContainer, { zIndex: 4 }]}>
             <View style={styles.labelContainer}>
               <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
-              <Text style={styles.requiredLabel}>*</Text>
             </View>
             <TextInput
-              label={t("vehicles.name")}
               value={vehicleData.name}
               onChangeText={(text) =>
                 setVehicleData({ ...vehicleData, name: text })
@@ -163,7 +159,6 @@ export default function EditVehicleScreen({ navigation, route }) {
               style={styles.input}
               mode="outlined"
               disabled={saving}
-              placeholder={t("vehicles.namePlaceholder")}
             />
           </View>
 
