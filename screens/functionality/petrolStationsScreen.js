@@ -204,14 +204,19 @@ const PetrolStationsScreen = ({ navigation }) => {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("map"); // 'map', 'list', or 'favorites'
+  // const [activeTab, setActiveTab] = useState("map");
   const [userLocation, setUserLocation] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredStations, setFilteredStations] = useState([]);
   const [favoriteStations, setFavoriteStations] = useState([]);
   const [lastRefresh, setLastRefresh] = useState(null);
-
-  const [favoriteStationIds, setFavoriteStationIds] = useState(new Set()); 
+  const [favoriteStationIds, setFavoriteStationIds] = useState(new Set());
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'map', title: t('petrolStations.map') },
+    { key: 'list', title: t('petrolStations.list') },
+    { key: 'favorites', title: t('petrolStations.favorites') },
+  ]);
 
   const fetchFavoriteIds = useCallback(async () => {
       try {
@@ -374,68 +379,23 @@ const PetrolStationsScreen = ({ navigation }) => {
     }
   }, [stations]);
 
-  // Add useEffect to load favorites when component mounts
   useEffect(() => {
     fetchFavoriteStations();
-  }, [stations]); // Re-fetch when stations change
+  }, [stations]);
 
-  return (
-    <View style={{ flex: 1 }}>
-      {/* Custom Tab Bar */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "map" && styles.activeTab]}
-          onPress={() => setActiveTab("map")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "map" && styles.activeTabText,
-            ]}
-          >
-            {t("petrolStations.map")}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "list" && styles.activeTab]}
-          onPress={() => setActiveTab("list")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "list" && styles.activeTabText,
-            ]}
-          >
-            {t("petrolStations.list")}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "favorites" && styles.activeTab]}
-          onPress={() => setActiveTab("favorites")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "favorites" && styles.activeTabText,
-            ]}
-          >
-            {t("petrolStations.favorites")}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tab Content */}
-      <View style={{ flex: 1 }}>
-        {activeTab === "map" ? (
+  const renderScene = useCallback(({ route }) => {
+    switch (route.key) {
+      case 'map':
+        return (
           <StationMapScreen
             stations={stations}
             loading={loading}
             error={error}
             navigation={navigation}
           />
-        ) : activeTab === "list" ? (
+        );
+      case 'list':
+        return (
           <StationListScreen
             stations={stations}
             filteredStations={filteredStations}
@@ -446,10 +406,12 @@ const PetrolStationsScreen = ({ navigation }) => {
             onSearch={handleSearch}
             onRefresh={loadStations}
             favoriteStationIds={favoriteStationIds}
-            onFavoriteChange={fetchFavoriteIds}
+            onFavoritesChange={fetchFavoriteIds}
             fetchFavorites={fetchFavoriteStations}
           />
-        ) : (
+        );
+      case 'favorites':
+        return (
           <StationListScreen
             stations={favoriteStations}
             filteredStations={favoriteStations}
@@ -461,12 +423,46 @@ const PetrolStationsScreen = ({ navigation }) => {
             isFavorites={true}
             onRefresh={loadStations}
             favoriteStationIds={favoriteStationIds}
-            onFavoriteChange={fetchFavoriteIds}
+            onFavoritesChange={fetchFavoriteIds}
             fetchFavorites={fetchFavoriteStations}
           />
-        )}
-      </View>
-    </View>
+        );
+      default:
+        return null;
+    }
+  }, [
+    // Add all variables and functions that renderScene depends on
+    stations,
+    loading,
+    error,
+    navigation,
+    filteredStations,
+    searchQuery,
+    handleSearch,
+    loadStations,
+    favoriteStationIds,
+    fetchFavoriteIds,
+    fetchFavoriteStations,
+    favoriteStations
+  ]);
+
+  return (
+    <TabView
+      navigationState={{ index, routes }}
+      renderScene={renderScene}
+      onIndexChange={setIndex}
+      initialLayout={initialLayout}
+      renderTabBar={props => (
+        <TabBar
+          {...props}
+          indicatorStyle={{ backgroundColor: 'black' }}
+          style={{ backgroundColor: 'white' }}
+          labelStyle={{ color: 'black', fontWeight: 'bold' }}
+          activeColor={'#000000'}
+          inactiveColor={'#777777'}
+        />
+      )}
+    />
   );
 };
 
