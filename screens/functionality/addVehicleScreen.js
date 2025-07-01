@@ -130,7 +130,7 @@ const AddVehicleScreen = ({ navigation }) => {
             <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
             {renderRequiredLabel()}
           </View>
-          {/* <TextInput
+          <TextInput
             value={vehicleData.name}
             onChangeText={(text) =>
               setVehicleData({ ...vehicleData, name: text })
@@ -138,7 +138,7 @@ const AddVehicleScreen = ({ navigation }) => {
             style={styles.input}
             disabled={saving}
             mode="outlined"
-          /> */}
+          />
         </View>
 
         <View style={styles.inputContainer}>
