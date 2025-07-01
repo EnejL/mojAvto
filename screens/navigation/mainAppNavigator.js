@@ -48,7 +48,7 @@ function MyVehiclesStack() {
         component={MyVehiclesScreen}
         options={{
           title: t("vehicles.title"),
-          headerLeft: () => null,
+          headerBackVisible: false,
         }}
       />
       <Stack.Screen
@@ -64,7 +64,6 @@ function MyVehiclesStack() {
               size={24}
               style={styles.headerIcon}
               onPress={() => {
-                // Navigate within the same stack
                 navigation.navigate("EditVehicle", {
                   vehicle: route.params.vehicle,
                 });
@@ -143,7 +142,7 @@ function PetrolStationsStack() {
         component={PetrolStationsScreen}
         options={{
           title: t("navigation.petrolStations"),
-          headerLeft: () => null, // Remove back button
+          // headerLeft: () => null,
         }}
       />
       <Stack.Screen

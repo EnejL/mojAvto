@@ -18,7 +18,7 @@ const resources = {
         add: "Dodaj Vozilo",
         empty: "Še ni dodanih vozil",
         details: "Informacije o vozilu",
-        name: "Ime Vozila",
+        name: "Ime Vozila (neobvezno)",
         make: "Znamka",
         model: "Model",
         modelPlaceholder: "Najprej izberite znamko",
