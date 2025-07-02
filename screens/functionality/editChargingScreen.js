@@ -3,38 +3,43 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  Alert,
   TouchableOpacity,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Animated,
 } from "react-native";
-import { TextInput, Button, Text, Surface, SegmentedButtons } from "react-native-paper";
+import { TextInput, Button, Surface, Text, SegmentedButtons } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { addChargingSession } from "../../utils/firestore";
+import { updateChargingSession, deleteChargingSession } from "../../utils/firestore";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { MaterialIcons } from "@expo/vector-icons";
 
-export default function AddChargingScreen({ route, navigation }) {
+export default function EditChargingScreen({ route, navigation }) {
   const { t } = useTranslation();
+  const { chargingSession, vehicleId } = route.params;
   const [loading, setLoading] = useState(false);
-  const { vehicle } = route.params;
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const scrollViewRef = useRef(null);
-  const animatedHeight = useRef(new Animated.Value(0)).current;
 
-  const [chargingData, setChargingData] = useState({
-    date: new Date(),
-    energyAdded: "",
-    cost: "",
-    odometer: "",
-    chargingLocation: {
-      type: "Public",
-      chargerType: "AC",
-      locationName: "",
-    },
-  });
+  const formatDecimal = (value) => {
+    return value.replace(".", ",");
+  };
+
+  // Parse the date from the charging session object
+  const parseDate = (dateValue) => {
+    if (dateValue instanceof Date) {
+      return dateValue;
+    } else if (dateValue.seconds) {
+      return new Date(dateValue.seconds * 1000);
+    } else {
+      return new Date(dateValue);
+    }
+  };
+
+  const formatDate = (date) => {
+    return date.toISOString().split("T")[0];
+  };
 
   // Charging location type options
   const locationTypeOptions = [
@@ -49,22 +54,23 @@ export default function AddChargingScreen({ route, navigation }) {
     { value: 'DC Fast', label: 'DC Fast' },
   ];
 
-  const formatDecimal = (value) => {
-    return value.replace(".", ",");
-  };
-
-  const formatDate = (date) => {
-    return date.toISOString().split("T")[0];
-  };
+  const [chargingData, setChargingData] = useState({
+    date: parseDate(chargingSession.date),
+    energyAdded: chargingSession.energyAdded.toString().replace(".", ","),
+    cost: chargingSession.cost.toString().replace(".", ","),
+    odometer: chargingSession.odometer.toString(),
+    chargingLocation: {
+      type: chargingSession.chargingLocation?.type || "Public",
+      chargerType: chargingSession.chargingLocation?.chargerType || "AC",
+      locationName: chargingSession.chargingLocation?.locationName || "",
+    },
+  });
 
   const handleDateChange = (event, selectedDate) => {
     // Only update the date if a date was actually selected (user didn't cancel)
     if (selectedDate) {
       setChargingData({ ...chargingData, date: selectedDate });
     }
-
-    // Note: We're not closing the picker here anymore
-    // The picker will stay open until the user taps elsewhere
   };
 
   // Toggle date picker visibility
@@ -80,19 +86,6 @@ export default function AddChargingScreen({ route, navigation }) {
     if (showDatePicker) {
       setShowDatePicker(false);
     }
-  };
-
-  // Toggle more details section
-  const toggleMoreDetails = () => {
-    const toValue = showMoreDetails ? 0 : 200; // Approximate height for the section
-    
-    Animated.timing(animatedHeight, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-    
-    setShowMoreDetails(!showMoreDetails);
   };
 
   const handleSave = async () => {
@@ -114,7 +107,7 @@ export default function AddChargingScreen({ route, navigation }) {
       const energyAdded = parseFloat(parseFloat(energyAddedStr).toFixed(2));
       const cost = parseFloat(parseFloat(costStr).toFixed(2));
 
-      await addChargingSession(vehicle.id, {
+      await updateChargingSession(vehicleId, chargingSession.id, {
         date: formatDate(chargingData.date),
         energyAdded: energyAdded,
         cost: cost,
@@ -128,26 +121,42 @@ export default function AddChargingScreen({ route, navigation }) {
 
       navigation.goBack();
     } catch (error) {
-      console.error("Error saving charging session:", error);
+      console.error("Error updating charging session:", error);
       alert(t("common.error.save"));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(t("common.delete"), t("charging.deleteConfirmMessage"), [
+      {
+        text: t("common.cancel"),
+        style: "cancel",
+      },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setLoading(true);
+            await deleteChargingSession(vehicleId, chargingSession.id);
+            navigation.goBack();
+          } catch (error) {
+            console.error("Error deleting charging session:", error);
+            alert(t("common.error.delete"));
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <View style={styles.container}>
         <ScrollView ref={scrollViewRef}>
-          <Surface style={styles.vehicleInfoCard}>
-            <Text style={styles.vehicleInfoTitle}>
-              {t("vehicles.selected")}:
-            </Text>
-            <Text style={styles.vehicleInfoText}>
-              {vehicle.name} ({vehicle.make} {vehicle.model})
-            </Text>
-          </Surface>
-
           <Surface style={styles.formCard}>
             {/* Date Picker Button */}
             <TouchableOpacity
@@ -214,93 +223,90 @@ export default function AddChargingScreen({ route, navigation }) {
               right={<TextInput.Affix text="km" />}
             />
 
-            {/* Collapsible More Details Section */}
-            <TouchableOpacity 
-              style={styles.moreDetailsButton} 
-              onPress={toggleMoreDetails}
-            >
-              <Text style={styles.moreDetailsText}>
-                {t("charging.moreDetails") || "Add more details"}
-              </Text>
-              <MaterialIcons 
-                name={showMoreDetails ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-                size={24} 
-                color="#666" 
+            {/* Location Type Selector */}
+            <View style={styles.selectorContainer}>
+              <Text style={styles.selectorLabel}>{t("charging.locationType")}</Text>
+              <SegmentedButtons
+                value={chargingData.chargingLocation.type}
+                onValueChange={(value) => setChargingData({ 
+                  ...chargingData, 
+                  chargingLocation: { ...chargingData.chargingLocation, type: value }
+                })}
+                buttons={locationTypeOptions}
+                style={styles.segmentedButtons}
+                disabled={loading}
               />
-            </TouchableOpacity>
+            </View>
 
-            {/* Animated collapsible section */}
-            <Animated.View style={[styles.collapsibleSection, { height: animatedHeight }]}>
-              <View style={styles.collapsibleContent}>
-                {/* Location Type Selector */}
-                <View style={styles.selectorContainer}>
-                  <Text style={styles.selectorLabel}>{t("charging.locationType")}</Text>
-                  <SegmentedButtons
-                    value={chargingData.chargingLocation.type}
-                    onValueChange={(value) => setChargingData({ 
-                      ...chargingData, 
-                      chargingLocation: { ...chargingData.chargingLocation, type: value }
-                    })}
-                    buttons={locationTypeOptions}
-                    style={styles.segmentedButtons}
-                    disabled={loading}
-                  />
-                </View>
+            {/* Charger Type Selector */}
+            <View style={styles.selectorContainer}>
+              <Text style={styles.selectorLabel}>{t("charging.chargerType")}</Text>
+              <SegmentedButtons
+                value={chargingData.chargingLocation.chargerType}
+                onValueChange={(value) => setChargingData({ 
+                  ...chargingData, 
+                  chargingLocation: { ...chargingData.chargingLocation, chargerType: value }
+                })}
+                buttons={chargerTypeOptions}
+                style={styles.segmentedButtons}
+                disabled={loading}
+              />
+            </View>
 
-                {/* Charger Type Selector */}
-                <View style={styles.selectorContainer}>
-                  <Text style={styles.selectorLabel}>{t("charging.chargerType")}</Text>
-                  <SegmentedButtons
-                    value={chargingData.chargingLocation.chargerType}
-                    onValueChange={(value) => setChargingData({ 
-                      ...chargingData, 
-                      chargingLocation: { ...chargingData.chargingLocation, chargerType: value }
-                    })}
-                    buttons={chargerTypeOptions}
-                    style={styles.segmentedButtons}
-                    disabled={loading}
-                  />
-                </View>
+            {/* Optional Location Name */}
+            <TextInput
+              label={t("charging.locationName")}
+              value={chargingData.chargingLocation.locationName}
+              onChangeText={(text) =>
+                setChargingData({ 
+                  ...chargingData, 
+                  chargingLocation: { ...chargingData.chargingLocation, locationName: text }
+                })
+              }
+              style={styles.input}
+              mode="outlined"
+              onFocus={() => setShowDatePicker(false)}
+              placeholder={t("charging.locationNamePlaceholder")}
+            />
+          </Surface>
 
-                {/* Optional Location Name */}
-                <TextInput
-                  label={t("charging.locationName")}
-                  value={chargingData.chargingLocation.locationName}
-                  onChangeText={(text) =>
-                    setChargingData({ 
-                      ...chargingData, 
-                      chargingLocation: { ...chargingData.chargingLocation, locationName: text }
-                    })
-                  }
-                  style={styles.input}
-                  mode="outlined"
-                  onFocus={() => setShowDatePicker(false)}
-                  placeholder={t("charging.locationNamePlaceholder")}
+          <View style={styles.bottomContainer}>
+            <Button
+              mode="outlined"
+              onPress={handleDelete}
+              style={styles.deleteButton}
+              labelStyle={styles.deleteButtonLabel}
+              icon={({ size, color }) => (
+                <MaterialCommunityIcons
+                  name="trash-can"
+                  size={size}
+                  color={color}
                 />
-              </View>
-            </Animated.View>
+              )}
+            >
+              {t("charging.delete")}
+            </Button>
 
             <View style={styles.buttonContainer}>
               <Button
                 mode="outlined"
                 onPress={() => navigation.goBack()}
-                style={styles.button}
+                style={[styles.button, styles.cancelButton]}
                 disabled={loading}
               >
                 {t("common.cancel")}
               </Button>
-
               <Button
                 mode="contained"
                 onPress={handleSave}
-                style={styles.button}
+                style={[styles.button, styles.saveButton]}
                 loading={loading}
                 disabled={loading}
               >
                 {t("common.save")}
               </Button>
             </View>
-          </Surface>
+          </View>
         </ScrollView>
       </View>
     </TouchableWithoutFeedback>
@@ -313,25 +319,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     padding: 16,
   },
-  vehicleInfoCard: {
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    elevation: 2,
-  },
-  vehicleInfoTitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  vehicleInfoText: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
   formCard: {
     padding: 16,
     borderRadius: 8,
     elevation: 2,
+    marginBottom: 16,
   },
   input: {
     marginBottom: 16,
@@ -347,14 +339,6 @@ const styles = StyleSheet.create({
   },
   segmentedButtons: {
     marginBottom: 8,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  button: {
-    width: "48%",
   },
   datePickerButton: {
     borderWidth: 1,
@@ -381,31 +365,28 @@ const styles = StyleSheet.create({
   datePickerValue: {
     fontSize: 16,
   },
-  moreDetailsButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    backgroundColor: '#f9f9f9',
-    marginBottom: 8,
+  bottomContainer: {
+    marginTop: 16,
   },
-  moreDetailsText: {
-    fontSize: 16,
-    color: '#666',
+  deleteButton: {
+    marginBottom: 16,
+    borderColor: "#d32f2f",
   },
-  collapsibleSection: {
-    overflow: 'hidden',
-    marginBottom: 8,
+  deleteButtonLabel: {
+    color: "#d32f2f",
   },
-  collapsibleContent: {
-    padding: 8,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 32,
+  },
+  button: {
+    width: "48%",
+  },
+  cancelButton: {
+    borderColor: "#666",
+  },
+  saveButton: {
+    backgroundColor: "#4CAF50",
   },
 }); 

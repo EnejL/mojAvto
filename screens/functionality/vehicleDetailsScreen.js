@@ -384,81 +384,159 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           </View>
         </Surface>
 
-        {/* Statistics Card */}
-        <Surface style={styles.statsCard}>
-          <Text style={styles.sectionTitle}>{t("vehicles.statistics")}</Text>
-
-          {(fillings.length < 2 && chargingSessions.length < 2) ? (
-            <Text style={styles.emptyText}>{t("common.notEnoughData")}</Text>
-          ) : (
-            <View style={styles.statsGrid}>
-              {/* Fuel Consumption Stats */}
-              {averageFuelConsumption !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>
-                    {t("fillings.avgConsumption")}
-                  </Text>
-                  <Text style={styles.statValue}>
+        {/* Vehicle Statistics - Different layouts for PHEV vs others */}
+        {vehicleType === 'PHEV' ? (
+          // PHEV: Separate cards for fuel, electricity, and combined costs
+          <>
+            {/* Fuel Consumption Card for PHEV */}
+            {averageFuelConsumption !== null && fillings.length >= 2 && (
+              <Surface style={styles.statsCard}>
+                <View style={styles.statCardHeader}>
+                  <Text style={styles.statCardIcon}>⛽</Text>
+                  <Text style={styles.statCardTitle}>Petrol Usage</Text>
+                </View>
+                <View style={styles.statCardContent}>
+                  <Text style={styles.statCardPrimaryValue}>
                     {formatNumber(averageFuelConsumption)} l/100km
                   </Text>
-                </View>
-              )}
-
-              {/* Electricity Consumption Stats */}
-              {averageElectricityConsumption !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>
-                    {t("charging.avgConsumption")}
+                  <Text style={styles.statCardSecondaryValue}>
+                    Total Cost: {formatNumber(totalFuelCost, 2)} €
                   </Text>
-                  <Text style={styles.statValue}>
+                </View>
+              </Surface>
+            )}
+
+            {/* Electric Consumption Card for PHEV */}
+            {averageElectricityConsumption !== null && chargingSessions.length >= 2 && (
+              <Surface style={styles.statsCard}>
+                <View style={styles.statCardHeader}>
+                  <Text style={styles.statCardIcon}>⚡</Text>
+                  <Text style={styles.statCardTitle}>Electricity Usage</Text>
+                </View>
+                <View style={styles.statCardContent}>
+                  <Text style={styles.statCardPrimaryValue}>
                     {formatNumber(averageElectricityConsumption)} kWh/100km
                   </Text>
+                  <Text style={styles.statCardSecondaryValue}>
+                    Total Cost: {formatNumber(totalChargingCost, 2)} €
+                  </Text>
                 </View>
-              )}
+              </Surface>
+            )}
 
-              {/* Cost Statistics */}
-              {averageFuelCost !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t("fillings.avgCost")}</Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(averageFuelCost, 2)} € / {t("fillings.filling")}
-                  </Text>
-                </View>
-              )}
+            {/* Combined Running Cost Card for PHEV */}
+            {(totalFuelCost !== null || totalChargingCost !== null) && (fillings.length >= 2 || chargingSessions.length >= 2) && (() => {
+              // Calculate combined metrics
+              const totalDistance = Math.max(
+                fillings.length >= 2 ? fillings.reduce((max, filling, index) => {
+                  if (index === 0) return 0;
+                  return Math.max(max, filling.odometer - fillings[0].odometer);
+                }, 0) : 0,
+                chargingSessions.length >= 2 ? chargingSessions.reduce((max, session, index) => {
+                  if (index === 0) return 0;
+                  return Math.max(max, session.odometer - chargingSessions[0].odometer);
+                }, 0) : 0
+              );
+              
+              const totalCombinedCost = (totalFuelCost || 0) + (totalChargingCost || 0);
+              const costPer100km = totalDistance > 0 ? (totalCombinedCost / totalDistance) * 100 : 0;
+              const monthlyEstimate = costPer100km * 12; // Assuming 1200km per month
+              
+              return (
+                <Surface style={styles.statsCard}>
+                  <View style={styles.statCardHeader}>
+                    <Text style={styles.statCardIcon}>💰</Text>
+                    <Text style={styles.statCardTitle}>True Running Cost</Text>
+                  </View>
+                  <View style={styles.statCardContent}>
+                    <Text style={styles.statCardPrimaryValue}>
+                      {formatNumber(costPer100km, 2)} € / 100km
+                    </Text>
+                    <Text style={styles.statCardSecondaryValue}>
+                      Est. Monthly Cost: {formatNumber(monthlyEstimate, 0)} €
+                    </Text>
+                  </View>
+                </Surface>
+              );
+            })()}
+          </>
+        ) : (
+          // Non-PHEV: Traditional single card layout
+          <Surface style={styles.statsCard}>
+            <Text style={styles.sectionTitle}>{t("vehicles.statistics")}</Text>
 
-              {averageChargingCost !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t("charging.avgCost")}</Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(averageChargingCost, 2)} € / {t("charging.session")}
-                  </Text>
-                </View>
-              )}
+            {(fillings.length < 2 && chargingSessions.length < 2) ? (
+              <Text style={styles.emptyText}>{t("common.notEnoughData")}</Text>
+            ) : (
+              <View style={styles.statsGrid}>
+                {/* Fuel Consumption Stats */}
+                {averageFuelConsumption !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("fillings.avgConsumption")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageFuelConsumption)} l/100km
+                    </Text>
+                  </View>
+                )}
 
-              {totalFuelCost !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>
-                    {t("fillings.totalCost")}
-                  </Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(totalFuelCost, 2)} €
-                  </Text>
-                </View>
-              )}
+                {/* Electricity Consumption Stats */}
+                {averageElectricityConsumption !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("charging.avgConsumption")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageElectricityConsumption)} kWh/100km
+                    </Text>
+                  </View>
+                )}
 
-              {totalChargingCost !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>
-                    {t("charging.totalCost")}
-                  </Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(totalChargingCost, 2)} €
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-        </Surface>
+                {/* Cost Statistics */}
+                {averageFuelCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>{t("fillings.avgCost")}</Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageFuelCost, 2)} € / {t("fillings.filling")}
+                    </Text>
+                  </View>
+                )}
+
+                {averageChargingCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>{t("charging.avgCost")}</Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageChargingCost, 2)} € / {t("charging.session")}
+                    </Text>
+                  </View>
+                )}
+
+                {totalFuelCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("fillings.totalCost")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(totalFuelCost, 2)} €
+                    </Text>
+                  </View>
+                )}
+
+                {totalChargingCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("charging.totalCost")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(totalChargingCost, 2)} €
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </Surface>
+        )}
 
         {/* Fuel Consumption Graph (only for vehicles with fuel) */}
         {shouldShowFuelButton() && fillings.length > 0 && (
@@ -608,6 +686,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#2e7d32",
+  },
+  // PHEV Statistics Card Styles
+  statCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  statCardIcon: {
+    fontSize: 24,
+    marginRight: 8,
+  },
+  statCardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  statCardContent: {
+    alignItems: "flex-start",
+  },
+  statCardPrimaryValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 4,
+  },
+  statCardSecondaryValue: {
+    fontSize: 14,
+    color: "#666",
   },
   fillingsCard: {
     margin: 16,

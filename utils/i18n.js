@@ -100,6 +100,8 @@ const resources = {
         totalCost: "Skupni strošek polnjenj",
         deleteConfirmMessage: "Ste prepričani, da želite izbrisati to polnjenje?",
         consumptionUnit: "kWh/100 km",
+        moreDetails: "Dodaj podrobnosti",
+        delete: "Izbriši polnjenje",
       },
       petrolStations: {
         title: "Bencinske Črpalke",

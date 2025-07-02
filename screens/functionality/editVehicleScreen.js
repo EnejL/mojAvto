@@ -8,10 +8,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import { TextInput, Button, Surface, Text, SegmentedButtons } from "react-native-paper";
+import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { updateVehicle, deleteVehicle } from "../../utils/firestore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Dropdown } from 'react-native-element-dropdown';
 import AutocompleteInput from "../../components/AutocompleteInput";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -35,12 +36,12 @@ export default function EditVehicleScreen({ navigation, route }) {
   const [carModels, setCarModels] = useState([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
 
-  // Vehicle type options for SegmentedButtons
+  // Vehicle type options for Dropdown
   const vehicleTypeOptions = [
-    { value: 'ICE', label: 'ICE' },
-    { value: 'HYBRID', label: 'Hybrid' },
-    { value: 'PHEV', label: 'PHEV' },
-    { value: 'BEV', label: 'BEV' },
+    { label: 'ICE (Internal Combustion Engine)', value: 'ICE' },
+    { label: 'Hybrid (Gasoline + Electric)', value: 'HYBRID' },
+    { label: 'PHEV (Plug-in Hybrid Electric)', value: 'PHEV' },
+    { label: 'BEV (Battery Electric Vehicle)', value: 'BEV' },
   ];
 
   useEffect(() => {
@@ -285,12 +286,18 @@ export default function EditVehicleScreen({ navigation, route }) {
               <Text style={styles.inputLabel}>{t("vehicles.vehicleType")}</Text>
               {renderRequiredLabel()}
             </View>
-            <SegmentedButtons
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              data={vehicleTypeOptions}
+              maxHeight={300}
+              labelField="label"
+              valueField="value"
+              placeholder="Select vehicle type"
               value={vehicleData.vehicleType}
-              onValueChange={(value) => setVehicleData({ ...vehicleData, vehicleType: value })}
-              buttons={vehicleTypeOptions}
-              style={styles.segmentedButtons}
-              disabled={saving}
+              onChange={(item) => setVehicleData({ ...vehicleData, vehicleType: item.value })}
+              disable={saving}
             />
           </View>
 
@@ -419,8 +426,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: "#fff",
   },
-  segmentedButtons: {
+  dropdown: {
+    height: 50,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
     marginTop: 8,
+  },
+  placeholderStyle: {
+    fontSize: 16,
+    color: '#999',
+  },
+  selectedTextStyle: {
+    fontSize: 16,
   },
   deleteButton: {
     margin: 0,
