@@ -9,7 +9,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import { Button, Title, Text, TextInput } from "react-native-paper";
+import { Button, Title, Text, TextInput, SegmentedButtons } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { addVehicle } from "../../utils/firestore";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
@@ -23,11 +23,22 @@ const AddVehicleScreen = ({ navigation }) => {
     make: "",
     model: "",
     numberPlate: "",
+    vehicleType: "ICE", // Default to ICE
+    fuelTankSize: "",
+    batteryCapacity: "",
   });
   const [saving, setSaving] = useState(false);
   const [carBrands, setCarBrands] = useState([]);
   const [carModels, setCarModels] = useState([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
+
+  // Vehicle type options for SegmentedButtons
+  const vehicleTypeOptions = [
+    { value: 'ICE', label: 'ICE' },
+    { value: 'HYBRID', label: 'Hybrid' },
+    { value: 'PHEV', label: 'PHEV' },
+    { value: 'BEV', label: 'BEV' },
+  ];
 
   // Load car brands when component mounts
   useEffect(() => {
@@ -50,7 +61,8 @@ const AddVehicleScreen = ({ navigation }) => {
     // Validate required inputs
     if (
       !vehicleData.make.trim() ||
-      !vehicleData.model.trim()
+      !vehicleData.model.trim() ||
+      !vehicleData.vehicleType
     ) {
       alert(t("common.error.required"));
       return;
@@ -65,7 +77,21 @@ const AddVehicleScreen = ({ navigation }) => {
         make: vehicleData.make.trim(),
         model: vehicleData.model.trim(),
         numberPlate: vehicleData.numberPlate.trim(),
+        vehicleType: vehicleData.vehicleType,
       };
+
+      // Add optional fields based on vehicle type
+      if (vehicleData.vehicleType === 'ICE' || vehicleData.vehicleType === 'HYBRID' || vehicleData.vehicleType === 'PHEV') {
+        if (vehicleData.fuelTankSize.trim()) {
+          newVehicle.fuelTankSize = parseFloat(vehicleData.fuelTankSize.replace(',', '.'));
+        }
+      }
+
+      if (vehicleData.vehicleType === 'BEV' || vehicleData.vehicleType === 'PHEV') {
+        if (vehicleData.batteryCapacity.trim()) {
+          newVehicle.batteryCapacity = parseFloat(vehicleData.batteryCapacity.replace(',', '.'));
+        }
+      }
 
       console.log("Adding vehicle:", newVehicle); // Debug log
       const vehicleId = await addVehicle(newVehicle);
@@ -77,6 +103,9 @@ const AddVehicleScreen = ({ navigation }) => {
         make: "",
         model: "",
         numberPlate: "",
+        vehicleType: "ICE",
+        fuelTankSize: "",
+        batteryCapacity: "",
       });
 
       navigation.navigate("MyVehiclesMain");
@@ -116,6 +145,15 @@ const AddVehicleScreen = ({ navigation }) => {
 
   const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
 
+  // Helper functions to determine what fields to show
+  const shouldShowFuelTankSize = () => {
+    return vehicleData.vehicleType === 'ICE' || vehicleData.vehicleType === 'HYBRID' || vehicleData.vehicleType === 'PHEV';
+  };
+
+  const shouldShowBatteryCapacity = () => {
+    return vehicleData.vehicleType === 'BEV' || vehicleData.vehicleType === 'PHEV';
+  };
+
   return (
     <KeyboardAwareScrollView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -136,7 +174,6 @@ const AddVehicleScreen = ({ navigation }) => {
             style={styles.input}
             disabled={saving}
             mode="outlined"
-            // placeholder={t("vehicles.namePlaceholder") || "Optional - will use brand name if empty"}
           />
         </View>
 
@@ -207,6 +244,56 @@ const AddVehicleScreen = ({ navigation }) => {
           />
         </View>
 
+        {/* Vehicle Type Selector */}
+        <View style={styles.inputContainer}>
+          <View style={styles.labelContainer}>
+            <Text style={styles.inputLabel}>{t("vehicles.vehicleType")}</Text>
+            {renderRequiredLabel()}
+          </View>
+          <SegmentedButtons
+            value={vehicleData.vehicleType}
+            onValueChange={(value) => setVehicleData({ ...vehicleData, vehicleType: value })}
+            buttons={vehicleTypeOptions}
+            style={styles.segmentedButtons}
+            disabled={saving}
+          />
+        </View>
+
+        {/* Conditional Fields */}
+        {shouldShowFuelTankSize() && (
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>{t("vehicles.fuelTankSize")} (L)</Text>
+            <TextInput
+              value={vehicleData.fuelTankSize}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, fuelTankSize: text })
+              }
+              style={styles.input}
+              disabled={saving}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="e.g. 60"
+            />
+          </View>
+        )}
+
+        {shouldShowBatteryCapacity() && (
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>{t("vehicles.batteryCapacity")} (kWh)</Text>
+            <TextInput
+              value={vehicleData.batteryCapacity}
+              onChangeText={(text) =>
+                setVehicleData({ ...vehicleData, batteryCapacity: text })
+              }
+              style={styles.input}
+              disabled={saving}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="e.g. 75"
+            />
+          </View>
+        )}
+
         <Button
           mode="contained"
           onPress={handleAddVehicle}
@@ -250,6 +337,9 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#fff",
+  },
+  segmentedButtons: {
+    marginTop: 8,
   },
   button: {
     marginTop: 16,

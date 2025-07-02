@@ -149,5 +149,121 @@ export const deleteFilling = async (vehicleId, fillingId) => {
   }
 };
 
-// NOTE: The redundant 'getVehicles' and 'getFillings' functions have been removed
-// as they were identical to 'getAllVehicles' and 'getVehicleFillings'.
+// =================================================================
+// ChargingSessions Subcollection Operations
+// =================================================================
+
+export const addChargingSession = async (vehicleId, chargingSessionData) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+    
+    const chargingSessionWithMetadata = {
+      ...chargingSessionData,
+      vehicleId: vehicleId,
+      userId: user.uid,
+      date: new Date(chargingSessionData.date),
+      createdAt: firestore.FieldValue.serverTimestamp(),
+    };
+
+    // Use the native chained syntax for sub-collections
+    const docRef = await db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions').add(chargingSessionWithMetadata);
+    return docRef.id;
+  } catch (error) {
+    console.error("Error adding charging session:", error);
+    throw error;
+  }
+};
+
+export const getVehicleChargingSessions = async (vehicleId) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+    
+    const chargingSessionsRef = db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions');
+    const querySnapshot = await chargingSessionsRef.orderBy('date', 'desc').get();
+
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Error getting charging sessions:", error);
+    throw error;
+  }
+};
+
+export const updateChargingSession = async (vehicleId, chargingSessionId, chargingSessionData) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+
+    const chargingSessionWithMetadata = {
+      ...chargingSessionData,
+      date: new Date(chargingSessionData.date),
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    };
+    
+    const chargingSessionRef = db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions').doc(chargingSessionId);
+    await chargingSessionRef.update(chargingSessionWithMetadata);
+  } catch (error) {
+    console.error("Error updating charging session:", error);
+    throw error;
+  }
+};
+
+export const deleteChargingSession = async (vehicleId, chargingSessionId) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+    
+    await db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions').doc(chargingSessionId).delete();
+  } catch (error) {
+    console.error("Error deleting charging session:", error);
+    throw error;
+  }
+};
+
+// =================================================================
+// Unified History Operations (Fillings + Charging Sessions)
+// =================================================================
+
+export const getVehicleHistory = async (vehicleId) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+    
+    // Fetch both fillings and charging sessions
+    const [fillings, chargingSessions] = await Promise.all([
+      getVehicleFillings(vehicleId),
+      getVehicleChargingSessions(vehicleId)
+    ]);
+
+    // Add type field to distinguish between events
+    const fillingsWithType = fillings.map(filling => ({
+      ...filling,
+      type: 'filling',
+      sortDate: filling.date,
+    }));
+
+    const chargingSessionsWithType = chargingSessions.map(session => ({
+      ...session,
+      type: 'charging',
+      sortDate: session.date,
+    }));
+
+    // Combine and sort by date (newest first)
+    const combinedHistory = [...fillingsWithType, ...chargingSessionsWithType];
+    
+    combinedHistory.sort((a, b) => {
+      const dateA = a.sortDate.seconds ? new Date(a.sortDate.seconds * 1000) : new Date(a.sortDate);
+      const dateB = b.sortDate.seconds ? new Date(b.sortDate.seconds * 1000) : new Date(b.sortDate);
+      return dateB - dateA; // Newest first
+    });
+
+    return combinedHistory;
+  } catch (error) {
+    console.error("Error getting vehicle history:", error);
+    throw error;
+  }
+};

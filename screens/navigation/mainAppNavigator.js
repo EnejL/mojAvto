@@ -19,6 +19,7 @@ import AuthScreen from "../navigation/authScreen";
 import MyAccountScreen from "../account/myAccountScreen";
 import AddFillingScreen from "../functionality/addFillingScreen";
 import EditFillingScreen from "../functionality/editFillingScreen";
+import AddChargingScreen from "../functionality/addChargingScreen";
 import ForgotPasswordScreen from "../navigation/forgotPasswordScreen";
 import PrivacyPolicyScreen from "../account/privacyPolicy";
 import TermsOfUseScreen from "../account/termsOfUse";
@@ -101,6 +102,14 @@ function MyVehiclesStack() {
         component={EditFillingScreen}
         options={{
           title: t("fillings.edit"),
+          headerBackTitle: t("navigation.back"),
+        }}
+      />
+      <Stack.Screen
+        name="AddCharging"
+        component={AddChargingScreen}
+        options={{
+          title: t("charging.add"),
           headerBackTitle: t("navigation.back"),
         }}
       />
