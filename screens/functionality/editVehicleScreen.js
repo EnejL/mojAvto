@@ -12,6 +12,7 @@ import { TextInput, Button, Surface, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { updateVehicle, deleteVehicle } from "../../utils/firestore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Dropdown } from 'react-native-element-dropdown';
 import AutocompleteInput from "../../components/AutocompleteInput";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -26,11 +27,22 @@ export default function EditVehicleScreen({ navigation, route }) {
     make: vehicle.make,
     model: vehicle.model,
     numberPlate: vehicle.numberPlate || "",
+    vehicleType: vehicle.vehicleType || "ICE", // Default to ICE if not set
+    fuelTankSize: vehicle.fuelTankSize ? vehicle.fuelTankSize.toString() : "",
+    batteryCapacity: vehicle.batteryCapacity ? vehicle.batteryCapacity.toString() : "",
   });
 
   const [carBrands, setCarBrands] = useState([]);
   const [carModels, setCarModels] = useState([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
+
+  // Vehicle type options for Dropdown
+  const vehicleTypeOptions = [
+    { label: 'ICE (Internal Combustion Engine)', value: 'ICE' },
+    { label: 'Hybrid (Gasoline + Electric)', value: 'HYBRID' },
+    { label: 'PHEV (Plug-in Hybrid Electric)', value: 'PHEV' },
+    { label: 'BEV (Battery Electric Vehicle)', value: 'BEV' },
+  ];
 
   useEffect(() => {
     const loadCarBrands = async () => {
@@ -77,7 +89,8 @@ export default function EditVehicleScreen({ navigation, route }) {
     // Validate inputs
     if (
       !vehicleData.make.trim() ||
-      !vehicleData.model.trim()
+      !vehicleData.model.trim() ||
+      !vehicleData.vehicleType
     ) {
       alert(t("common.error.required"));
       return;
@@ -85,13 +98,38 @@ export default function EditVehicleScreen({ navigation, route }) {
 
     setSaving(true);
     try {
-      // Update vehicle in Firestore
-      await updateVehicle(vehicle.id, {
+      // Create update object
+      const updateData = {
         name: vehicleData.name.trim() || vehicleData.make.trim(),
         make: vehicleData.make.trim(),
         model: vehicleData.model.trim(),
         numberPlate: vehicleData.numberPlate.trim(),
-      });
+        vehicleType: vehicleData.vehicleType,
+      };
+
+      // Add optional fields based on vehicle type
+      if (vehicleData.vehicleType === 'ICE' || vehicleData.vehicleType === 'HYBRID' || vehicleData.vehicleType === 'PHEV') {
+        if (vehicleData.fuelTankSize.trim()) {
+          updateData.fuelTankSize = parseFloat(vehicleData.fuelTankSize.replace(',', '.'));
+        } else {
+          updateData.fuelTankSize = null;
+        }
+      } else {
+        updateData.fuelTankSize = null;
+      }
+
+      if (vehicleData.vehicleType === 'BEV' || vehicleData.vehicleType === 'PHEV') {
+        if (vehicleData.batteryCapacity.trim()) {
+          updateData.batteryCapacity = parseFloat(vehicleData.batteryCapacity.replace(',', '.'));
+        } else {
+          updateData.batteryCapacity = null;
+        }
+      } else {
+        updateData.batteryCapacity = null;
+      }
+
+      // Update vehicle in Firestore
+      await updateVehicle(vehicle.id, updateData);
 
       // Navigate back to MyVehiclesMain
       navigation.navigate("MyVehiclesMain");
@@ -130,6 +168,15 @@ export default function EditVehicleScreen({ navigation, route }) {
 
   const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
 
+  // Helper functions to determine what fields to show
+  const shouldShowFuelTankSize = () => {
+    return vehicleData.vehicleType === 'ICE' || vehicleData.vehicleType === 'HYBRID' || vehicleData.vehicleType === 'PHEV';
+  };
+
+  const shouldShowBatteryCapacity = () => {
+    return vehicleData.vehicleType === 'BEV' || vehicleData.vehicleType === 'PHEV';
+  };
+
   return (
     <KeyboardAwareScrollView
       style={styles.container}
@@ -147,7 +194,7 @@ export default function EditVehicleScreen({ navigation, route }) {
         </Surface>
 
         <Surface style={styles.formCard}>
-            <View style={[styles.inputContainer, { zIndex: 4 }]}>
+            <View style={[styles.inputContainer, { zIndex: 5 }]}>
             <View style={styles.labelContainer}>
               <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
             </View>
@@ -162,7 +209,7 @@ export default function EditVehicleScreen({ navigation, route }) {
             />
           </View>
 
-            <View style={[styles.inputContainer, { zIndex: 3 }]}>
+            <View style={[styles.inputContainer, { zIndex: 4 }]}>
             <View style={styles.labelContainer}>
               <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
               {renderRequiredLabel()}
@@ -178,11 +225,11 @@ export default function EditVehicleScreen({ navigation, route }) {
               required={true}
               label=""
               placeholder={t("vehicles.makePlaceholder")}
-                containerStyle={{ zIndex: 3 }}
+                containerStyle={{ zIndex: 4 }}
             />
           </View>
 
-            <View style={[styles.inputContainer, { zIndex: 2 }]}>
+            <View style={[styles.inputContainer, { zIndex: 3 }]}>
             <View style={styles.labelContainer}>
               <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
               {renderRequiredLabel()}
@@ -200,7 +247,7 @@ export default function EditVehicleScreen({ navigation, route }) {
                   placeholder={
                     !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
                   }
-                  containerStyle={{ zIndex: 2 }}
+                  containerStyle={{ zIndex: 3 }}
                 />
               ) : (
             <TextInput
@@ -218,7 +265,7 @@ export default function EditVehicleScreen({ navigation, route }) {
               )}
           </View>
 
-            <View style={[styles.inputContainer, { zIndex: 1 }]}>
+            <View style={[styles.inputContainer, { zIndex: 2 }]}>
             <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
             <TextInput
               label={t("vehicles.numberPlate")}
@@ -232,6 +279,62 @@ export default function EditVehicleScreen({ navigation, route }) {
               placeholder={t("vehicles.numberPlate")}
             />
           </View>
+
+          {/* Vehicle Type Selector */}
+          <View style={[styles.inputContainer, { zIndex: 1 }]}>
+            <View style={styles.labelContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.vehicleType")}</Text>
+              {renderRequiredLabel()}
+            </View>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              data={vehicleTypeOptions}
+              maxHeight={300}
+              labelField="label"
+              valueField="value"
+              placeholder="Select vehicle type"
+              value={vehicleData.vehicleType}
+              onChange={(item) => setVehicleData({ ...vehicleData, vehicleType: item.value })}
+              disable={saving}
+            />
+          </View>
+
+          {/* Conditional Fields */}
+          {shouldShowFuelTankSize() && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.fuelTankSize")} (L)</Text>
+              <TextInput
+                value={vehicleData.fuelTankSize}
+                onChangeText={(text) =>
+                  setVehicleData({ ...vehicleData, fuelTankSize: text })
+                }
+                style={styles.input}
+                disabled={saving}
+                mode="outlined"
+                keyboardType="numeric"
+                placeholder="e.g. 60"
+              />
+            </View>
+          )}
+
+          {shouldShowBatteryCapacity() && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>{t("vehicles.batteryCapacity")} (kWh)</Text>
+              <TextInput
+                value={vehicleData.batteryCapacity}
+                onChangeText={(text) =>
+                  setVehicleData({ ...vehicleData, batteryCapacity: text })
+                }
+                style={styles.input}
+                disabled={saving}
+                mode="outlined"
+                keyboardType="numeric"
+                placeholder="e.g. 75"
+              />
+            </View>
+          )}
         </Surface>
 
         <Button
@@ -322,6 +425,22 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 8,
     backgroundColor: "#fff",
+  },
+  dropdown: {
+    height: 50,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
+    marginTop: 8,
+  },
+  placeholderStyle: {
+    fontSize: 16,
+    color: '#999',
+  },
+  selectedTextStyle: {
+    fontSize: 16,
   },
   deleteButton: {
     margin: 0,

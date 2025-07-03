@@ -60,7 +60,21 @@ export default function App() {
               <>
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} />
-                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                <Stack.Screen 
+                  name="ForgotPassword" 
+                  component={ForgotPasswordScreen}
+                  options={{
+                    headerShown: true,
+                    title: t("auth.forgotPassword"),
+                    headerStyle: {
+                      backgroundColor: "#000000",
+                    },
+                    headerTintColor: "#fff",
+                    headerTitleStyle: {
+                      color: "#fff",
+                    },
+                  }}
+                />
               </>
             )}
             {/* Common screens can be placed outside the conditional logic if they can be accessed from both states */}

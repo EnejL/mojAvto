@@ -19,7 +19,8 @@ import AuthScreen from "../navigation/authScreen";
 import MyAccountScreen from "../account/myAccountScreen";
 import AddFillingScreen from "../functionality/addFillingScreen";
 import EditFillingScreen from "../functionality/editFillingScreen";
-import ForgotPasswordScreen from "../navigation/forgotPasswordScreen";
+import AddChargingScreen from "../functionality/addChargingScreen";
+import EditChargingScreen from "../functionality/editChargingScreen";
 import PrivacyPolicyScreen from "../account/privacyPolicy";
 import TermsOfUseScreen from "../account/termsOfUse";
 import FrequentlyAskedQuestionsScreen from "../account/frequentlyAskedQuestions";
@@ -105,17 +106,25 @@ function MyVehiclesStack() {
         }}
       />
       <Stack.Screen
+        name="AddCharging"
+        component={AddChargingScreen}
+        options={{
+          title: t("charging.add"),
+          headerBackTitle: t("navigation.back"),
+        }}
+      />
+      <Stack.Screen
+        name="EditCharging"
+        component={EditChargingScreen}
+        options={{
+          title: t("charging.edit"),
+          headerBackTitle: t("navigation.back"),
+        }}
+      />
+      <Stack.Screen
         name="Auth"
         component={AuthScreen}
         options={{ title: t("auth.title") }}
-      />
-      <Stack.Screen
-        name="ForgotPassword"
-        component={ForgotPasswordScreen}
-        options={{
-          title: t("auth.forgotPassword"),
-          headerBackTitle: t("navigation.back"),
-        }}
       />
     </Stack.Navigator>
   );
@@ -252,14 +261,6 @@ function AccountStack() {
         component={FrequentlyAskedQuestionsScreen}
         options={{
           title: t("common.faq"),
-        }}
-      />
-      <Stack.Screen
-        name="ForgotPassword"
-        component={ForgotPasswordScreen}
-        options={{
-          title: t("auth.forgotPassword"),
-          headerBackTitle: t("navigation.back"),
         }}
       />
     </Stack.Navigator>

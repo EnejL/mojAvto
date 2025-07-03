@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { Text, Button, Surface, Divider } from "react-native-paper";
+import { Text, Button, Surface, Divider, FAB } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { getVehicleFillings, deleteFilling } from "../../utils/firestore";
+import { getVehicleFillings, deleteFilling, getVehicleChargingSessions, deleteChargingSession, getVehicleHistory } from "../../utils/firestore";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 import BrandLogo from "../../components/BrandLogo";
 import FuelConsumptionGraph from "../../components/FuelConsumptionGraph";
@@ -46,58 +46,79 @@ const formatDate = (date) => {
     .padStart(2, "0")}. ${dateObj.getFullYear()}`;
 };
 
-// Fix the helper function for number formatting
-const formatNumber = (value, decimals = 2) => {
-  if (value === null || value === undefined) return "";
-
-  // First convert to string with fixed decimal places
-  const fixed = value.toFixed(decimals);
-
-  // Split into integer and decimal parts
-  const parts = fixed.split(".");
-  const integerPart = parts[0];
-  const decimalPart = parts.length > 1 ? parts[1] : "";
-
-  // Add thousand separators (dots) to integer part
-  const integerWithSeparators = integerPart.replace(
-    /\B(?=(\d{3})+(?!\d))/g,
-    "."
-  );
-
-  // Combine with decimal part using comma as separator
-  return decimalPart
-    ? `${integerWithSeparators},${decimalPart}`
-    : integerWithSeparators;
+// Helper function to format numbers consistently
+const formatNumber = (value, decimals = 1) => {
+  if (value === null || value === undefined) return "0";
+  return parseFloat(value).toFixed(decimals).replace(".", ",");
 };
 
 export default function VehicleDetailsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
   const [fillings, setFillings] = useState([]);
+  const [chargingSessions, setChargingSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const [combinedHistory, setCombinedHistory] = useState([]);
+
+  // Get vehicle type or default to ICE for backwards compatibility
+  const vehicleType = vehicle.vehicleType || 'ICE';
+
+  // Determine what buttons to show based on vehicle type
+  const shouldShowFuelButton = () => {
+    return vehicleType === 'ICE' || vehicleType === 'HYBRID' || vehicleType === 'PHEV';
+  };
+
+  const shouldShowChargeButton = () => {
+    return vehicleType === 'BEV' || vehicleType === 'PHEV';
+  };
 
   useEffect(() => {
-    const loadFillings = async () => {
+    const loadData = async () => {
       try {
-        const vehicleFillings = await getVehicleFillings(vehicle.id);
+        let promises = [];
+        
+        // Load fillings for fuel-compatible vehicles
+        if (shouldShowFuelButton()) {
+          promises.push(getVehicleFillings(vehicle.id));
+        } else {
+          promises.push(Promise.resolve([]));
+        }
+
+        // Load charging sessions for electric-compatible vehicles
+        if (shouldShowChargeButton()) {
+          promises.push(getVehicleChargingSessions(vehicle.id));
+        } else {
+          promises.push(Promise.resolve([]));
+        }
+
+        const [vehicleFillings, vehicleChargingSessions] = await Promise.all(promises);
+        
         setFillings(vehicleFillings);
+        setChargingSessions(vehicleChargingSessions);
+
+        // Load combined history if this is a PHEV (has both types)
+        if (vehicleType === 'PHEV') {
+          const history = await getVehicleHistory(vehicle.id);
+          setCombinedHistory(history);
+        }
       } catch (error) {
-        console.error("Error loading fillings:", error);
+        console.error("Error loading data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadFillings();
+    loadData();
 
     // Reload when screen comes into focus
-    const unsubscribe = navigation.addListener("focus", loadFillings);
+    const unsubscribe = navigation.addListener("focus", loadData);
     return unsubscribe;
-  }, [navigation, vehicle.id]);
+  }, [navigation, vehicle.id, vehicleType]);
 
-  // Calculate average fuel consumption
-  const averageConsumption = useMemo(() => {
-    if (fillings.length < 2) return null;
+  // Calculate average fuel consumption (l/100km)
+  const averageFuelConsumption = useMemo(() => {
+    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
 
     // Sort fillings by odometer reading (ascending)
     const sortedFillings = [...fillings].sort(
@@ -122,47 +143,140 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     // Calculate average consumption (liters per 100 km)
     if (totalDistance === 0) return null;
     return (totalLiters / totalDistance) * 100;
-  }, [fillings]);
+  }, [fillings, shouldShowFuelButton]);
+
+  // Calculate average electricity consumption (kWh/100km)
+  const averageElectricityConsumption = useMemo(() => {
+    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+
+    // Sort charging sessions by odometer reading (ascending)
+    const sortedSessions = [...chargingSessions].sort(
+      (a, b) => a.odometer - b.odometer
+    );
+
+    // Calculate total distance and total energy
+    let totalDistance = 0;
+    let totalEnergy = 0;
+
+    for (let i = 1; i < sortedSessions.length; i++) {
+      const distance =
+        sortedSessions[i].odometer - sortedSessions[i - 1].odometer;
+      
+      // Skip invalid distances (e.g., negative or zero)
+      if (distance <= 0) continue;
+      
+      totalDistance += distance;
+      totalEnergy += sortedSessions[i].energyAdded;
+    }
+
+    // Calculate average consumption (kWh per 100 km)
+    if (totalDistance === 0) return null;
+    return (totalEnergy / totalDistance) * 100;
+  }, [chargingSessions, shouldShowChargeButton]);
 
   // Calculate average cost per filling
-  const averageCost = useMemo(() => {
+  const averageFuelCost = useMemo(() => {
     if (fillings.length === 0) return null;
     const totalCost = fillings.reduce((sum, filling) => sum + filling.cost, 0);
     return totalCost / fillings.length;
   }, [fillings]);
 
-  // Calculate total cost
-  const totalCost = useMemo(() => {
+  // Calculate average cost per charging session
+  const averageChargingCost = useMemo(() => {
+    if (chargingSessions.length === 0) return null;
+    const totalCost = chargingSessions.reduce((sum, session) => sum + session.cost, 0);
+    return totalCost / chargingSessions.length;
+  }, [chargingSessions]);
+
+  // Calculate total costs
+  const totalFuelCost = useMemo(() => {
     if (fillings.length === 0) return null;
     return fillings.reduce((sum, filling) => sum + filling.cost, 0);
   }, [fillings]);
 
-  // Calculate average liters per filling
-  const averageLiters = useMemo(() => {
-    if (fillings.length === 0) return null;
-    const totalLiters = fillings.reduce(
-      (sum, filling) => sum + filling.liters,
-      0
-    );
-    return totalLiters / fillings.length;
-  }, [fillings]);
+  const totalChargingCost = useMemo(() => {
+    if (chargingSessions.length === 0) return null;
+    return chargingSessions.reduce((sum, session) => sum + session.cost, 0);
+  }, [chargingSessions]);
 
-  const renderFillingItem = ({ item }) => {
+  // Calculate average cost per 100km for fuel
+  const averageFuelCostPer100km = useMemo(() => {
+    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+
+    // Sort fillings by odometer reading (ascending)
+    const sortedFillings = [...fillings].sort(
+      (a, b) => a.odometer - b.odometer
+    );
+
+    // Calculate total distance and total cost
+    let totalDistance = 0;
+    let totalCost = 0;
+
+    for (let i = 1; i < sortedFillings.length; i++) {
+      const distance =
+        sortedFillings[i].odometer - sortedFillings[i - 1].odometer;
+      
+      // Skip invalid distances (e.g., negative or zero)
+      if (distance <= 0) continue;
+      
+      totalDistance += distance;
+      totalCost += sortedFillings[i].cost;
+    }
+
+    // Calculate average cost per 100km
+    if (totalDistance === 0) return null;
+    return (totalCost / totalDistance) * 100;
+  }, [fillings, shouldShowFuelButton]);
+
+  // Calculate average cost per 100km for electricity
+  const averageElectricityCostPer100km = useMemo(() => {
+    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+
+    // Sort charging sessions by odometer reading (ascending)
+    const sortedSessions = [...chargingSessions].sort(
+      (a, b) => a.odometer - b.odometer
+    );
+
+    // Calculate total distance and total cost
+    let totalDistance = 0;
+    let totalCost = 0;
+
+    for (let i = 1; i < sortedSessions.length; i++) {
+      const distance =
+        sortedSessions[i].odometer - sortedSessions[i - 1].odometer;
+      
+      // Skip invalid distances (e.g., negative or zero)
+      if (distance <= 0) continue;
+      
+      totalDistance += distance;
+      totalCost += sortedSessions[i].cost;
+    }
+
+    // Calculate average cost per 100km
+    if (totalDistance === 0) return null;
+    return (totalCost / totalDistance) * 100;
+  }, [chargingSessions, shouldShowChargeButton]);
+
+  const renderHistoryItem = ({ item }) => {
     const renderRightActions = (progress, dragX) => {
       return (
         <View style={styles.deleteAction}>
           <Button
             icon="trash-can"
             color="#fff"
-            onPress={() => handleDeleteFilling(item.id)}
+            onPress={() => handleDeleteHistoryItem(item)}
             style={styles.deleteActionButton}
           />
         </View>
       );
     };
 
-    const handleDeleteFilling = (fillingId) => {
-      Alert.alert(t("common.delete"), t("fillings.deleteConfirmMessage"), [
+    const handleDeleteHistoryItem = (item) => {
+      const confirmMessage = item.type === 'filling' 
+        ? t("fillings.deleteConfirmMessage") 
+        : t("charging.deleteConfirmMessage");
+        
+      Alert.alert(t("common.delete"), confirmMessage, [
         {
           text: t("common.cancel"),
           style: "cancel",
@@ -172,20 +286,32 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           style: "destructive",
           onPress: async () => {
             try {
-              await deleteFilling(vehicle.id, fillingId);
-              // Refresh the fillings list
-              const updatedFillings = fillings.filter(
-                (f) => f.id !== fillingId
-              );
-              setFillings(updatedFillings);
+              if (item.type === 'filling') {
+                await deleteFilling(vehicle.id, item.id);
+                const updatedFillings = fillings.filter(f => f.id !== item.id);
+                setFillings(updatedFillings);
+              } else {
+                await deleteChargingSession(vehicle.id, item.id);
+                const updatedSessions = chargingSessions.filter(s => s.id !== item.id);
+                setChargingSessions(updatedSessions);
+              }
+              
+              // Refresh combined history for PHEV
+              if (vehicleType === 'PHEV') {
+                const history = await getVehicleHistory(vehicle.id);
+                setCombinedHistory(history);
+              }
             } catch (error) {
-              console.error("Error deleting filling:", error);
+              console.error("Error deleting item:", error);
               alert(t("common.error.delete"));
             }
           },
         },
       ]);
     };
+
+    const isCharging = item.type === 'charging';
+    const icon = isCharging ? "⚡️" : "⛽";
 
     return (
       <GestureHandlerRootView style={styles.gestureContainer}>
@@ -196,35 +322,54 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           rightThreshold={40}
         >
           <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("EditFilling", {
-                filling: item,
-                vehicleId: vehicle.id,
-              })
-            }
+            onPress={() => {
+              if (isCharging) {
+                navigation.navigate("EditCharging", {
+                  chargingSession: item,
+                  vehicleId: vehicle.id,
+                });
+              } else {
+                navigation.navigate("EditFilling", {
+                  filling: item,
+                  vehicleId: vehicle.id,
+                });
+              }
+            }}
           >
             <Surface style={styles.fillingItem}>
               <View style={styles.fillingContent}>
-                <View style={styles.fillingLabels}>
-                  <Text style={styles.fillingLabel}>{t("fillings.date")}:</Text>
-                  <Text style={styles.fillingLabel}>
-                    {t("fillings.odometer")}:
+                <View style={styles.fillingHeader}>
+                  <Text style={styles.fillingIcon}>{icon}</Text>
+                  <Text style={styles.fillingType}>
+                    {isCharging ? t("charging.session") : t("fillings.filling")}
                   </Text>
-                  <Text style={styles.fillingLabel}>{t("fillings.liters")}:</Text>
-                  <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
                 </View>
+                
+                <View style={styles.fillingDetails}>
+                  <View style={styles.fillingLabels}>
+                    <Text style={styles.fillingLabel}>{t("charging.date")}:</Text>
+                    <Text style={styles.fillingLabel}>{t("charging.odometer")}:</Text>
+                    <Text style={styles.fillingLabel}>
+                      {isCharging ? t("charging.energyAdded") : t("fillings.liters")}:
+                    </Text>
+                    <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
+                  </View>
 
-                <View style={styles.fillingValues}>
-                  <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
-                  <Text style={styles.fillingValue}>
-                    {formatNumber(item.odometer, 0)} km
-                  </Text>
-                  <Text style={styles.fillingValue}>
-                    {formatNumber(item.liters, 2)} L
-                  </Text>
-                  <Text style={styles.fillingValue}>
-                    {formatNumber(item.cost, 2)} €
-                  </Text>
+                  <View style={styles.fillingValues}>
+                    <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
+                    <Text style={styles.fillingValue}>
+                      {formatNumber(item.odometer, 0)} km
+                    </Text>
+                    <Text style={styles.fillingValue}>
+                      {isCharging 
+                        ? `${formatNumber(item.energyAdded, 2)} kWh`
+                        : `${formatNumber(item.liters, 2)} L`
+                      }
+                    </Text>
+                    <Text style={styles.fillingValue}>
+                      {formatNumber(item.cost, 2)} €
+                    </Text>
+                  </View>
                 </View>
               </View>
             </Surface>
@@ -232,6 +377,56 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         </Swipeable>
       </GestureHandlerRootView>
     );
+  };
+
+  // Create action buttons based on vehicle type
+  const renderActionButtons = () => {
+    const showFuel = shouldShowFuelButton();
+    const showCharge = shouldShowChargeButton();
+
+    if (showFuel && showCharge) {
+      // PHEV - show both buttons (keep existing layout)
+      return (
+        <View style={styles.actionButtonsContainer}>
+          <FAB
+            style={[styles.fab, styles.fuelFab]}
+            icon="gas-station"
+            label={t("fillings.add")}
+            onPress={() => navigation.navigate("AddFilling", { vehicle })}
+          />
+          <FAB
+            style={[styles.fab, styles.chargeFab]}
+            icon="lightning-bolt"
+            label={t("charging.add")}
+            onPress={() => navigation.navigate("AddCharging", { vehicle })}
+          />
+        </View>
+      );
+    } else if (showCharge) {
+      // BEV - show only charge button (using container approach for consistency)
+      return (
+        <View style={styles.actionButtonsContainer}>
+        <FAB
+            style={[styles.fab, styles.chargeFab]}
+          icon="lightning-bolt"
+          label={t("charging.add")}
+          onPress={() => navigation.navigate("AddCharging", { vehicle })}
+        />
+        </View>
+      );
+    } else {
+      // ICE/HYBRID - show only fuel button (using container approach for consistency)
+      return (
+        <View style={styles.actionButtonsContainer}>
+        <FAB
+            style={[styles.fab, styles.fuelFab]}
+          icon="gas-station"
+          label={t("fillings.add")}
+          onPress={() => navigation.navigate("AddFilling", { vehicle })}
+        />
+        </View>
+      );
+    }
   };
 
   return (
@@ -244,94 +439,280 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               <View style={styles.vehicleTextContainer}>
                 <Text style={styles.vehicleName}>{vehicle.name}</Text>
                 <Text style={styles.vehicleSubtitle}>
-                  {vehicle.make} {vehicle.model}
+                  {vehicle.make} {vehicle.model} ({vehicleType})
                 </Text>
               </View>
             </View>
           </View>
         </Surface>
 
-        <Surface style={styles.statsCard}>
-          <Text style={styles.sectionTitle}>{t("fillings.statistics")}</Text>
-
-          {fillings.length < 2 ? (
-            <Text style={styles.emptyText}>{t("fillings.notEnoughData")}</Text>
-          ) : (
-            <View style={styles.statsGrid}>
-              {averageConsumption !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>
-                    {t("fillings.avgConsumption")}
-                  </Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(averageConsumption)}{" "}
-                    {t("fillings.consumptionUnit")}
-                  </Text>
+        {/* Vehicle Statistics - Different layouts for PHEV vs others */}
+        {vehicleType === 'PHEV' ? (
+          // PHEV: Separate cards for fuel, electricity, and combined costs
+          <>
+            {/* Fuel Consumption Card for PHEV */}
+            {averageFuelConsumption !== null && fillings.length >= 2 && (
+              <Surface style={styles.statsCard}>
+                <View style={styles.statCardHeader}>
+                  <Text style={styles.statCardIcon}>⛽</Text>
+                  <Text style={styles.statCardTitle}>{t("fillings.nav")}</Text>
                 </View>
-              )}
-
-              {averageCost !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t("fillings.avgCost")}</Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(averageCost, 2)} € / {t("fillings.filling")}
+                <View style={styles.statCardContent}>
+                  <Text style={styles.statCardPrimaryValue}>
+                    {formatNumber(averageFuelConsumption)} l/100km
                   </Text>
+                  <Text style={styles.statCardSecondaryValue}>
+                    {t("fillings.totalCost")}: {formatNumber(totalFuelCost, 2)} €
+                  </Text>
+                  {averageFuelCostPer100km !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("vehicles.avgCostPer100km")}: {formatNumber(averageFuelCostPer100km, 2)} € / 100km
+                    </Text>
+                  )}
+                  {averageFuelCost !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("fillings.avgCost")}: {formatNumber(averageFuelCost, 2)} € / {t("fillings.filling")}
+                    </Text>
+                  )}
                 </View>
-              )}
+              </Surface>
+            )}
 
-              {averageLiters !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>
-                    {t("fillings.avgLiters")}
-                  </Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(averageLiters)} L
-                  </Text>
+            {/* Electric Consumption Card for PHEV */}
+            {averageElectricityConsumption !== null && chargingSessions.length >= 2 && (
+              <Surface style={styles.statsCard}>
+                <View style={styles.statCardHeader}>
+                  <Text style={styles.statCardIcon}>⚡</Text>
+                  <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
                 </View>
-              )}
+                <View style={styles.statCardContent}>
+                  <Text style={styles.statCardPrimaryValue}>
+                    {formatNumber(averageElectricityConsumption)} kWh/100km
+                  </Text>
+                  <Text style={styles.statCardSecondaryValue}>
+                    {t("charging.totalCost")}: {formatNumber(totalChargingCost, 2)} €
+                  </Text>
+                  {averageElectricityCostPer100km !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("vehicles.avgCostPer100km")}: {formatNumber(averageElectricityCostPer100km, 2)} € / 100km
+                    </Text>
+                  )}
+                  {averageChargingCost !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("charging.avgCost")}: {formatNumber(averageChargingCost, 2)} € / {t("charging.session")}
+                    </Text>
+                  )}
+                </View>
+              </Surface>
+            )}
 
-              {totalCost !== null && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>
-                    {t("fillings.totalCost")}
-                  </Text>
-                  <Text style={styles.statValue}>
-                    {formatNumber(totalCost, 2)} €
-                  </Text>
-                </View>
-              )}
+            {/* Combined Running Cost Card for PHEV */}
+            {(totalFuelCost !== null || totalChargingCost !== null) && (fillings.length >= 2 || chargingSessions.length >= 2) && (() => {
+              // Calculate combined metrics
+              const totalDistance = Math.max(
+                fillings.length >= 2 ? fillings.reduce((max, filling, index) => {
+                  if (index === 0) return 0;
+                  return Math.max(max, filling.odometer - fillings[0].odometer);
+                }, 0) : 0,
+                chargingSessions.length >= 2 ? chargingSessions.reduce((max, session, index) => {
+                  if (index === 0) return 0;
+                  return Math.max(max, session.odometer - chargingSessions[0].odometer);
+                }, 0) : 0
+              );
+              
+              const totalCombinedCost = (totalFuelCost || 0) + (totalChargingCost || 0);
+              const costPer100km = totalDistance > 0 ? (totalCombinedCost / totalDistance) * 100 : 0;
+              const monthlyEstimate = costPer100km * 12; // Assuming 1200km per month
+              
+              return (
+                <Surface style={styles.statsCard}>
+                  <View style={styles.statCardHeader}>
+                    <Text style={styles.statCardIcon}>💰</Text>
+                    <Text style={styles.statCardTitle}>{t("vehicles.trueRunningCost")}</Text>
+                  </View>
+                  <View style={styles.statCardContent}>
+                    <Text style={styles.statCardPrimaryValue}>
+                      {formatNumber(costPer100km, 2)} € / 100km
+                    </Text>
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("vehicles.monthlyEstimate")}: {formatNumber(monthlyEstimate, 0)} €
+                    </Text>
+                  </View>
+                </Surface>
+              );
+            })()}
+          </>
+        ) : (
+          // Non-PHEV: Traditional single card layout
+          <Surface style={styles.statsCard}>
+            <Text style={styles.sectionTitle}>{t("vehicles.statistics")}</Text>
+
+            {(fillings.length < 2 && chargingSessions.length < 2) ? (
+              <Text style={styles.emptyText}>{t("common.notEnoughData")}</Text>
+            ) : (
+              <View style={styles.statsGrid}>
+                {/* Fuel Consumption Stats */}
+                {averageFuelConsumption !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("fillings.avgConsumption")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageFuelConsumption)} {t("fillings.fuelConsumptionUnit")}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Electricity Consumption Stats */}
+                {averageElectricityConsumption !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("charging.avgConsumption")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageElectricityConsumption)} {t("charging.electricityConsumptionUnit")}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Cost Statistics */}
+                {averageFuelCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>{t("fillings.avgCost")}</Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageFuelCost, 2)} € / {t("fillings.filling")}
+                    </Text>
+                  </View>
+                )}
+
+                {averageChargingCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>{t("charging.avgCost")}</Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageChargingCost, 2)} € / {t("charging.session")}
+                    </Text>
+                  </View>
+                )}
+
+                {totalFuelCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("fillings.totalCost")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(totalFuelCost, 2)} €
+                    </Text>
+                  </View>
+                )}
+
+                {totalChargingCost !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("charging.totalCost")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(totalChargingCost, 2)} €
+                    </Text>
+                  </View>
+                )}
+
+                {/* Cost per 100km Statistics */}
+                {averageFuelCostPer100km !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("vehicles.avgCostPer100km")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageFuelCostPer100km, 2)} € / 100km
+                    </Text>
+                  </View>
+                )}
+
+                {averageElectricityCostPer100km !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("vehicles.avgCostPer100km")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageElectricityCostPer100km, 2)} € / 100km
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </Surface>
+        )}
+
+        {/* Fuel Consumption Graph (only for vehicles with fuel) */}
+        {shouldShowFuelButton() && fillings.length > 0 && (
+          <FuelConsumptionGraph fillings={fillings} />
+        )}
+
+        {/* History Section for PHEV, individual sections for others */}
+        {vehicleType === 'PHEV' ? (
+          <Surface style={styles.fillingsCard}>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>{t("vehicles.history")}</Text>
+              <Text style={styles.fillingCount}>({combinedHistory.length})</Text>
             </View>
-          )}
-        </Surface>
+            {combinedHistory.length === 0 ? (
+              <Text style={styles.emptyText}>{t("vehicles.noHistory")}</Text>
+            ) : (
+              <FlatList
+                data={combinedHistory}
+                renderItem={renderHistoryItem}
+                keyExtractor={(item) => `${item.type}-${item.id}`}
+                scrollEnabled={false}
+              />
+            )}
+          </Surface>
+        ) : (
+          <>
+            {/* Fuel Fillings Section */}
+            {shouldShowFuelButton() && (
+              <Surface style={styles.fillingsCard}>
+                <View style={styles.sectionTitleContainer}>
+                  <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
+                  <Text style={styles.fillingCount}>({fillings.length})</Text>
+                </View>
+                {fillings.length === 0 ? (
+                  <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
+                ) : (
+                  <FlatList
+                    data={fillings.map(f => ({ ...f, type: 'filling' }))}
+                    renderItem={renderHistoryItem}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={false}
+                  />
+                )}
+              </Surface>
+            )}
 
-        {/* Replace the old FuelConsumptionGraph component with our new SimpleFuelConsumptionGraph */}
-        <FuelConsumptionGraph fillings={fillings} />
-
-        <Surface style={styles.fillingsCard}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
-            <Text style={styles.fillingCount}>({fillings.length})</Text>
-          </View>
-          {fillings.length === 0 ? (
-            <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
-          ) : (
-            <FlatList
-              data={fillings}
-              renderItem={renderFillingItem}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-            />
-          )}
-        </Surface>
+            {/* Charging Sessions Section */}
+            {shouldShowChargeButton() && (
+              <Surface style={styles.fillingsCard}>
+                <View style={styles.sectionTitleContainer}>
+                  <Text style={styles.sectionTitle}>{t("charging.title")}</Text>
+                  <Text style={styles.fillingCount}>({chargingSessions.length})</Text>
+                </View>
+                {chargingSessions.length === 0 ? (
+                  <Text style={styles.emptyText}>{t("charging.empty")}</Text>
+                ) : (
+                  <FlatList
+                    data={chargingSessions.map(s => ({ ...s, type: 'charging' }))}
+                    renderItem={renderHistoryItem}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={false}
+                  />
+                )}
+              </Surface>
+            )}
+          </>
+        )}
       </ScrollView>
 
-      <Button
-        mode="contained"
-        onPress={() => navigation.navigate("AddFilling", { vehicle })}
-        style={styles.addButton}
-      >
-        {t("fillings.add")}
-      </Button>
+      {/* Action Buttons */}
+      {renderActionButtons()}
     </View>
   );
 }
@@ -411,6 +792,34 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#2e7d32",
   },
+  // PHEV Statistics Card Styles
+  statCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  statCardIcon: {
+    fontSize: 24,
+    marginRight: 8,
+  },
+  statCardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  statCardContent: {
+    alignItems: "flex-start",
+  },
+  statCardPrimaryValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 4,
+  },
+  statCardSecondaryValue: {
+    fontSize: 14,
+    color: "#666",
+  },
   fillingsCard: {
     margin: 16,
     marginTop: 8,
@@ -442,6 +851,23 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   fillingContent: {
+    flexDirection: "column",
+  },
+  fillingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  fillingIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  fillingType: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  fillingDetails: {
     flexDirection: "row",
   },
   fillingLabels: {
@@ -461,10 +887,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginBottom: 8,
   },
-  addButton: {
-    margin: 16,
-    paddingVertical: 6,
-  },
   deleteAction: {
     backgroundColor: "#dd2c00",
     justifyContent: "center",
@@ -480,5 +902,29 @@ const styles = StyleSheet.create({
   },
   gestureContainer: {
     flex: 1,
+  },
+  actionButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  fab: {
+    borderRadius: 16,
+  },
+  singleFab: {
+    position: "absolute",
+    bottom: 16,
+    right: 16,
+  },
+  fuelFab: {
+    backgroundColor: "#4CAF50",
+    flex: 1,
+    marginRight: 8,
+  },
+  chargeFab: {
+    backgroundColor: "#2196F3",
+    flex: 1,
+    marginLeft: 8,
   },
 });

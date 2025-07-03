@@ -10,7 +10,7 @@ export default {
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
-      "buildNumber": "11",
+      "buildNumber": "10",
       "googleServicesFile": "./GoogleService-Info.plist",
       "config": {
         "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
