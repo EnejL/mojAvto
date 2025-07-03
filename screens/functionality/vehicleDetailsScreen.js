@@ -406,24 +406,24 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       // BEV - show only charge button (using container approach for consistency)
       return (
         <View style={styles.actionButtonsContainer}>
-          <FAB
+        <FAB
             style={[styles.fab, styles.chargeFab]}
-            icon="lightning-bolt"
-            label={t("charging.add")}
-            onPress={() => navigation.navigate("AddCharging", { vehicle })}
-          />
+          icon="lightning-bolt"
+          label={t("charging.add")}
+          onPress={() => navigation.navigate("AddCharging", { vehicle })}
+        />
         </View>
       );
     } else {
       // ICE/HYBRID - show only fuel button (using container approach for consistency)
       return (
         <View style={styles.actionButtonsContainer}>
-          <FAB
+        <FAB
             style={[styles.fab, styles.fuelFab]}
-            icon="gas-station"
-            label={t("fillings.add")}
-            onPress={() => navigation.navigate("AddFilling", { vehicle })}
-          />
+          icon="gas-station"
+          label={t("fillings.add")}
+          onPress={() => navigation.navigate("AddFilling", { vehicle })}
+        />
         </View>
       );
     }

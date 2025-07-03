@@ -2,17 +2,15 @@ import React, { useState } from "react";
 import {
   View,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   Alert,
+  SafeAreaView,
+  Platform,
 } from "react-native";
-import { TextInput, Button } from "react-native-paper";
+import { TextInput, Button, Text, Surface, Title } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../utils/firebase";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -20,10 +18,10 @@ const ForgotPasswordScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleResetPassword = async () => {
-    if (!email) {
+    if (!email.trim()) {
       Alert.alert(
-        t("auth.error"),
-        t("auth.emailRequired"),
+        t("common.error.required"),
+        t("auth.enterEmailFirst"),
         [{ text: t("common.ok") }],
         { cancelable: true }
       );
@@ -32,14 +30,14 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email.trim());
       Alert.alert(
         t("auth.resetEmailSent"),
-        t("auth.resetEmailInstructions"),
+        t("auth.checkEmail"),
         [
           {
             text: t("common.ok"),
-            onPress: () => navigation.navigate("Login"),
+            onPress: () => navigation.goBack(),
           },
         ],
         { cancelable: false }
@@ -47,11 +45,11 @@ const ForgotPasswordScreen = ({ navigation }) => {
     } catch (error) {
       let errorMessage = t("auth.resetError");
       if (error.code === "auth/user-not-found") {
-        errorMessage = t("auth.userNotFound");
+        errorMessage = t("auth.error.userNotFound");
       } else if (error.code === "auth/invalid-email") {
-        errorMessage = t("auth.invalidEmail");
+        errorMessage = t("auth.error.invalidEmail");
       }
-      Alert.alert(t("auth.error"), errorMessage, [{ text: t("common.ok") }], {
+      Alert.alert(t("auth.error.unknownError"), errorMessage, [{ text: t("common.ok") }], {
         cancelable: true,
       });
     } finally {
@@ -60,97 +58,84 @@ const ForgotPasswordScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>{t("auth.forgotPassword")}</Text>
-        <Text style={styles.subtitle}>
-          {t("auth.forgotPasswordInstructions")}
-        </Text>
+        <View style={styles.content}>
+          <Title style={styles.title}>{t("auth.forgotPassword")}</Title>
 
-        <View style={styles.formContainer}>
-          <TextInput
-            label={t("auth.email")}
-            value={email}
-            onChangeText={setEmail}
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-            outlineColor="#ccc"
-            activeOutlineColor="#000"
-          />
+          <Surface style={styles.formCard}>
+            <Text style={styles.instructions}>
+              {t("auth.forgotPasswordInstructions")}
+            </Text>
 
-          <Button
-            mode="contained"
-            onPress={handleResetPassword}
-            style={styles.button}
-            loading={loading}
-            disabled={loading}
-          >
-            {t("common.submit")}
-          </Button>
+            <View style={styles.inputContainer}>
+              <TextInput
+                label={t("auth.email")}
+                value={email}
+                onChangeText={setEmail}
+                mode="outlined"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.input}
+                disabled={loading}
+              />
+            </View>
 
-          <TouchableOpacity
-            style={styles.linkContainer}
-            onPress={() => navigation.navigate("Login")}
-          ></TouchableOpacity>
+            <Button
+              mode="contained"
+              onPress={handleResetPassword}
+              style={styles.button}
+              loading={loading}
+              disabled={loading || !email.trim()}
+            >
+              {t("common.submit")}
+            </Button>
+          </Surface>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#fff",
   },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 20,
+  content: {
+    padding: 16,
     justifyContent: "center",
   },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 20,
     textAlign: "center",
   },
-  subtitle: {
+  formCard: {
+    padding: 24,
+    borderRadius: 12,
+    elevation: 2,
+    backgroundColor: "#fff",
+  },
+  instructions: {
     fontSize: 16,
     color: "#666",
-    marginBottom: 30,
+    marginBottom: 24,
     textAlign: "center",
+    lineHeight: 22,
   },
-  formContainer: {
-    width: "100%",
+  inputContainer: {
+    marginBottom: 16,
   },
   input: {
-    marginBottom: 16,
     backgroundColor: "#fff",
   },
   button: {
-    marginTop: 10,
-    paddingVertical: 8,
-    backgroundColor: "#000",
-  },
-  linkContainer: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-  linkText: {
-    color: "#000",
-    fontSize: 16,
+    marginTop: 8,
+    marginBottom: 16,
   },
 });
 

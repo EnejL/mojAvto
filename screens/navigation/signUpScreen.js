@@ -98,12 +98,12 @@ export default function SignUpScreen({ navigation }) {
           {t("auth.createAccount")}
         </Button>
 
-        <View style={styles.switchContainer}>
+        {/* <View style={styles.switchContainer}>
           <Text style={styles.switchText}>{t("auth.haveAccount")}</Text>
           <TouchableOpacity onPress={() => navigation.navigate("Login")}>
             <Text style={styles.switchLink}>{t("auth.signIn")}</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </Surface>
     </View>
   );
@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 32,
     justifyContent: "center",
     backgroundColor: "#f8f9fa",
   },
