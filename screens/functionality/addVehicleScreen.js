@@ -35,10 +35,10 @@ const AddVehicleScreen = ({ navigation }) => {
 
   // Vehicle type options for Dropdown
   const vehicleTypeOptions = [
-    { label: 'ICE (Internal Combustion Engine)', value: 'ICE' },
-    { label: 'Hybrid (Gasoline + Electric)', value: 'HYBRID' },
-    { label: 'PHEV (Plug-in Hybrid Electric)', value: 'PHEV' },
-    { label: 'BEV (Battery Electric Vehicle)', value: 'BEV' },
+    { label: t("vehicles.types.ICE"), value: 'ICE' },
+    { label: t("vehicles.types.HYBRID"), value: 'HYBRID' },
+    { label: t("vehicles.types.PHEV"), value: 'PHEV' },
+    { label: t("vehicles.types.BEV"), value: 'BEV' },
   ];
 
   // Load car brands when component mounts

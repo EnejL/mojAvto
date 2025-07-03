@@ -1,3 +1,4 @@
+import { types } from "@babel/core";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
@@ -15,28 +16,13 @@ const resources = {
       },
       vehicles: {
         title: "Moja Vozila",
+        details: "Podrobnosti",
         add: "Dodaj Vozilo",
-        empty: "Še ni dodanih vozil",
-        details: "Informacije o vozilu",
+        edit: "Uredi Vozilo",
         name: "Ime Vozila (neobvezno)",
         make: "Znamka",
         model: "Model",
-        modelPlaceholder: "Najprej izberite znamko",
-        edit: "Uredi Vozilo",
-        numberPlate: "Registrska Oznaka",
         addFirst: "Dodaj Svoje Prvo Vozilo",
-        selected: "Izbrano Vozilo",
-        deleteVehicle: "Izbriši Vozilo",
-        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to vozilo?",
-      },
-      vehicles: {
-        title: "Moja Vozila",
-        details: "Podrobnosti Vozila",
-        add: "Dodaj Vozilo",
-        edit: "Uredi Vozilo",
-        name: "Ime vozila",
-        make: "Znamka",
-        model: "Model",
         numberPlate: "Registrska oznaka",
         vehicleType: "Tip vozila",
         fuelTankSize: "Prostornina rezervoarja",
@@ -48,22 +34,30 @@ const resources = {
         makePlaceholder: "Izberite znamko",
         modelPlaceholder: "Najprej izberite znamko",
         statistics: "Statistika vozila",
-        history: "Zgodovina dogodkov",
+        history: "Zgodovina",
         noHistory: "Ni zabeleženih dogodkov",
+        trueRunningCost: "Skupni strošek vožnje",
+        monthlyEstimate: "Predvideni mesečni strošek",
+        avgCostPer100km: "Povp. strošek na 100 km",
+        types: {
+          ICE: "Bencin / dizel",
+          HYBRID: "Hibrid (blagi / polni)",
+          PHEV: "PHEV (priključni hibrid)",
+          BEV: "Električno vozilo",
+        }
       },
       fillings: {
         title: "Točenja goriva",
-        nav: "Poraba Goriva",
+        nav: "Poraba goriva",
         date: "Datum",
         liters: "Litrov",
         cost: "Strošek",
         odometer: "Stanje Kilometrov",
-        add: "Dodaj Točenje",
+        add: "Točenje +",
         empty: "Ni zabeleženih točenj",
         delete: "Odstrani vnos",
         consumption: "Povprečna Poraba Goriva",
         consumptionUnit: "l/100 km",
-        notEnoughData: "Ni dovolj podatkov. Vnesite vsaj dve točenji.",
         distanceSince: "Prevoženi kilometri od zadnjega točenja",
         noVehiclesWarning: "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
         noFillings: "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
@@ -72,16 +66,17 @@ const resources = {
         filling: "točenje",
         statistics: "Statistika vozila",
         avgConsumption: "Povprečna poraba",
+        fuelConsumptionUnit: "l/100 km",
         avgCost: "Povprečni strošek",
         avgLiters: "Povprečno točenje",
-        totalCost: "Skupni strošek",
+        totalCost: "Skupni strošek dosedanjih točenj",
         showConsumptionGraph: "Prikaži graf porabe",
         consumptionOverTime: "Poraba goriva skozi čas"
       },
       charging: {
         title: "Polnjenja baterije",
         session: "polnjenje",
-        add: "Dodaj Polnjenje",
+        add: "Polnjenje +",
         edit: "Uredi Polnjenje",
         empty: "Ni zabeleženih polnjenj",
         date: "Datum",
@@ -95,9 +90,10 @@ const resources = {
         locationHome: "Doma",
         locationPublic: "Javno",
         locationWorkplace: "Služba",
-        avgConsumption: "Povprečna poraba",
+        avgConsumption: "Poraba el. energije",
+        electricityConsumptionUnit: "kWh/100 km",
         avgCost: "Povprečni strošek polnjenja",
-        totalCost: "Skupni strošek polnjenj",
+        totalCost: "Skupni strošek dosedanjih poljenj",
         deleteConfirmMessage: "Ste prepričani, da želite izbrisati to polnjenje?",
         consumptionUnit: "kWh/100 km",
         moreDetails: "Dodaj podrobnosti",
@@ -146,7 +142,8 @@ const resources = {
         privacyPolicy: "Politika zasebnosti",
         terms: "Pogoji uporabe",
         faq: "Pogosto zastavljena vprašanja",
-        hide: "Skrij"
+        hide: "Skrij",
+        notEnoughData: "Ni dovolj podatkov. Vnesite vsaj dve točenji.",
       },
       auth: {
         title: "Račun",
@@ -183,9 +180,7 @@ const resources = {
         signInWithGoogle: "Prijava z Google računom",
         or: "ali",
         googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
-      },
-      welcome: {
-        message: "Spremljajte porabo goriva in vzdrževanje vašega vozila."
+        welcomeMessage: "Vozite pametneje, ne dražje!"
       }
     }
   }

@@ -199,6 +199,64 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return chargingSessions.reduce((sum, session) => sum + session.cost, 0);
   }, [chargingSessions]);
 
+  // Calculate average cost per 100km for fuel
+  const averageFuelCostPer100km = useMemo(() => {
+    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+
+    // Sort fillings by odometer reading (ascending)
+    const sortedFillings = [...fillings].sort(
+      (a, b) => a.odometer - b.odometer
+    );
+
+    // Calculate total distance and total cost
+    let totalDistance = 0;
+    let totalCost = 0;
+
+    for (let i = 1; i < sortedFillings.length; i++) {
+      const distance =
+        sortedFillings[i].odometer - sortedFillings[i - 1].odometer;
+      
+      // Skip invalid distances (e.g., negative or zero)
+      if (distance <= 0) continue;
+      
+      totalDistance += distance;
+      totalCost += sortedFillings[i].cost;
+    }
+
+    // Calculate average cost per 100km
+    if (totalDistance === 0) return null;
+    return (totalCost / totalDistance) * 100;
+  }, [fillings, shouldShowFuelButton]);
+
+  // Calculate average cost per 100km for electricity
+  const averageElectricityCostPer100km = useMemo(() => {
+    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+
+    // Sort charging sessions by odometer reading (ascending)
+    const sortedSessions = [...chargingSessions].sort(
+      (a, b) => a.odometer - b.odometer
+    );
+
+    // Calculate total distance and total cost
+    let totalDistance = 0;
+    let totalCost = 0;
+
+    for (let i = 1; i < sortedSessions.length; i++) {
+      const distance =
+        sortedSessions[i].odometer - sortedSessions[i - 1].odometer;
+      
+      // Skip invalid distances (e.g., negative or zero)
+      if (distance <= 0) continue;
+      
+      totalDistance += distance;
+      totalCost += sortedSessions[i].cost;
+    }
+
+    // Calculate average cost per 100km
+    if (totalDistance === 0) return null;
+    return (totalCost / totalDistance) * 100;
+  }, [chargingSessions, shouldShowChargeButton]);
+
   const renderHistoryItem = ({ item }) => {
     const renderRightActions = (progress, dragX) => {
       return (
@@ -289,12 +347,12 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 
                 <View style={styles.fillingDetails}>
                   <View style={styles.fillingLabels}>
-                    <Text style={styles.fillingLabel}>{t("common.date")}:</Text>
-                    <Text style={styles.fillingLabel}>{t("common.odometer")}:</Text>
+                    <Text style={styles.fillingLabel}>{t("charging.date")}:</Text>
+                    <Text style={styles.fillingLabel}>{t("charging.odometer")}:</Text>
                     <Text style={styles.fillingLabel}>
                       {isCharging ? t("charging.energyAdded") : t("fillings.liters")}:
                     </Text>
-                    <Text style={styles.fillingLabel}>{t("common.cost")}:</Text>
+                    <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
                   </View>
 
                   <View style={styles.fillingValues}>
@@ -327,7 +385,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     const showCharge = shouldShowChargeButton();
 
     if (showFuel && showCharge) {
-      // PHEV - show both buttons
+      // PHEV - show both buttons (keep existing layout)
       return (
         <View style={styles.actionButtonsContainer}>
           <FAB
@@ -345,24 +403,28 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         </View>
       );
     } else if (showCharge) {
-      // BEV - show only charge button
+      // BEV - show only charge button (using container approach for consistency)
       return (
-        <FAB
-          style={[styles.fab, styles.singleFab]}
-          icon="lightning-bolt"
-          label={t("charging.add")}
-          onPress={() => navigation.navigate("AddCharging", { vehicle })}
-        />
+        <View style={styles.actionButtonsContainer}>
+          <FAB
+            style={[styles.fab, styles.chargeFab]}
+            icon="lightning-bolt"
+            label={t("charging.add")}
+            onPress={() => navigation.navigate("AddCharging", { vehicle })}
+          />
+        </View>
       );
     } else {
-      // ICE/HYBRID - show only fuel button
+      // ICE/HYBRID - show only fuel button (using container approach for consistency)
       return (
-        <FAB
-          style={[styles.fab, styles.singleFab]}
-          icon="gas-station"
-          label={t("fillings.add")}
-          onPress={() => navigation.navigate("AddFilling", { vehicle })}
-        />
+        <View style={styles.actionButtonsContainer}>
+          <FAB
+            style={[styles.fab, styles.fuelFab]}
+            icon="gas-station"
+            label={t("fillings.add")}
+            onPress={() => navigation.navigate("AddFilling", { vehicle })}
+          />
+        </View>
       );
     }
   };
@@ -393,15 +455,25 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               <Surface style={styles.statsCard}>
                 <View style={styles.statCardHeader}>
                   <Text style={styles.statCardIcon}>⛽</Text>
-                  <Text style={styles.statCardTitle}>Petrol Usage</Text>
+                  <Text style={styles.statCardTitle}>{t("fillings.nav")}</Text>
                 </View>
                 <View style={styles.statCardContent}>
                   <Text style={styles.statCardPrimaryValue}>
                     {formatNumber(averageFuelConsumption)} l/100km
                   </Text>
                   <Text style={styles.statCardSecondaryValue}>
-                    Total Cost: {formatNumber(totalFuelCost, 2)} €
+                    {t("fillings.totalCost")}: {formatNumber(totalFuelCost, 2)} €
                   </Text>
+                  {averageFuelCostPer100km !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("vehicles.avgCostPer100km")}: {formatNumber(averageFuelCostPer100km, 2)} € / 100km
+                    </Text>
+                  )}
+                  {averageFuelCost !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("fillings.avgCost")}: {formatNumber(averageFuelCost, 2)} € / {t("fillings.filling")}
+                    </Text>
+                  )}
                 </View>
               </Surface>
             )}
@@ -411,15 +483,25 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               <Surface style={styles.statsCard}>
                 <View style={styles.statCardHeader}>
                   <Text style={styles.statCardIcon}>⚡</Text>
-                  <Text style={styles.statCardTitle}>Electricity Usage</Text>
+                  <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
                 </View>
                 <View style={styles.statCardContent}>
                   <Text style={styles.statCardPrimaryValue}>
                     {formatNumber(averageElectricityConsumption)} kWh/100km
                   </Text>
                   <Text style={styles.statCardSecondaryValue}>
-                    Total Cost: {formatNumber(totalChargingCost, 2)} €
+                    {t("charging.totalCost")}: {formatNumber(totalChargingCost, 2)} €
                   </Text>
+                  {averageElectricityCostPer100km !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("vehicles.avgCostPer100km")}: {formatNumber(averageElectricityCostPer100km, 2)} € / 100km
+                    </Text>
+                  )}
+                  {averageChargingCost !== null && (
+                    <Text style={styles.statCardSecondaryValue}>
+                      {t("charging.avgCost")}: {formatNumber(averageChargingCost, 2)} € / {t("charging.session")}
+                    </Text>
+                  )}
                 </View>
               </Surface>
             )}
@@ -446,14 +528,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 <Surface style={styles.statsCard}>
                   <View style={styles.statCardHeader}>
                     <Text style={styles.statCardIcon}>💰</Text>
-                    <Text style={styles.statCardTitle}>True Running Cost</Text>
+                    <Text style={styles.statCardTitle}>{t("vehicles.trueRunningCost")}</Text>
                   </View>
                   <View style={styles.statCardContent}>
                     <Text style={styles.statCardPrimaryValue}>
                       {formatNumber(costPer100km, 2)} € / 100km
                     </Text>
                     <Text style={styles.statCardSecondaryValue}>
-                      Est. Monthly Cost: {formatNumber(monthlyEstimate, 0)} €
+                      {t("vehicles.monthlyEstimate")}: {formatNumber(monthlyEstimate, 0)} €
                     </Text>
                   </View>
                 </Surface>
@@ -476,7 +558,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {t("fillings.avgConsumption")}
                     </Text>
                     <Text style={styles.statValue}>
-                      {formatNumber(averageFuelConsumption)} l/100km
+                      {formatNumber(averageFuelConsumption)} {t("fillings.fuelConsumptionUnit")}
                     </Text>
                   </View>
                 )}
@@ -488,7 +570,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {t("charging.avgConsumption")}
                     </Text>
                     <Text style={styles.statValue}>
-                      {formatNumber(averageElectricityConsumption)} kWh/100km
+                      {formatNumber(averageElectricityConsumption)} {t("charging.electricityConsumptionUnit")}
                     </Text>
                   </View>
                 )}
@@ -530,6 +612,29 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     </Text>
                     <Text style={styles.statValue}>
                       {formatNumber(totalChargingCost, 2)} €
+                    </Text>
+                  </View>
+                )}
+
+                {/* Cost per 100km Statistics */}
+                {averageFuelCostPer100km !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("vehicles.avgCostPer100km")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageFuelCostPer100km, 2)} € / 100km
+                    </Text>
+                  </View>
+                )}
+
+                {averageElectricityCostPer100km !== null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>
+                      {t("vehicles.avgCostPer100km")}
+                    </Text>
+                    <Text style={styles.statValue}>
+                      {formatNumber(averageElectricityCostPer100km, 2)} € / 100km
                     </Text>
                   </View>
                 )}

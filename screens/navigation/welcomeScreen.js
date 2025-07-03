@@ -144,7 +144,7 @@ export default function WelcomeScreen() {
         <Text style={styles.appName}>Na Poti</Text>
       </Surface>
 
-      <Text style={styles.welcomeText}>{t("welcome.message")}</Text>
+      <Text style={styles.welcomeText}>{t("auth.welcomeMessage")}</Text>
 
       <Surface style={styles.formCard}>
         <TextInput
