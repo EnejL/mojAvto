@@ -1,5 +1,6 @@
 import "react-native-gesture-handler";
 import React, { useEffect, useState } from "react";
+import * as Linking from "expo-linking";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
@@ -15,10 +16,23 @@ import { StatusBar, ActivityIndicator, View } from "react-native";
 import WelcomeScreen from "./screens/navigation/welcomeScreen";
 import SignUpScreen from "./screens/navigation/signUpScreen";
 import ForgotPasswordScreen from "./screens/navigation/forgotPasswordScreen";
+import EmailVerificationScreen from "./screens/navigation/emailVerificationScreen";
 import MainAppNavigator from "./screens/navigation/mainAppNavigator";
-import PetrolStationDetailsScreen from "./screens/functionality/petrolStationDetailsScreen";
 
 const Stack = createNativeStackNavigator();
+
+const prefix = Linking.createURL('/');
+const linking = {
+  prefixes: [
+    'com.enejlicina.napoti://', 
+    'https://verify.enejlicina.com'
+  ],
+  config: {
+    screens: {
+      Verify: 'verify-email',
+    },
+  },
+};
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
@@ -34,11 +48,10 @@ export default function App() {
       console.log("Auth state changed:", user ? user.uid : "No User");
     });
 
-    // 3. Cleanup the listener when the component unmounts
     return unsubscribe;
-  }, []); // The empty dependency array ensures this runs only once.
+  }, []);
 
-  // While the first onAuthStateChanged check is running, show a spinner.
+  // Show a spinner.
   if (initializing) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -47,48 +60,43 @@ export default function App() {
     );
   }
 
-  // Now, render the correct navigator based on the user state.
+  // Render the correct navigator based on the user state.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PaperProvider>
         <StatusBar style="auto" />
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             {user ? (
-              <Stack.Screen name="MainApp" component={MainAppNavigator} />
-            ) : (
-              <>
-                <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                <Stack.Screen name="SignUp" component={SignUpScreen} />
-                <Stack.Screen 
-                  name="ForgotPassword" 
-                  component={ForgotPasswordScreen}
-                  options={{
-                    headerShown: true,
-                    title: t("auth.forgotPassword"),
-                    headerStyle: {
-                      backgroundColor: "#000000",
-                    },
-                    headerTintColor: "#fff",
-                    headerTitleStyle: {
-                      color: "#fff",
-                    },
-                  }}
-                />
-              </>
-            )}
-            {/* Common screens can be placed outside the conditional logic if they can be accessed from both states */}
-            {/* Example:
-            <Stack.Screen name="PetrolStationDetails" component={PetrolStationDetailsScreen} />
-            */}
+                user.emailVerified ? (
+                  <Stack.Screen name="MainApp" component={MainAppNavigator} />
+                ) : (
+                  <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+                )
+              ) : (
+                <>
+                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                  <Stack.Screen name="SignUp" component={SignUpScreen} />
+                  <Stack.Screen 
+                    name="ForgotPassword" 
+                    component={ForgotPasswordScreen}
+                    options={{
+                      headerShown: true,
+                      title: t("auth.forgotPassword"),
+                      headerStyle: {
+                        backgroundColor: "#000000",
+                      },
+                      headerTintColor: "#fff",
+                      headerTitleStyle: {
+                        color: "#fff",
+                      },
+                    }}
+                  />
+                </>
+              )}
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
     </GestureHandlerRootView>
   );
 }
-
-// NOTE: Your previous setup had PetrolStationDetailsScreen inside the authenticated stack.
-// If you navigate to it from within MainAppNavigator, that's perfect.
-// If it needs to be accessible from anywhere, you might adjust the navigator structure.
-// The structure above is a simplified, common pattern.

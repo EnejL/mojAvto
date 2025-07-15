@@ -20,7 +20,7 @@ export default function SignUpScreen({ navigation }) {
     }
 
     if (password !== confirmPassword) {
-      setError(t("auth.error.passwords-dont-match"));
+      setError(t("auth.error.passwordsDontMatch"));
       return;
     }
 

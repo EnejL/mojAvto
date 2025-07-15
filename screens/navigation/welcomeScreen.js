@@ -53,12 +53,12 @@ export default function WelcomeScreen() {
 
         // Map Firebase error codes to our new camelCase keys
         const errorMap = {
-          "invalid-email": "invalidCredentials",
-          "user-not-found": "invalidCredentials",
+          "invalid-email": "invalidEmailFormat",
+          "user-not-found": "userNotFound",
           "wrong-password": "invalidCredentials",
           "user-disabled": "userDisabled",
           "too-many-requests": "tooManyAttempts",
-          "email-already-in-use": "emailTaken",
+          "email-already-in-use": "auth.error.emailTaken",
           "weak-password": "weakPassword",
         };
 

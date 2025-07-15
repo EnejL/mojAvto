@@ -158,13 +158,23 @@ const resources = {
           signOut: "Odjava ni uspela",
           invalidCredentials: "Napačen email ali geslo",
           userDisabled: "Ta račun je onemogočen",
-          tooManyAttempts: "Preveč poskusov. Prosimo poskusite kasneje",
-          unknownError: "Prišlo je do napake. Prosimo poskusite ponovno",
+          tooManyAttempts: "Preveč poskusov. Prosimo, poskusite kasneje",
+          unknownError: "Prišlo je do napake. Prosimo, poskusite ponovno",
           emailTaken: "Ta email je že v uporabi",
           weakPassword: "Geslo mora vsebovati vsaj 6 znakov",
           googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite kasneje.",
           userNotFound: "Uporabnik s tem e-poštnim naslovom ni najden",
-          invalidEmail: "Nepravilen e-poštni naslov",
+          incorrectEmail: "Nepravilen e-poštni naslov",
+          invalidEmailFormat: "Neveljaven e-poštni naslov",
+          passwordsDontMatch: "Gesli se ne ujemata!",
+        },
+        verification: {
+          title: "Potrditev e-pošte",
+          description: "E-pošta je poslana na {{email}}. Prosimo, preverite svojo e-pošto in kliknite na povezavo za potrditev.",
+          instructions: "Prosimo, preverite svojo e-pošto in kliknite na povezavo za potrditev.",
+          checkVerification: "Preveri",
+          resendEmail: "Pošlji E-pošto Ponovno",
+          signOut: "Prekliči",
         },
         haveAccount: "Že imate račun? Prijavite se",
         needAccount: "Potrebujete račun?",
@@ -183,7 +193,7 @@ const resources = {
         signInWithGoogle: "Prijava z Google računom",
         or: "ali",
         googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
-        welcomeMessage: "Vozite pametneje, ne dražje!"
+        welcomeMessage: "Vozite pametneje!"
       }
     }
   }
