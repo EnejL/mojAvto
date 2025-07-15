@@ -7,13 +7,16 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  Text,
 } from "react-native";
-import { TextInput, Button, Surface, Text } from "react-native-paper";
+import { TextInput, Button, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { updateVehicle, deleteVehicle } from "../../utils/firestore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Dropdown } from 'react-native-element-dropdown';
-import AutocompleteInput from "../../components/AutocompleteInput";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
@@ -22,28 +25,41 @@ export default function EditVehicleScreen({ navigation, route }) {
   const { vehicle } = route.params;
   const [saving, setSaving] = useState(false);
 
+  // State for vehicle data
   const [vehicleData, setVehicleData] = useState({
     name: vehicle.name,
-    make: vehicle.make,
-    model: vehicle.model,
     numberPlate: vehicle.numberPlate || "",
-    vehicleType: vehicle.vehicleType || "ICE", // Default to ICE if not set
+    vehicleType: vehicle.vehicleType || "ICE",
     fuelTankSize: vehicle.fuelTankSize ? vehicle.fuelTankSize.toString() : "",
     batteryCapacity: vehicle.batteryCapacity ? vehicle.batteryCapacity.toString() : "",
   });
 
+  // State for Make and Model selection
+  const [make, setMake] = useState(vehicle.make);
+  const [model, setModel] = useState(vehicle.model);
+
   const [carBrands, setCarBrands] = useState([]);
   const [carModels, setCarModels] = useState([]);
-  const [loadingBrands, setLoadingBrands] = useState(false);
+  
+  const [filteredBrands, setFilteredBrands] = useState([]);
+  const [filteredModels, setFilteredModels] = useState([]);
 
-  // Vehicle type options for Dropdown
+  const [isMakeDropdownVisible, setMakeDropdownVisible] = useState(false);
+  const [isModelDropdownVisible, setModelDropdownVisible] = useState(false);
+
+  // Loading states
+  const [loadingBrands, setLoadingBrands] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  // Vehicle type options
   const vehicleTypeOptions = [
-    { label: 'ICE (Internal Combustion Engine)', value: 'ICE' },
-    { label: 'Hybrid (Gasoline + Electric)', value: 'HYBRID' },
-    { label: 'PHEV (Plug-in Hybrid Electric)', value: 'PHEV' },
-    { label: 'BEV (Battery Electric Vehicle)', value: 'BEV' },
+    { label: t("vehicles.types.ICE"), value: 'ICE' },
+    { label: t("vehicles.types.HYBRID"), value: 'HYBRID' },
+    { label: t("vehicles.types.PHEV"), value: 'PHEV' },
+    { label: t("vehicles.types.BEV"), value: 'BEV' },
   ];
 
+  // Load car brands on mount
   useEffect(() => {
     const loadCarBrands = async () => {
       setLoadingBrands(true);
@@ -56,82 +72,92 @@ export default function EditVehicleScreen({ navigation, route }) {
         setLoadingBrands(false);
       }
     };
-
     loadCarBrands();
   }, []);
 
-  const handleBrandSelection = (brand) => {
-    setVehicleData({ ...vehicleData, make: brand, model: "" });
-
-    fetchModelsForBrand(brand);
-  };
-
-  const fetchModelsForBrand = async (brand) => {
-    if (!brand) return;
-
-    try {
-      console.log(`Fetching models for selected brand: ${brand}`);
-      const models = await fetchCarModels(brand);
-      if (Array.isArray(models) && models.length > 0) {
-        console.log(`Found ${models.length} models for ${brand}`);
-        setCarModels(models);
-      } else {
-        console.log(`No models found for ${brand}`);
+  // Fetch models when make changes
+  useEffect(() => {
+    const fetchModelsForMake = async () => {
+      if (!make || !carBrands.includes(make)) {
         setCarModels([]);
+        return;
       }
-    } catch (error) {
-      console.error("Failed to load car models:", error);
-      setCarModels([]);
+      setLoadingModels(true);
+      try {
+        const models = await fetchCarModels(make);
+        setCarModels(models);
+      } catch (error) {
+        console.error("Failed to load car models:", error);
+      } finally {
+        setLoadingModels(false);
+      }
+    };
+    if (carBrands.length > 0) {
+        fetchModelsForMake();
+    }
+  }, [make, carBrands]);
+
+  // Handle Make input change and filtering
+  const handleMakeChange = (text) => {
+    setMake(text);
+    if (text) {
+      setFilteredBrands(
+        carBrands.filter((brand) =>
+          brand.toLowerCase().includes(text.toLowerCase())
+        )
+      );
+      setMakeDropdownVisible(true);
+    } else {
+      setFilteredBrands([]);
+      setMakeDropdownVisible(false);
     }
   };
 
+  // Handle Model input change and filtering
+  const handleModelChange = (text) => {
+    setModel(text);
+    if (text) {
+      setFilteredModels(
+        carModels.filter((modelItem) =>
+          modelItem.toLowerCase().includes(text.toLowerCase())
+        )
+      );
+      setModelDropdownVisible(true);
+    } else {
+      setFilteredModels([]);
+      setModelDropdownVisible(false);
+    }
+  };
+
+  const handleSelectMake = (selectedMake) => {
+    setMake(selectedMake);
+    setModel(""); // Clear model when make changes
+    setMakeDropdownVisible(false);
+  };
+
+  const handleSelectModel = (selectedModel) => {
+    setModel(selectedModel);
+    setModelDropdownVisible(false);
+  };
+
+  // Main submission handler
   const handleSave = async () => {
-    // Validate inputs
-    if (
-      !vehicleData.make.trim() ||
-      !vehicleData.model.trim() ||
-      !vehicleData.vehicleType
-    ) {
+    if (!make.trim() || !model.trim() || !vehicleData.vehicleType) {
       alert(t("common.error.required"));
       return;
     }
-
     setSaving(true);
     try {
-      // Create update object
       const updateData = {
-        name: vehicleData.name.trim() || vehicleData.make.trim(),
-        make: vehicleData.make.trim(),
-        model: vehicleData.model.trim(),
+        name: vehicleData.name.trim() || make.trim(),
+        make: make.trim(),
+        model: model.trim(),
         numberPlate: vehicleData.numberPlate.trim(),
         vehicleType: vehicleData.vehicleType,
+        fuelTankSize: shouldShowFuelTankSize() && vehicleData.fuelTankSize.trim() ? parseFloat(vehicleData.fuelTankSize.replace(',', '.')) : null,
+        batteryCapacity: shouldShowBatteryCapacity() && vehicleData.batteryCapacity.trim() ? parseFloat(vehicleData.batteryCapacity.replace(',', '.')) : null,
       };
-
-      // Add optional fields based on vehicle type
-      if (vehicleData.vehicleType === 'ICE' || vehicleData.vehicleType === 'HYBRID' || vehicleData.vehicleType === 'PHEV') {
-        if (vehicleData.fuelTankSize.trim()) {
-          updateData.fuelTankSize = parseFloat(vehicleData.fuelTankSize.replace(',', '.'));
-        } else {
-          updateData.fuelTankSize = null;
-        }
-      } else {
-        updateData.fuelTankSize = null;
-      }
-
-      if (vehicleData.vehicleType === 'BEV' || vehicleData.vehicleType === 'PHEV') {
-        if (vehicleData.batteryCapacity.trim()) {
-          updateData.batteryCapacity = parseFloat(vehicleData.batteryCapacity.replace(',', '.'));
-        } else {
-          updateData.batteryCapacity = null;
-        }
-      } else {
-        updateData.batteryCapacity = null;
-      }
-
-      // Update vehicle in Firestore
       await updateVehicle(vehicle.id, updateData);
-
-      // Navigate back to MyVehiclesMain
       navigation.navigate("MyVehiclesMain");
     } catch (error) {
       console.error("Error updating vehicle:", error);
@@ -140,7 +166,7 @@ export default function EditVehicleScreen({ navigation, route }) {
       setSaving(false);
     }
   };
-
+  
   const handleDelete = () => {
     Alert.alert(t("common.delete"), t("vehicles.deleteConfirmMessage"), [
       {
@@ -168,21 +194,25 @@ export default function EditVehicleScreen({ navigation, route }) {
 
   const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
 
-  // Helper functions to determine what fields to show
-  const shouldShowFuelTankSize = () => {
-    return vehicleData.vehicleType === 'ICE' || vehicleData.vehicleType === 'HYBRID' || vehicleData.vehicleType === 'PHEV';
-  };
+  const shouldShowFuelTankSize = () => ['ICE', 'HYBRID', 'PHEV'].includes(vehicleData.vehicleType);
+  const shouldShowBatteryCapacity = () => ['BEV', 'PHEV'].includes(vehicleData.vehicleType);
 
-  const shouldShowBatteryCapacity = () => {
-    return vehicleData.vehicleType === 'BEV' || vehicleData.vehicleType === 'PHEV';
-  };
+  const renderDropdown = (data, onSelect) => (
+    <Surface style={styles.dropdownSurface}>
+      <ScrollView keyboardShouldPersistTaps="handled">
+        {data.map((item) => (
+          <TouchableOpacity key={item} style={styles.dropdownItem} onPress={() => onSelect(item)}>
+            <Text>{item}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </Surface>
+  );
 
   return (
     <KeyboardAwareScrollView
       style={styles.container}
-      enableOnAndroid={true}
-      enableAutomaticScroll={true}
-      extraScrollHeight={Platform.OS === 'ios' ? 120 : 140}
+      nestedScrollEnabled={true}
       keyboardShouldPersistTaps="handled"
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -214,19 +244,17 @@ export default function EditVehicleScreen({ navigation, route }) {
               <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
               {renderRequiredLabel()}
             </View>
-            <AutocompleteInput
-              value={vehicleData.make}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, make: text, model: "" })
-              }
-              onSelectSuggestion={handleBrandSelection}
-              suggestions={carBrands}
-              disabled={saving || loadingBrands}
-              required={true}
-              label=""
-              placeholder={t("vehicles.makePlaceholder")}
-                containerStyle={{ zIndex: 4 }}
+            <TextInput
+                value={make}
+                onChangeText={handleMakeChange}
+                onFocus={() => setMakeDropdownVisible(true)}
+                onBlur={() => setTimeout(() => setMakeDropdownVisible(false), 200)}
+                style={styles.input}
+                disabled={saving || loadingBrands}
+                mode="outlined"
+                right={loadingBrands && <TextInput.Icon icon="loading" />}
             />
+            {isMakeDropdownVisible && filteredBrands.length > 0 && renderDropdown(filteredBrands, handleSelectMake)}
           </View>
 
             <View style={[styles.inputContainer, { zIndex: 3 }]}>
@@ -234,41 +262,23 @@ export default function EditVehicleScreen({ navigation, route }) {
               <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
               {renderRequiredLabel()}
             </View>
-              {carModels.length > 0 ? (
-                <AutocompleteInput
-                  value={vehicleData.model}
-                  onChangeText={(text) =>
-                    setVehicleData({ ...vehicleData, model: text })
-                  }
-                  suggestions={carModels}
-                  disabled={saving || !vehicleData.make}
-                  required={true}
-                  label=""
-                  placeholder={
-                    !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
-                  }
-                  containerStyle={{ zIndex: 3 }}
-                />
-              ) : (
             <TextInput
-              value={vehicleData.model}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, model: text })
-              }
-              style={styles.input}
-              mode="outlined"
-              disabled={saving || !vehicleData.make}
-              placeholder={
-                !vehicleData.make ? t("vehicles.modelPlaceholder") : ""
-              }
+                value={model}
+                onChangeText={handleModelChange}
+                onFocus={() => setModelDropdownVisible(true)}
+                onBlur={() => setTimeout(() => setModelDropdownVisible(false), 200)}
+                style={styles.input}
+                disabled={saving || loadingModels || !make}
+                mode="outlined"
+                right={loadingModels && <TextInput.Icon icon="loading" />}
+                placeholder={!make ? t("vehicles.modelPlaceholder") : ""}
             />
-              )}
+            {isModelDropdownVisible && filteredModels.length > 0 && renderDropdown(filteredModels, handleSelectModel)}
           </View>
 
             <View style={[styles.inputContainer, { zIndex: 2 }]}>
             <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
             <TextInput
-              label={t("vehicles.numberPlate")}
               value={vehicleData.numberPlate}
               onChangeText={(text) =>
                 setVehicleData({ ...vehicleData, numberPlate: text })
@@ -390,11 +400,6 @@ const styles = StyleSheet.create({
     elevation: 1,
     backgroundColor: "#fff",
   },
-  headerText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 4,
-  },
   headerSubtext: {
     fontSize: 16,
     color: "#495057",
@@ -423,15 +428,14 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   input: {
-    marginBottom: 8,
     backgroundColor: "#fff",
   },
   dropdown: {
-    height: 50,
-    borderColor: 'gray',
+    height: 56,
+    borderColor: '#79747E',
     borderWidth: 1,
     borderRadius: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     backgroundColor: '#fff',
     marginTop: 8,
   },
@@ -443,17 +447,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   deleteButton: {
-    margin: 0,
-    marginLeft: "auto",
-    marginRight: "auto",
-    marginTop: 24,
+    marginHorizontal: 16,
+    marginTop: 16,
     borderColor: "#d32f2f",
-    backgroundColor: "transparent",
-    width: "calc(100% - 132px)",
   },
   deleteButtonLabel: {
-    fontSize: 16,
-    paddingVertical: 4,
     color: "#d32f2f",
   },
   buttonContainer: {
@@ -461,7 +459,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 8,
     backgroundColor: "#f8f9fa",
-    marginBottom: Platform.OS === 'ios' ? 120 : 140,
   },
   button: {
     flex: 1,
@@ -473,8 +470,26 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: "#6c757d",
   },
-  buttonLabel: {
-    fontSize: 16,
-    paddingVertical: 4,
+  dropdownSurface: {
+    position: 'absolute',
+    top: 80, 
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 4,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    maxHeight: 200,
+    zIndex: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
 });

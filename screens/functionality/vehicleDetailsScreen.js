@@ -188,6 +188,22 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return totalCost / chargingSessions.length;
   }, [chargingSessions]);
 
+  // Calculate average price per liter for fuel
+  const averagePricePerLiter = useMemo(() => {
+    if (fillings.length === 0) return null;
+    const totalLiters = fillings.reduce((sum, filling) => sum + filling.liters, 0);
+    const totalCost = fillings.reduce((sum, filling) => sum + filling.cost, 0);
+    return totalLiters > 0 ? totalCost / totalLiters : null;
+  }, [fillings]);
+
+  // Calculate average price per kWh for electricity
+  const averagePricePerKWh = useMemo(() => {
+    if (chargingSessions.length === 0) return null;
+    const totalEnergy = chargingSessions.reduce((sum, session) => sum + session.energyAdded, 0);
+    const totalCost = chargingSessions.reduce((sum, session) => sum + session.cost, 0);
+    return totalEnergy > 0 ? totalCost / totalEnergy : null;
+  }, [chargingSessions]);
+
   // Calculate total costs
   const totalFuelCost = useMemo(() => {
     if (fillings.length === 0) return null;
@@ -438,9 +454,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               <BrandLogo brand={vehicle.make} style={styles.brandLogo} />
               <View style={styles.vehicleTextContainer}>
                 <Text style={styles.vehicleName}>{vehicle.name}</Text>
-                <Text style={styles.vehicleSubtitle}>
-                  {vehicle.make} {vehicle.model} ({vehicleType})
-                </Text>
+                <View style={styles.vehicleSubtitleContainer}>
+                  <Text style={styles.vehicleSubtitle}>
+                    {vehicle.make} {vehicle.model}
+                  </Text>
+                  <Text style={styles.vehicleTypeText}>
+                    {t(`vehicles.types.${vehicleType}`)}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -458,22 +479,50 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <Text style={styles.statCardTitle}>{t("fillings.nav")}</Text>
                 </View>
                 <View style={styles.statCardContent}>
-                  <Text style={styles.statCardPrimaryValue}>
-                    {formatNumber(averageFuelConsumption)} l/100km
-                  </Text>
-                  <Text style={styles.statCardSecondaryValue}>
-                    {t("fillings.totalCost")}: {formatNumber(totalFuelCost, 2)} €
-                  </Text>
-                  {averageFuelCostPer100km !== null && (
-                    <Text style={styles.statCardSecondaryValue}>
-                      {t("vehicles.avgCostPer100km")}: {formatNumber(averageFuelCostPer100km, 2)} € / 100km
+                  {/* Primary consumption metric */}
+                  <View style={styles.primaryMetricContainer}>
+                    <Text style={styles.statCardPrimaryValue}>
+                      {formatNumber(averageFuelConsumption)} l / 100km
                     </Text>
-                  )}
-                  {averageFuelCost !== null && (
-                    <Text style={styles.statCardSecondaryValue}>
-                      {t("fillings.avgCost")}: {formatNumber(averageFuelCost, 2)} € / {t("fillings.filling")}
-                    </Text>
-                  )}
+                    <Text style={styles.primaryMetricLabel}>{t("fillings.consumption")}</Text>
+                  </View>
+                  
+                  {/* Secondary metrics in grid */}
+                  <View style={styles.secondaryMetricsGrid}>
+                    {averageFuelCostPer100km !== null && (
+                      <View style={styles.secondaryMetricItem}>
+                        <Text style={styles.secondaryMetricValue}>
+                          {formatNumber(averageFuelCostPer100km, 2)} €
+                        </Text>
+                        <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
+                      </View>
+                    )}
+
+                      {averagePricePerLiter !== null && (
+                       <View style={styles.secondaryMetricItem}>
+                         <Text style={styles.secondaryMetricValue}>
+                           {formatNumber(averagePricePerLiter, 2)} €
+                         </Text>
+                         <Text style={styles.secondaryMetricLabel}>{t("fillings.avgPricePerLiter")}</Text>
+                       </View>
+                     )}
+
+                     {averageFuelCost !== null && (
+                       <View style={styles.secondaryMetricItem}>
+                         <Text style={styles.secondaryMetricValue}>
+                           {formatNumber(averageFuelCost, 2)} €
+                         </Text>
+                         <Text style={styles.secondaryMetricLabel}>{t("fillings.avgCost")}</Text>
+                       </View>
+                     )}
+
+                     <View style={styles.secondaryMetricItem}>
+                       <Text style={styles.secondaryMetricValue}>
+                         {formatNumber(totalFuelCost, 2)} €
+                       </Text>
+                       <Text style={styles.secondaryMetricLabel}>{t("fillings.totalCost")}</Text>
+                     </View>
+                  </View>
                 </View>
               </Surface>
             )}
@@ -486,43 +535,72 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
                 </View>
                 <View style={styles.statCardContent}>
-                  <Text style={styles.statCardPrimaryValue}>
-                    {formatNumber(averageElectricityConsumption)} kWh/100km
-                  </Text>
-                  <Text style={styles.statCardSecondaryValue}>
-                    {t("charging.totalCost")}: {formatNumber(totalChargingCost, 2)} €
-                  </Text>
-                  {averageElectricityCostPer100km !== null && (
-                    <Text style={styles.statCardSecondaryValue}>
-                      {t("vehicles.avgCostPer100km")}: {formatNumber(averageElectricityCostPer100km, 2)} € / 100km
+                  {/* Primary consumption metric */}
+                  <View style={styles.primaryMetricContainer}>
+                    <Text style={styles.statCardPrimaryValue}>
+                      {formatNumber(averageElectricityConsumption)} kWh / 100km
                     </Text>
-                  )}
-                  {averageChargingCost !== null && (
-                    <Text style={styles.statCardSecondaryValue}>
-                      {t("charging.avgCost")}: {formatNumber(averageChargingCost, 2)} € / {t("charging.session")}
-                    </Text>
-                  )}
+                    <Text style={styles.primaryMetricLabel}>{t("charging.avgConsumption")}</Text>
+                  </View>
+                  
+                  {/* Secondary metrics in grid */}
+                  <View style={styles.secondaryMetricsGrid}>
+                     {averageElectricityCostPer100km !== null && (
+                       <View style={styles.secondaryMetricItem}>
+                         <Text style={styles.secondaryMetricValue}>
+                           {formatNumber(averageElectricityCostPer100km, 2)} €
+                         </Text>
+                         <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
+                       </View>
+                     )}
+                     
+                     {averagePricePerKWh !== null && (
+                      <View style={styles.secondaryMetricItem}>
+                        <Text style={styles.secondaryMetricValue}>
+                          {formatNumber(averagePricePerKWh, 2)} €
+                        </Text>
+                        <Text style={styles.secondaryMetricLabel}>{t("charging.avgPricePerKWh")}</Text>
+                      </View>
+                     )}
+
+                     {averageChargingCost !== null && (
+                       <View style={styles.secondaryMetricItem}>
+                         <Text style={styles.secondaryMetricValue}>
+                           {formatNumber(averageChargingCost, 2)} €
+                         </Text>
+                         <Text style={styles.secondaryMetricLabel}>{t("charging.avgCost")}</Text>
+                       </View>
+                     )}
+
+                     <View style={styles.secondaryMetricItem}>
+                       <Text style={styles.secondaryMetricValue}>
+                         {formatNumber(totalChargingCost, 2)} €
+                       </Text>
+                       <Text style={styles.secondaryMetricLabel}>{t("charging.totalCost")}</Text>
+                     </View>
+                  </View>
                 </View>
               </Surface>
             )}
 
             {/* Combined Running Cost Card for PHEV */}
             {(totalFuelCost !== null || totalChargingCost !== null) && (fillings.length >= 2 || chargingSessions.length >= 2) && (() => {
-              // Calculate combined metrics
-              const totalDistance = Math.max(
-                fillings.length >= 2 ? fillings.reduce((max, filling, index) => {
-                  if (index === 0) return 0;
-                  return Math.max(max, filling.odometer - fillings[0].odometer);
-                }, 0) : 0,
-                chargingSessions.length >= 2 ? chargingSessions.reduce((max, session, index) => {
-                  if (index === 0) return 0;
-                  return Math.max(max, session.odometer - chargingSessions[0].odometer);
-                }, 0) : 0
-              );
+              // Calculate combined metrics using all events
+              const allEvents = [
+                ...fillings.map(f => ({...f, type: 'fuel'})), 
+                ...chargingSessions.map(c => ({...c, type: 'charging'}))
+              ];
+              const sortedEvents = allEvents.sort((a, b) => a.odometer - b.odometer);
+              
+              let totalCombinedDistance = 0;
+              if (sortedEvents.length >= 2) {
+                totalCombinedDistance = sortedEvents[sortedEvents.length - 1].odometer - sortedEvents[0].odometer;
+              }
               
               const totalCombinedCost = (totalFuelCost || 0) + (totalChargingCost || 0);
-              const costPer100km = totalDistance > 0 ? (totalCombinedCost / totalDistance) * 100 : 0;
-              const monthlyEstimate = costPer100km * 12; // Assuming 1200km per month
+              const costPer100km = totalCombinedDistance > 0 ? (totalCombinedCost / totalCombinedDistance) * 100 : 0;
+              // Assuming 1200km per month
+              // const monthlyEstimate = costPer100km * 12;
               
               return (
                 <Surface style={styles.statsCard}>
@@ -531,116 +609,156 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     <Text style={styles.statCardTitle}>{t("vehicles.trueRunningCost")}</Text>
                   </View>
                   <View style={styles.statCardContent}>
-                    <Text style={styles.statCardPrimaryValue}>
-                      {formatNumber(costPer100km, 2)} € / 100km
-                    </Text>
-                    <Text style={styles.statCardSecondaryValue}>
-                      {t("vehicles.monthlyEstimate")}: {formatNumber(monthlyEstimate, 0)} €
-                    </Text>
+                    {/* Primary cost metric */}
+                    <View style={styles.primaryMetricContainer}>
+                      <Text style={styles.statCardPrimaryValue}>
+                        {formatNumber(costPer100km, 2)} € / 100km
+                      </Text>
+                      <Text style={styles.primaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
+                    </View>
+                    
+                    {/* Secondary metrics */}
+                    {/* <View style={styles.secondaryMetricsGrid}>
+                      <View style={styles.secondaryMetricItem}>
+                        <Text style={styles.secondaryMetricValue}>
+                          {formatNumber(monthlyEstimate, 0)} €
+                        </Text>
+                        <Text style={styles.secondaryMetricLabel}>{t("vehicles.monthlyEstimate")}</Text>
+                      </View>
+                      
+                      <View style={styles.secondaryMetricItem}>
+                        <Text style={styles.secondaryMetricValue}>
+                          {formatNumber(totalCombinedCost, 2)} €
+                        </Text>
+                        <Text style={styles.secondaryMetricLabel}>{t("vehicles.totalCost")}</Text>
+                      </View>
+                    </View> */}
                   </View>
                 </Surface>
               );
             })()}
           </>
         ) : (
-          // Non-PHEV: Traditional single card layout
-          <Surface style={styles.statsCard}>
-            <Text style={styles.sectionTitle}>{t("vehicles.statistics")}</Text>
-
-            {(fillings.length < 2 && chargingSessions.length < 2) ? (
-              <Text style={styles.emptyText}>{t("common.notEnoughData")}</Text>
-            ) : (
-              <View style={styles.statsGrid}>
-                {/* Fuel Consumption Stats */}
-                {averageFuelConsumption !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>
-                      {t("fillings.avgConsumption")}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(averageFuelConsumption)} {t("fillings.fuelConsumptionUnit")}
-                    </Text>
+          // ICE/HYBRID/BEV: Use appropriate card layout based on vehicle type
+          (() => {
+            // For ICE/HYBRID: Show fuel statistics
+            if (shouldShowFuelButton() && averageFuelConsumption !== null && fillings.length >= 2) {
+              return (
+                <Surface style={styles.statsCard}>
+                  <View style={styles.statCardHeader}>
+                    <Text style={styles.statCardIcon}>⛽</Text>
+                    <Text style={styles.statCardTitle}>{t("fillings.nav")}</Text>
                   </View>
-                )}
-
-                {/* Electricity Consumption Stats */}
-                {averageElectricityConsumption !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>
-                      {t("charging.avgConsumption")}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(averageElectricityConsumption)} {t("charging.electricityConsumptionUnit")}
-                    </Text>
+                  <View style={styles.statCardContent}>
+                    {/* Primary consumption metric */}
+                    <View style={styles.primaryMetricContainer}>
+                      <Text style={styles.statCardPrimaryValue}>
+                        {formatNumber(averageFuelConsumption)} l / 100km
+                      </Text>
+                      <Text style={styles.primaryMetricLabel}>{t("fillings.consumption")}</Text>
+                    </View>
+                    {/* Secondary metrics in grid */}
+                    <View style={styles.secondaryMetricsGrid}>
+                      {averageFuelCostPer100km !== null && (
+                        <View style={styles.secondaryMetricItem}>
+                          <Text style={styles.secondaryMetricValue}>
+                            {formatNumber(averageFuelCostPer100km, 2)} €
+                          </Text>
+                          <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
+                        </View>
+                      )}
+                      {averagePricePerLiter !== null && (
+                        <View style={styles.secondaryMetricItem}>
+                          <Text style={styles.secondaryMetricValue}>
+                            {formatNumber(averagePricePerLiter, 2)} €
+                          </Text>
+                          <Text style={styles.secondaryMetricLabel}>{t("fillings.avgPricePerLiter")}</Text>
+                        </View>
+                      )}
+                      {averageFuelCost !== null && (
+                        <View style={styles.secondaryMetricItem}>
+                          <Text style={styles.secondaryMetricValue}>
+                            {formatNumber(averageFuelCost, 2)} €
+                          </Text>
+                          <Text style={styles.secondaryMetricLabel}>{t("fillings.avgCost")}</Text>
+                        </View>
+                      )}
+                      <View style={styles.secondaryMetricItem}>
+                        <Text style={styles.secondaryMetricValue}>
+                          {formatNumber(totalFuelCost, 2)} €
+                        </Text>
+                        <Text style={styles.secondaryMetricLabel}>{t("fillings.totalCost")}</Text>
+                      </View>
+                    </View>
                   </View>
-                )}
-
-                {/* Cost Statistics */}
-                {averageFuelCost !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t("fillings.avgCost")}</Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(averageFuelCost, 2)} € / {t("fillings.filling")}
-                    </Text>
+                </Surface>
+              );
+            }
+            
+            // For BEV: Show electricity statistics
+            if (shouldShowChargeButton() && averageElectricityConsumption !== null && chargingSessions.length >= 2) {
+              return (
+                <Surface style={styles.statsCard}>
+                  <View style={styles.statCardHeader}>
+                    <Text style={styles.statCardIcon}>⚡</Text>
+                    <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
                   </View>
-                )}
-
-                {averageChargingCost !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t("charging.avgCost")}</Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(averageChargingCost, 2)} € / {t("charging.session")}
-                    </Text>
+                  <View style={styles.statCardContent}>
+                    {/* Primary consumption metric */}
+                    <View style={styles.primaryMetricContainer}>
+                      <Text style={styles.statCardPrimaryValue}>
+                        {formatNumber(averageElectricityConsumption)} kWh / 100km
+                      </Text>
+                      <Text style={styles.primaryMetricLabel}>{t("charging.avgConsumption")}</Text>
+                    </View>
+                    {/* Secondary metrics in grid */}
+                    <View style={styles.secondaryMetricsGrid}>
+                      {averageElectricityCostPer100km !== null && (
+                        <View style={styles.secondaryMetricItem}>
+                          <Text style={styles.secondaryMetricValue}>
+                            {formatNumber(averageElectricityCostPer100km, 2)} €
+                          </Text>
+                          <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
+                        </View>
+                      )}
+                      {averagePricePerKWh !== null && (
+                        <View style={styles.secondaryMetricItem}>
+                          <Text style={styles.secondaryMetricValue}>
+                            {formatNumber(averagePricePerKWh, 2)} €
+                          </Text>
+                          <Text style={styles.secondaryMetricLabel}>{t("charging.avgPricePerKWh")}</Text>
+                        </View>
+                      )}
+                      {averageChargingCost !== null && (
+                        <View style={styles.secondaryMetricItem}>
+                          <Text style={styles.secondaryMetricValue}>
+                            {formatNumber(averageChargingCost, 2)} €
+                          </Text>
+                          <Text style={styles.secondaryMetricLabel}>{t("charging.avgCost")}</Text>
+                        </View>
+                      )}
+                      <View style={styles.secondaryMetricItem}>
+                        <Text style={styles.secondaryMetricValue}>
+                          {formatNumber(totalChargingCost, 2)} €
+                        </Text>
+                        <Text style={styles.secondaryMetricLabel}>{t("charging.totalCost")}</Text>
+                      </View>
+                    </View>
                   </View>
-                )}
-
-                {totalFuelCost !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>
-                      {t("fillings.totalCost")}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(totalFuelCost, 2)} €
-                    </Text>
-                  </View>
-                )}
-
-                {totalChargingCost !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>
-                      {t("charging.totalCost")}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(totalChargingCost, 2)} €
-                    </Text>
-                  </View>
-                )}
-
-                {/* Cost per 100km Statistics */}
-                {averageFuelCostPer100km !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>
-                      {t("vehicles.avgCostPer100km")}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(averageFuelCostPer100km, 2)} € / 100km
-                    </Text>
-                  </View>
-                )}
-
-                {averageElectricityCostPer100km !== null && (
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>
-                      {t("vehicles.avgCostPer100km")}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {formatNumber(averageElectricityCostPer100km, 2)} € / 100km
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </Surface>
+                </Surface>
+              );
+            }
+            
+            // No data available
+            return (
+              <Surface style={styles.statsCard}>
+                <Text style={styles.sectionTitle}>{t("vehicles.statistics")}</Text>
+                <Text style={styles.emptyText}>
+                  {shouldShowChargeButton() ? t("charging.notEnoughData") : t("fillings.notEnoughData")}
+                </Text>
+              </Surface>
+            );
+          })()
         )}
 
         {/* Fuel Consumption Graph (only for vehicles with fuel) */}
@@ -745,7 +863,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   brandLogo: {
-    width: 60,
+    width: 80,
     height: 60,
     borderRadius: 0,
     backgroundColor: "transparent",
@@ -759,6 +877,15 @@ const styles = StyleSheet.create({
   vehicleSubtitle: {
     fontSize: 16,
     color: "#666",
+    marginBottom: 4,
+  },
+  vehicleSubtitleContainer: {
+    flexDirection: "column",
+  },
+  vehicleTypeText: {
+    fontSize: 10,
+    color: "#888",
+    fontStyle: "italic",
   },
   statsCard: {
     margin: 16,
@@ -813,12 +940,98 @@ const styles = StyleSheet.create({
   statCardPrimaryValue: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#000",
+    color: "#2e7d32",
     marginBottom: 4,
+    textAlign: "center",
   },
   statCardSecondaryValue: {
     fontSize: 14,
     color: "#666",
+  },
+  // New improved PHEV card styles
+  primaryMetricContainer: {
+    justifyContent: "center",
+    marginBottom: 12,
+    paddingBottom: 12,
+    // borderBottomWidth: 1,
+    // borderBottomColor: "#f0f0f0",
+    width: "100%",
+  },
+  primaryMetricLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  secondaryMetricsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    width: "100%",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    padding: 12,
+  },
+  secondaryMetricItem: {
+    alignItems: "center",
+    width: "48%",
+    marginBottom: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  secondaryMetricValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2e7d32",
+    marginBottom: 4,
+  },
+  secondaryMetricLabel: {
+    fontSize: 11,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 14,
+  },
+  // Improved non-PHEV statistics styles
+  improvedStatsContainer: {
+    marginTop: 12,
+  },
+  statsSection: {
+    marginBottom: 20,
+  },
+  statsSectionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  improvedStatsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  improvedStatItem: {
+    width: "48%",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+  },
+  improvedStatValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2e7d32",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  improvedStatLabel: {
+    fontSize: 11,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 14,
   },
   fillingsCard: {
     margin: 16,
