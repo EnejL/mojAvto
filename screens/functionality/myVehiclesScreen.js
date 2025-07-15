@@ -225,6 +225,7 @@ const styles = StyleSheet.create({
     marginRight: 0,
     borderRadius: 0,
     borderWidth: 0,
+    padding: 10,
     backgroundColor: "white",
   },
   vehicleContent: {
