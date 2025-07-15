@@ -2,6 +2,16 @@ import { auth } from "./firebase";
 import { getDeviceId } from "./deviceStorage";
 import { updateVehicle } from "./firestore";
 
+const actionCodeSettings = {
+  url: 'https://verify.enejlicina.com/verify-email',
+  handleCodeInApp: true,
+  iOS: {
+    bundleId: 'com.enejlicina.napoti',
+  },
+  android: {
+    packageName: 'com.enejlicina.napoti',
+  },
+};
 
 // Function to get vehicles by device ID
 export const getVehiclesByDeviceId = async (deviceId) => {
@@ -75,8 +85,10 @@ export const signIn = async (email, password) => {
 // Register with email and password
 export const createAccount = async (email, password) => {
   try {
-    // Call the method on your auth instance
     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+
+    await userCredential.user.sendEmailVerification(actionCodeSettings);
+
     return userCredential.user;
   } catch (error) {
     console.error("Error creating account:", error.code);
@@ -87,7 +99,6 @@ export const createAccount = async (email, password) => {
 // Sign out
 export const signOut = async () => {
   try {
-    // Call the method on your auth instance
     await auth.signOut();
   } catch (error) {
     console.error("Error signing out:", error);
@@ -98,4 +109,40 @@ export const signOut = async () => {
 // Get current user
 export const getCurrentUser = () => {
   return auth.currentUser;
+};
+
+// Check if user's email is verified
+export const isEmailVerified = () => {
+  const user = auth.currentUser;
+  return user ? user.emailVerified : false;
+};
+
+// Resend email verification
+export const resendEmailVerification = async () => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      // Send email verification WITH the new settings
+      await user.sendEmailVerification(actionCodeSettings);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error resending email verification:", error);
+    throw error;
+  }
+};
+
+export const reloadUser = async () => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      await user.reload();
+      return user;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error reloading user:", error);
+    throw error;
+  }
 };

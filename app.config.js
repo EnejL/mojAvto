@@ -7,9 +7,11 @@ export default {
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "com.enejlicina.napoti",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
+      "associatedDomains": ["applinks:verify.enejlicina.com"],
       "buildNumber": "10",
       "googleServicesFile": "./GoogleService-Info.plist",
       "config": {
