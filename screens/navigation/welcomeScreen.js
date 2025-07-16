@@ -7,6 +7,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../utils/firebase";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { signInWithGoogle } from "../../utils/googleSignIn";
+import AppleSignIn from "../../components/AppleSignIn";
 
 export default function WelcomeScreen() {
   const navigation = useNavigation();
@@ -220,6 +221,12 @@ export default function WelcomeScreen() {
           {t("auth.signInWithGoogle")}
         </Button>
 
+        {Platform.OS === 'ios' && (
+          <View style={styles.appleSignInContainer}>
+            <AppleSignIn />
+          </View>
+        )}
+
         <View style={styles.switchContainer}>
           <Text style={styles.switchText}>{t("auth.needAccount")}</Text>
           <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
@@ -337,5 +344,9 @@ const styles = StyleSheet.create({
   },
   doneButton: {
     marginRight: 8,
+  },
+  appleSignInContainer: {
+    marginTop: 16,
+    alignItems: 'center',
   },
 });
