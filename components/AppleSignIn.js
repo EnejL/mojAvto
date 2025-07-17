@@ -3,7 +3,7 @@
 import React from 'react';
 import { Alert } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { auth } from '../utils/firebase'; // Adjust path if needed
+import { auth } from '../utils/firebase';
 import { OAuthProvider, signInWithCredential } from 'firebase/auth';
 
 function AppleSignIn() {
@@ -37,7 +37,6 @@ function AppleSignIn() {
       
     } catch (error) {
       if (error.code === 'ERR_REQUEST_CANCELED') {
-        // User canceled the sign-in flow.
         console.log('User canceled Apple Sign-In.');
       } else {
         console.error('Apple Sign-In Error:', error);

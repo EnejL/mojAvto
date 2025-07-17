@@ -14,6 +14,9 @@ export default {
       "usesAppleSignIn": true,
       "associatedDomains": ["applinks:verify.enejlicina.com"],
       "buildNumber": "12",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "googleServicesFile": "./GoogleService-Info.plist",
       "config": {
         "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
