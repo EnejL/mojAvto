@@ -13,7 +13,8 @@ export default {
       "bundleIdentifier": "com.enejlicina.napoti",
       "usesAppleSignIn": true,
       "associatedDomains": ["applinks:verify.enejlicina.com"],
-      "buildNumber": "12",
+      "buildNumber": "13",
+      "entitlements": "./Entitlements.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
