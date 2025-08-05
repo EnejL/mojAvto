@@ -11,6 +11,7 @@ export default {
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
+      "deploymentTarget": "14.0",
       "usesAppleSignIn": true,
       "associatedDomains": ["applinks:verify.enejlicina.com"],
       "buildNumber": "13",
