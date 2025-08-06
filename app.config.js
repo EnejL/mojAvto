@@ -11,11 +11,9 @@ export default {
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
-      "deploymentTarget": "14.0",
-      "usesAppleSignIn": true,
+      "deploymentTarget": "15.1",
       "associatedDomains": ["applinks:verify.enejlicina.com"],
       "buildNumber": "13",
-      "entitlements": "./Entitlements.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -54,22 +52,13 @@ export default {
       ],
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
+      "expo-apple-authentication",
       [
         "expo-build-properties",
         {
           "ios": {
             "useFrameworks": "static",
-            "extraPods": [
-              { "name": "FirebaseAuth", "modular_headers": true },
-              { "name": "FirebaseAuthInterop", "modular_headers": true },
-              { "name": "FirebaseAppCheckInterop", "modular_headers": true },
-              { "name": "FirebaseCore", "modular_headers": true },
-              { "name": "FirebaseCoreExtension", "modular_headers": true },
-              { "name": "GoogleUtilities", "modular_headers": true },
-              { "name": "RecaptchaInterop", "modular_headers": true },
-              { "name": "FirebaseFirestore", "modular_headers": true },
-              { "name": "FirebaseFirestoreInternal", "modular_headers": true }
-            ]
+            "deploymentTarget": "15.1"
           },
           "android": {
             "minSdkVersion": 21

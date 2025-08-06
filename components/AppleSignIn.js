@@ -3,8 +3,7 @@
 import React from 'react';
 import { Alert } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { auth } from '../utils/firebase';
-import { OAuthProvider, signInWithCredential } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
 
 function AppleSignIn() {
   const handleAppleSignIn = async () => {
@@ -22,15 +21,12 @@ function AppleSignIn() {
       
       const { identityToken, nonce } = appleCredential;
 
-      // 2. Create a Firebase credential with the token from Apple
-      const provider = new OAuthProvider('apple.com');
-      const credential = provider.credential({
-        idToken: identityToken,
-        rawNonce: nonce,
-      });
+      // 2. Create the credential using React Native Firebase
+      const credential = auth.AppleAuthProvider.credential(identityToken, nonce);
 
       // 3. Sign in to Firebase with the new credential
-      await signInWithCredential(auth, credential);
+      const result = await auth().signInWithCredential(credential);
+      console.log('Firebase sign-in successful:', result.user.uid);
       
       // The onAuthStateChanged listener in your App.js will now handle navigation
       // to the main app.
