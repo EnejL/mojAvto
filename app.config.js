@@ -2,7 +2,7 @@ export default {
   "expo": {
     "name": "Na Poti",
     "slug": "NaPoti",
-    "version": "1.2.0", 
+    "version": "1.3.1", 
     "orientation": "portrait",
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
@@ -11,8 +11,12 @@ export default {
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.enejlicina.napoti",
+      "deploymentTarget": "15.1",
       "associatedDomains": ["applinks:verify.enejlicina.com"],
-      "buildNumber": "10",
+      "buildNumber": "13",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "googleServicesFile": "./GoogleService-Info.plist",
       "config": {
         "googleMapsApiKey": "AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA"
@@ -48,22 +52,13 @@ export default {
       ],
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
+      "expo-apple-authentication",
       [
         "expo-build-properties",
         {
           "ios": {
             "useFrameworks": "static",
-            "extraPods": [
-              { "name": "FirebaseAuth", "modular_headers": true },
-              { "name": "FirebaseAuthInterop", "modular_headers": true },
-              { "name": "FirebaseAppCheckInterop", "modular_headers": true },
-              { "name": "FirebaseCore", "modular_headers": true },
-              { "name": "FirebaseCoreExtension", "modular_headers": true },
-              { "name": "GoogleUtilities", "modular_headers": true },
-              { "name": "RecaptchaInterop", "modular_headers": true },
-              { "name": "FirebaseFirestore", "modular_headers": true },
-              { "name": "FirebaseFirestoreInternal", "modular_headers": true }
-            ]
+            "deploymentTarget": "15.1"
           },
           "android": {
             "minSdkVersion": 21
