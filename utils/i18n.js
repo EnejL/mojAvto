@@ -196,7 +196,7 @@ const resources = {
         signInWithGoogle: "Prijava z Google računom",
         or: "ali",
         googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
-        welcomeMessage: "Vozite pametneje!"
+        welcomeMessage: "Vaša vozila, na dlani!"
       }
     }
   }
