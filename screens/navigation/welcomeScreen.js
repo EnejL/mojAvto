@@ -24,8 +24,8 @@ export default function WelcomeScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      StatusBar.setBarStyle('dark-content');
-      StatusBar.setBackgroundColor('#ffffff');
+      StatusBar.setBarStyle('light-content');
+      StatusBar.setBackgroundColor('#1a1a2e');
     }, [])
   );
 
@@ -141,102 +141,106 @@ export default function WelcomeScreen() {
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      <Surface style={styles.headerCard}>
-        <Text style={styles.appName}>Na Poti</Text>
-      </Surface>
+      <View style={styles.centerContainer}>
+        <Surface style={styles.headerCard}>
+          <Text style={styles.appName}>Na Poti</Text>
+        </Surface>
 
-      <Text style={styles.welcomeText}>{t("auth.welcomeMessage")}</Text>
+        <Text style={styles.welcomeText}>{t("auth.welcomeMessage")}</Text>
 
-      <Surface style={styles.formCard}>
-        <TextInput
-          ref={emailInputRef}
-          label={t("auth.email")}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          style={styles.input}
-          inputAccessoryViewID={emailAccessoryID}
-          returnKeyType="next"
-          onSubmitEditing={() => passwordInputRef.current?.focus()}
-        />
+        <Surface style={styles.formCard}>
+          {/* Email/Password fields commented out - using only Google/Apple Sign-In
+          <TextInput
+            ref={emailInputRef}
+            label={t("auth.email")}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={styles.input}
+            inputAccessoryViewID={emailAccessoryID}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordInputRef.current?.focus()}
+          />
 
-        <TextInput
-          ref={passwordInputRef}
-          label={t("auth.password")}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!passwordVisible}
-          style={styles.input}
-          inputAccessoryViewID={passwordAccessoryID}
-          returnKeyType="done"
-          onSubmitEditing={() => Keyboard.dismiss()}
-          right={
-            <TextInput.Icon
-              icon={passwordVisible ? "eye-off" : "eye"}
-              onPress={togglePasswordVisibility}
-            />
-          }
-        />
+          <TextInput
+            ref={passwordInputRef}
+            label={t("auth.password")}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!passwordVisible}
+            style={styles.input}
+            inputAccessoryViewID={passwordAccessoryID}
+            returnKeyType="done"
+            onSubmitEditing={() => Keyboard.dismiss()}
+            right={
+              <TextInput.Icon
+                icon={passwordVisible ? "eye-off" : "eye"}
+                onPress={togglePasswordVisibility}
+              />
+            }
+          />
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <TouchableOpacity
-          style={styles.forgotPasswordContainer}
-          onPress={() => navigation.navigate("ForgotPassword")}
-        >
-          <Text style={styles.forgotPasswordText}>
-            {t("auth.forgotPassword")}
-          </Text>
-        </TouchableOpacity>
-
-        <Button
-          mode="contained"
-          onPress={handleSignIn}
-          loading={loading}
-          style={styles.button}
-          disabled={loading}
-        >
-          {t("auth.signIn")}
-        </Button>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>{t("auth.or")}</Text>
-          <View style={styles.divider} />
-        </View>
-
-        <Button
-          mode="outlined"
-          onPress={handleGoogleSignIn}
-          style={styles.googleButton}
-          icon={() => (
-            <Image
-              source={require("../../assets/google-logo.png")}
-              style={styles.googleIcon}
-            />
-          )}
-          loading={loading}
-        >
-          {t("auth.signInWithGoogle")}
-        </Button>
-
-        {Platform.OS === 'ios' && (
-          <View style={styles.appleSignInContainer}>
-            <AppleSignIn />
-          </View>
-        )}
-
-        <View style={styles.switchContainer}>
-          <Text style={styles.switchText}>{t("auth.needAccount")}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
-            <Text style={styles.switchLink}>{t("auth.createAccount")}</Text>
+          <TouchableOpacity
+            style={styles.forgotPasswordContainer}
+            onPress={() => navigation.navigate("ForgotPassword")}
+          >
+            <Text style={styles.forgotPasswordText}>
+              {t("auth.forgotPassword")}
+            </Text>
           </TouchableOpacity>
-        </View>
-      </Surface>
 
-      {renderInputAccessoryView(emailAccessoryID)}
-      {renderInputAccessoryView(passwordAccessoryID)}
+          <Button
+            mode="contained"
+            onPress={handleSignIn}
+            loading={loading}
+            style={styles.button}
+            disabled={loading}
+          >
+            {t("auth.signIn")}
+          </Button>
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>{t("auth.or")}</Text>
+            <View style={styles.divider} />
+          </View>
+          */}
+
+          <Button
+            mode="outlined"
+            onPress={handleGoogleSignIn}
+            style={styles.googleButton}
+            icon={() => (
+              <Image
+                source={require("../../assets/google-logo.png")}
+                style={styles.googleIcon}
+              />
+            )}
+            loading={loading}
+          >
+            {t("auth.signInWithGoogle")}
+          </Button>
+
+          {Platform.OS === 'ios' && (
+            <View style={styles.appleSignInContainer}>
+              <AppleSignIn />
+            </View>
+          )}
+
+          {/* <View style={styles.switchContainer}>
+            <Text style={styles.switchText}>{t("auth.needAccount")}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+              <Text style={styles.switchLink}>{t("auth.createAccount")}</Text>
+            </TouchableOpacity>
+          </View> */}
+        </Surface>
+      </View>
+
+      {/* {renderInputAccessoryView(emailAccessoryID)} // Commented out - no longer using email auth
+      {renderInputAccessoryView(passwordAccessoryID)} // Commented out - no longer using email auth */}
     </ScrollView>
   );
 }
@@ -244,11 +248,18 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#1a1a2e", // Modern dark blue background
   },
   scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
     padding: 20,
-    paddingTop: "15%",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
   },
   headerCard: {
     padding: 24,
@@ -256,29 +267,40 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     elevation: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.1)", // Semi-transparent white
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   appName: {
     fontSize: 42,
     fontWeight: "bold",
-    color: "#333",
+    color: "#ffffff", // White text for dark background
     marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: "#666",
+    color: "#cccccc", // Light gray text
     fontStyle: "italic",
   },
   welcomeText: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: 24,
-    color: "#666",
+    color: "#cccccc", // Light gray text
     lineHeight: 24,
   },
   formCard: {
     padding: 24,
     borderRadius: 8,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255, 255, 255, 0.95)", // Almost white with slight transparency
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   input: {
     marginBottom: 16,
@@ -327,6 +349,17 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     marginBottom: 16,
+    backgroundColor: "#ffffff",
+    borderColor: "#4285F4",
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   googleIcon: {
     width: 24,

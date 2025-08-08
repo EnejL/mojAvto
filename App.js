@@ -16,7 +16,7 @@ import { StatusBar, ActivityIndicator, View } from "react-native";
 import WelcomeScreen from "./screens/navigation/welcomeScreen";
 import SignUpScreen from "./screens/navigation/signUpScreen";
 import ForgotPasswordScreen from "./screens/navigation/forgotPasswordScreen";
-import EmailVerificationScreen from "./screens/navigation/emailVerificationScreen";
+// import EmailVerificationScreen from "./screens/navigation/emailVerificationScreen"; // Commented out - no longer using email verification
 import MainAppNavigator from "./screens/navigation/mainAppNavigator";
 
 const Stack = createNativeStackNavigator();
@@ -68,11 +68,7 @@ export default function App() {
         <NavigationContainer linking={linking}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             {user ? (
-                user.emailVerified ? (
-                  <Stack.Screen name="MainApp" component={MainAppNavigator} />
-                ) : (
-                  <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
-                )
+                <Stack.Screen name="MainApp" component={MainAppNavigator} />
               ) : (
                 <>
                   <Stack.Screen name="Welcome" component={WelcomeScreen} />
