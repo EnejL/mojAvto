@@ -10,17 +10,17 @@ export default function PrivacyPolicyScreen() {
     <ScrollView style={styles.container}>
       <Surface style={styles.section}>
         <Text style={styles.title}>Politika zasebnosti</Text>
-        <Text style={styles.date}>Nazadnje posodobljeno: 28. April 2025</Text>
+        <Text style={styles.date}>Nazadnje posodobljeno: 10. Avgust 2025</Text>
 
         <Text style={styles.sectionTitle}>1. Splošne informacije</Text>
         <Text style={styles.text}>
-          Aplikacijo "Na poti" razvija Enej Ličina.{"\n"}
-          Za vsa vprašanja o zasebnosti nas lahko kontaktirate na: enej.dev@gmail.com.
+          Aplikacijo "Na Poti" razvija Enej Ličina.{"\n"}
+          Za vsa vprašanja o zasebnosti se lahko obrnete na: enej.dev@gmail.com.
         </Text>
 
         <Text style={styles.sectionTitle}>2. Namen aplikacije</Text>
         <Text style={styles.text}>
-          "Na poti" omogoča uporabnikom sledenje porabi goriva oziroma električne energije za njihova vozila ter pregled bencinskih servisov v Sloveniji.
+          "Na Poti" omogoča uporabnikom sledenje porabi goriva oziroma električne energije za njihova vozila ter pregled bencinskih servisov v Sloveniji.
         </Text>
 
         <Text style={styles.sectionTitle}>3. Zbiranje in obdelava osebnih podatkov</Text>
@@ -30,15 +30,16 @@ export default function PrivacyPolicyScreen() {
         <Text style={styles.bulletPoint}>• Podatke o vozilu (znamka, model, registrska številka)</Text>
         <Text style={styles.bulletPoint}>• Lokacijo (za iskanje bencinskih servisov)</Text>
         <Text style={styles.bulletPoint}>• Podatke o polnjenju goriva</Text>
+        <Text style={styles.bulletPoint}>• Podatke o polnjenju elektrike</Text>
 
         <Text style={styles.subsectionTitle}>Podlaga za obdelavo:</Text>
         <Text style={styles.text}>Uporabniška privolitev pri registraciji računa.</Text>
 
         <Text style={styles.subsectionTitle}>Obdelava tretjih oseb:</Text>
-        <Text style={styles.text}>Uporabljamo Firebase za avtentikacijo in hranjenje podatkov.</Text>
+        <Text style={styles.text}>Uporabljamo Googlovo storitev Firebase za avtentikacijo in hranjenje podatkov.</Text>
 
         <Text style={styles.subsectionTitle}>Obdobje hrambe podatkov:</Text>
-        <Text style={styles.text}>Vaše podatke hranimo do izbrisa uporabniškega računa.</Text>
+        <Text style={styles.text}>Vaše podatke hranimo do izbrisa uporabniškega računa oz. največ 6 mesecev po izbrisu računa.</Text>
 
         <Text style={styles.subsectionTitle}>Vaše pravice:</Text>
         <Text style={styles.bulletPoint}>• Pravica do dostopa do podatkov</Text>

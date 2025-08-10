@@ -19,6 +19,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Dropdown } from 'react-native-element-dropdown';
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import FormLabel from "../../components/FormLabel";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -192,7 +193,7 @@ export default function EditVehicleScreen({ navigation, route }) {
     ]);
   };
 
-  const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
+
 
   const shouldShowFuelTankSize = () => ['ICE', 'HYBRID', 'PHEV'].includes(vehicleData.vehicleType);
   const shouldShowBatteryCapacity = () => ['BEV', 'PHEV'].includes(vehicleData.vehicleType);
@@ -225,9 +226,7 @@ export default function EditVehicleScreen({ navigation, route }) {
 
         <Surface style={styles.formCard}>
             <View style={[styles.inputContainer, { zIndex: 5 }]}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.name")}</Text>
-            </View>
+            <FormLabel style={styles.inputLabel}>{t("vehicles.name")}</FormLabel>
             <TextInput
               value={vehicleData.name}
               onChangeText={(text) =>
@@ -240,10 +239,7 @@ export default function EditVehicleScreen({ navigation, route }) {
           </View>
 
             <View style={[styles.inputContainer, { zIndex: 4 }]}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
-              {renderRequiredLabel()}
-            </View>
+            <FormLabel required style={styles.inputLabel}>{t("vehicles.make")}</FormLabel>
             <TextInput
                 value={make}
                 onChangeText={handleMakeChange}
@@ -258,10 +254,7 @@ export default function EditVehicleScreen({ navigation, route }) {
           </View>
 
             <View style={[styles.inputContainer, { zIndex: 3 }]}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
-              {renderRequiredLabel()}
-            </View>
+            <FormLabel required style={styles.inputLabel}>{t("vehicles.model")}</FormLabel>
             <TextInput
                 value={model}
                 onChangeText={handleModelChange}
@@ -277,7 +270,7 @@ export default function EditVehicleScreen({ navigation, route }) {
           </View>
 
             <View style={[styles.inputContainer, { zIndex: 2 }]}>
-            <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
+            <FormLabel style={styles.inputLabel}>{t("vehicles.numberPlate")}</FormLabel>
             <TextInput
               value={vehicleData.numberPlate}
               onChangeText={(text) =>
@@ -292,10 +285,7 @@ export default function EditVehicleScreen({ navigation, route }) {
 
           {/* Vehicle Type Selector */}
           <View style={[styles.inputContainer, { zIndex: 1 }]}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.vehicleType")}</Text>
-              {renderRequiredLabel()}
-            </View>
+            <FormLabel required style={styles.inputLabel}>{t("vehicles.vehicleType")}</FormLabel>
             <Dropdown
               style={styles.dropdown}
               placeholderStyle={styles.placeholderStyle}
@@ -314,7 +304,7 @@ export default function EditVehicleScreen({ navigation, route }) {
           {/* Conditional Fields */}
           {shouldShowFuelTankSize() && (
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.fuelTankSize")} (L)</Text>
+              <FormLabel style={styles.inputLabel}>{t("vehicles.fuelTankSize")} (L)</FormLabel>
               <TextInput
                 value={vehicleData.fuelTankSize}
                 onChangeText={(text) =>
@@ -331,7 +321,7 @@ export default function EditVehicleScreen({ navigation, route }) {
 
           {shouldShowBatteryCapacity() && (
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>{t("vehicles.batteryCapacity")} (kWh)</Text>
+              <FormLabel style={styles.inputLabel}>{t("vehicles.batteryCapacity")} (kWh)</FormLabel>
               <TextInput
                 value={vehicleData.batteryCapacity}
                 onChangeText={(text) =>
@@ -447,7 +437,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   deleteButton: {
-    marginHorizontal: 16,
+    marginHorizontal: 25,
     marginTop: 16,
     borderColor: "#d32f2f",
   },

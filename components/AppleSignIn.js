@@ -45,9 +45,9 @@ function AppleSignIn() {
   return (
     <AppleAuthentication.AppleAuthenticationButton
       buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-      cornerRadius={5}
-      style={{ width: '100%', height: 44 }} // Style as needed
+      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+      cornerRadius={12} 
+      style={{ width: '100%', height: 44, marginBottom: 16 }}
       onPress={handleAppleSignIn}
     />
   );

@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { addFilling } from "../../utils/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { MaterialIcons } from "@expo/vector-icons";
+import FormLabel from "../../components/FormLabel";
 
 export default function AddFillingScreen({ route, navigation }) {
   const { t } = useTranslation();
@@ -115,7 +116,7 @@ export default function AddFillingScreen({ route, navigation }) {
               style={styles.datePickerButton}
               onPress={toggleDatePicker}
             >
-              <Text style={styles.datePickerLabel}>{t("fillings.date")}</Text>
+              <FormLabel required style={styles.datePickerLabel}>{t("fillings.date")}</FormLabel>
               <View style={styles.datePickerValueContainer}>
                 <Text style={styles.datePickerValue}>
                   {formatDate(fillingData.date)}
@@ -135,7 +136,7 @@ export default function AddFillingScreen({ route, navigation }) {
             )}
 
             <TextInput
-              label={t("fillings.liters")}
+              label={<FormLabel required>{t("fillings.liters")}</FormLabel>}
               value={fillingData.liters}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -148,7 +149,7 @@ export default function AddFillingScreen({ route, navigation }) {
             />
 
             <TextInput
-              label={t("fillings.cost")}
+              label={<FormLabel required>{t("fillings.cost")}</FormLabel>}
               value={fillingData.cost}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -161,7 +162,7 @@ export default function AddFillingScreen({ route, navigation }) {
             />
 
             <TextInput
-              label={t("fillings.odometer")}
+              label={<FormLabel required>{t("fillings.odometer")}</FormLabel>}
               value={fillingData.odometer}
               onChangeText={(text) =>
                 setFillingData({ ...fillingData, odometer: text })
@@ -208,6 +209,8 @@ const styles = StyleSheet.create({
   vehicleInfoCard: {
     padding: 16,
     marginBottom: 16,
+    marginTop: 6,
+    marginHorizontal: 6,
     borderRadius: 8,
     elevation: 2,
   },
@@ -224,6 +227,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     elevation: 2,
+    marginHorizontal: 6,
   },
   input: {
     marginBottom: 16,

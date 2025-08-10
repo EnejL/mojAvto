@@ -19,7 +19,7 @@ const resources = {
         details: "Podrobnosti",
         add: "Dodaj Vozilo",
         edit: "Uredi Vozilo",
-        name: "Ime Vozila (neobvezno)",
+        name: "Ime Vozila",
         make: "Znamka",
         model: "Model",
         addFirst: "Dodaj Svoje Prvo Vozilo",
@@ -183,7 +183,8 @@ const resources = {
         needAccount: "Potrebujete račun?",
         signedInAs: "Prijavljeni kot {{email}}",
         signOut: "Odjava",
-        greeting: "Pozdravljeni, {{email}}",
+        greeting: "Pozdravljeni, {{name}}",
+        greetingAnonymous: "Pozdravljeni!",
         accountManage: "Moj Račun",
         forgotPassword: "Ste pozabili geslo?",
         forgotPasswordInstructions: "Prosimo, vnesite svoj e-poštni naslov in prejeli boste navodila za ponastavitev gesla.",
@@ -196,7 +197,7 @@ const resources = {
         signInWithGoogle: "Prijava z Google računom",
         or: "ali",
         googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
-        welcomeMessage: "Vozite pametneje!"
+        welcomeMessage: "Vaša vozila, na dlani!"
       }
     }
   }

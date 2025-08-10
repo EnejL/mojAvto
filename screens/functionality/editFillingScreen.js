@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { updateFilling, deleteFilling } from "../../utils/firestore";
 import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import FormLabel from "../../components/FormLabel";
 
 export default function EditFillingScreen({ route, navigation }) {
   const { t } = useTranslation();
@@ -143,7 +144,7 @@ export default function EditFillingScreen({ route, navigation }) {
               style={styles.datePickerButton}
               onPress={toggleDatePicker}
             >
-              <Text style={styles.datePickerLabel}>{t("fillings.date")}</Text>
+              <FormLabel required style={styles.datePickerLabel}>{t("fillings.date")}</FormLabel>
               <View style={styles.datePickerValueContainer}>
                 <Text style={styles.datePickerValue}>
                   {formatDate(fillingData.date)}
@@ -163,7 +164,7 @@ export default function EditFillingScreen({ route, navigation }) {
             )}
 
             <TextInput
-              label={t("fillings.liters")}
+              label={<FormLabel required>{t("fillings.liters")}</FormLabel>}
               value={fillingData.liters}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -176,7 +177,7 @@ export default function EditFillingScreen({ route, navigation }) {
             />
 
             <TextInput
-              label={t("fillings.cost")}
+              label={<FormLabel required>{t("fillings.cost")}</FormLabel>}
               value={fillingData.cost}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -189,7 +190,7 @@ export default function EditFillingScreen({ route, navigation }) {
             />
 
             <TextInput
-              label={t("fillings.odometer")}
+              label={<FormLabel required>{t("fillings.odometer")}</FormLabel>}
               value={fillingData.odometer}
               onChangeText={(text) =>
                 setFillingData({ ...fillingData, odometer: text })

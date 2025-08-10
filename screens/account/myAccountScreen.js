@@ -9,6 +9,11 @@ export default function MyAccountScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
+  
+  console.log('Current user data:', {
+    displayName: currentUser?.displayName,
+    photoURL: currentUser?.photoURL,
+  });
 
   const handleSignOut = async () => {
     try {
@@ -23,16 +28,27 @@ export default function MyAccountScreen() {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <Surface style={styles.headerCard}>
-          <Avatar.Icon
-            size={80}
-            icon="account"
-            style={styles.avatar}
-            color="#fff"
-          />
+          {currentUser?.photoURL ? (
+            <Avatar.Image
+              size={80}
+              source={{ uri: currentUser.photoURL }}
+              style={styles.avatar}
+            />
+          ) : (
+            <Avatar.Icon
+              size={80}
+              icon="account"
+              style={styles.avatar}
+              color="#fff"
+            />
+          )}
           <Text style={styles.greeting}>
-            {t("auth.greeting", {
-              email: currentUser?.email || t("auth.anonymous"),
-            })}
+            {currentUser?.isAnonymous 
+              ? t("auth.greetingAnonymous")
+              : t("auth.greeting", {
+                  name: currentUser?.displayName || currentUser?.email,
+                })
+            }
           </Text>
         </Surface>
 
