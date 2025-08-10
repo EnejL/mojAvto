@@ -10,10 +10,10 @@ export default function TermsOfUseScreen() {
     <ScrollView style={styles.container}>
       <Surface style={styles.section}>
         <Text style={styles.title}>Pogoji uporabe</Text>
-        <Text style={styles.date}>Nazadnje posodobljeno: 28. April 2025</Text>
+        <Text style={styles.date}>Nazadnje posodobljeno: 10. Avgust 2025</Text>
 
         <Text style={styles.sectionTitle}>1. Opis storitve</Text>
-        <Text style={styles.text}>"Na poti" omogoča uporabnikom:</Text>
+        <Text style={styles.text}>"Na Poti" omogoča uporabnikom:</Text>
         <Text style={styles.bulletPoint}>• sledenje porabi goriva/elektrike</Text>
         <Text style={styles.bulletPoint}>• pregled bencinskih servisov (lokacije, delovni časi, cene goriv)</Text>
 
@@ -31,7 +31,8 @@ export default function TermsOfUseScreen() {
 
         <Text style={styles.sectionTitle}>5. Prenehanje uporabe</Text>
         <Text style={styles.text}>
-          Uporabnik lahko kadarkoli izbriše svoj račun znotraj aplikacije ("Račun" > "Izbriši račun").{"\n"}
+          Uporabnik lahko zahteva izbris svojega uporabniškega računa. Za izbris računa se lahko obrnete na: enej.dev@gmail.com.{"\n"}
+          {"\n"}
           Z izbrisom računa se izbrišejo vsi osebni podatki.
         </Text>
 

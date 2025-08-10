@@ -19,7 +19,7 @@ const resources = {
         details: "Podrobnosti",
         add: "Dodaj Vozilo",
         edit: "Uredi Vozilo",
-        name: "Ime Vozila (neobvezno)",
+        name: "Ime Vozila",
         make: "Znamka",
         model: "Model",
         addFirst: "Dodaj Svoje Prvo Vozilo",

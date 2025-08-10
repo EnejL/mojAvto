@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { updateChargingSession, deleteChargingSession } from "../../utils/firestore";
 import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import FormLabel from "../../components/FormLabel";
 
 export default function EditChargingScreen({ route, navigation }) {
   const { t } = useTranslation();
@@ -163,7 +164,7 @@ export default function EditChargingScreen({ route, navigation }) {
               style={styles.datePickerButton}
               onPress={toggleDatePicker}
             >
-              <Text style={styles.datePickerLabel}>{t("charging.date")}</Text>
+              <FormLabel required style={styles.datePickerLabel}>{t("charging.date")}</FormLabel>
               <View style={styles.datePickerValueContainer}>
                 <Text style={styles.datePickerValue}>
                   {formatDate(chargingData.date)}
@@ -183,7 +184,7 @@ export default function EditChargingScreen({ route, navigation }) {
             )}
 
             <TextInput
-              label={t("charging.energyAdded")}
+              label={<FormLabel required>{t("charging.energyAdded")}</FormLabel>}
               value={chargingData.energyAdded}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -197,7 +198,7 @@ export default function EditChargingScreen({ route, navigation }) {
             />
 
             <TextInput
-              label={t("charging.cost")}
+              label={<FormLabel required>{t("charging.cost")}</FormLabel>}
               value={chargingData.cost}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -211,7 +212,7 @@ export default function EditChargingScreen({ route, navigation }) {
             />
 
             <TextInput
-              label={t("charging.odometer")}
+              label={<FormLabel required>{t("charging.odometer")}</FormLabel>}
               value={chargingData.odometer}
               onChangeText={(text) =>
                 setChargingData({ ...chargingData, odometer: text })
@@ -255,7 +256,7 @@ export default function EditChargingScreen({ route, navigation }) {
 
             {/* Optional Location Name */}
             <TextInput
-              label={t("charging.locationName")}
+              label={<FormLabel>{t("charging.locationName")}</FormLabel>}
               value={chargingData.chargingLocation.locationName}
               onChangeText={(text) =>
                 setChargingData({ 
@@ -323,6 +324,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     elevation: 2,
+    marginTop: 6,
+    marginHorizontal: 6,
     marginBottom: 16,
   },
   input: {

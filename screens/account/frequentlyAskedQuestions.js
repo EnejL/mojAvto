@@ -14,11 +14,23 @@ export default function FrequentlyAskedQuestionsScreen() {
     },
     {
       question: "Kako dodam novo vozilo?",
-      answer: "V glavnem meniju izberite 'Moja Vozila' in nato izberite 'Dodaj Vozilo'. Izpolnite zahtevane podatke o vozilu (ime, znamka, model) in kliknite 'Dodaj Vozilo'."
+      answer: "V glavnem meniju izberite 'Moja Vozila' in nato izberite 'Dodaj Vozilo'. Izpolnite zahtevane podatke o vozilu (znamka, model) in kliknite 'Dodaj Vozilo'."
     },
     {
       question: "Kako beležim polnjenje goriva?",
-      answer: "Kliknite na želeno vozilo v meniju 'Moja Vozila', nato izberite 'Dodaj Točenje'. Vnesite datum, količino goriva, ceno na liter in stanje števca kilometrov. Aplikacija bo samodejno izračunala porabo ko bosta vnešeni najmanj dve točenji."
+      answer: "Kliknite na želeno vozilo v meniju 'Moja Vozila', nato izberite 'Točenje +'. Vnesite datum točenja, količino natočenega goriva, skupno ceno točenja in stanje števca kilometrov. Aplikacija bo samodejno izračunala porabo ko bosta vnešeni najmanj dve točenji."
+    },
+    {
+      question: "Kako beležim polnjenje elektrike?",
+      answer: "Kliknite na želeno vozilo v meniju 'Moja Vozila', nato izberite 'Polnjenje +'. Vnesite datum polnjenja, količino električne energije, skupno ceno polnjenja in stanje števca kilometrov. Aplikacija bo samodejno izračunala porabo ko bosta vnešeni najmanj dve polnjenji."
+    },
+    {
+      question: "Ali lahko dodam več vozil?",
+      answer: "Da, lahko dodate več vozil. V meniju 'Moja Vozila' lahko dodate novo vozilo z istim postopkom kot pri prvem vozilu."
+    },
+    {
+      question: "Ali lahko aplikacijo uporabljam tudi če je moje vozilo priključni hibrid (t.i. plug-in hybrid / PHEV)?",
+      answer: "Da, aplikacijo lahko uporabljate tudi za priključne hibride. V meniju 'Moja Vozila' lahko dodate svoje hibridno vozilo po istem postopku kot pri bencinskem vozilu."
     },
     {
       question: "Kako deluje iskanje bencinskih servisov?",
@@ -41,8 +53,12 @@ export default function FrequentlyAskedQuestionsScreen() {
       answer: "Aplikacija izračuna porabo na podlagi razlike v kilometrih med polnjenji in količine natočenega goriva. Formula je: (litri / razlika v kilometrih) * 100."
     },
     {
+      question: "Kako deluje izračun porabe elektrike?",
+      answer: "Aplikacija izračuna porabo na podlagi razlike v kilometrih med polnjenji in količino električne energije. Formula je: (kWh / razlika v kilometrih) * 100."
+    },
+    {
       question: "Ali lahko izvozim svoje podatke?",
-      answer: "Trenutno ta funkcija še ni na voljo. Načrtujemo dodajanje možnosti izvoza podatkov v CSV formatu v prihodnji posodobitvi."
+      answer: "Trenutno ta funkcija še ni na voljo. Načrtujemo dodajanje možnosti izvoza podatkov v CSV formatu v prihodnosti."
     }
   ];
 

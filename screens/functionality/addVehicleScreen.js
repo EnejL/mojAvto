@@ -16,6 +16,7 @@ import { addVehicle } from "../../utils/firestore";
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import { Dropdown } from 'react-native-element-dropdown';
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import FormLabel from "../../components/FormLabel";
 
 const AddVehicleScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -161,7 +162,7 @@ const AddVehicleScreen = ({ navigation }) => {
     }
   };
 
-  const renderRequiredLabel = () => <Text style={styles.requiredLabel}>*</Text>;
+
 
   const shouldShowFuelTankSize = () => ['ICE', 'HYBRID', 'PHEV'].includes(vehicleData.vehicleType);
   const shouldShowBatteryCapacity = () => ['BEV', 'PHEV'].includes(vehicleData.vehicleType);
@@ -203,10 +204,7 @@ const AddVehicleScreen = ({ navigation }) => {
 
         {/* Make Input */}
         <View style={[styles.inputContainer, { zIndex: 5 }]}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.inputLabel}>{t("vehicles.make")}</Text>
-            {renderRequiredLabel()}
-          </View>
+          <FormLabel required style={styles.inputLabel}>{t("vehicles.make")}</FormLabel>
           <TextInput
             value={make}
             onChangeText={handleMakeChange}
@@ -222,10 +220,7 @@ const AddVehicleScreen = ({ navigation }) => {
 
         {/* Model Input */}
         <View style={[styles.inputContainer, { zIndex: 4 }]}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.inputLabel}>{t("vehicles.model")}</Text>
-            {renderRequiredLabel()}
-          </View>
+          <FormLabel required style={styles.inputLabel}>{t("vehicles.model")}</FormLabel>
           <TextInput
             value={model}
             onChangeText={handleModelChange}
@@ -241,7 +236,7 @@ const AddVehicleScreen = ({ navigation }) => {
         </View>
 
         <View style={[styles.inputContainer, { zIndex: 3 }]}>
-          <Text style={styles.inputLabel}>{t("vehicles.numberPlate")}</Text>
+          <FormLabel style={styles.inputLabel}>{t("vehicles.numberPlate")}</FormLabel>
           <TextInput
             value={vehicleData.numberPlate}
             onChangeText={(text) => setVehicleData({ ...vehicleData, numberPlate: text })}
@@ -253,10 +248,7 @@ const AddVehicleScreen = ({ navigation }) => {
 
         {/* Vehicle Type Dropdown */}
         <View style={[styles.inputContainer, { zIndex: 2 }]}>
-          <View style={styles.labelContainer}>
-            <Text style={styles.inputLabel}>{t("vehicles.vehicleType")}</Text>
-            {renderRequiredLabel()}
-          </View>
+          <FormLabel required style={styles.inputLabel}>{t("vehicles.vehicleType")}</FormLabel>
           <Dropdown
             style={styles.dropdown}
             placeholderStyle={styles.placeholderStyle}
@@ -275,7 +267,7 @@ const AddVehicleScreen = ({ navigation }) => {
         {/* Conditional Fields */}
         {shouldShowFuelTankSize() && (
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>{t("vehicles.fuelTankSize")} (L)</Text>
+            <FormLabel style={styles.inputLabel}>{t("vehicles.fuelTankSize")} (L)</FormLabel>
             <TextInput
               value={vehicleData.fuelTankSize}
               onChangeText={(text) => setVehicleData({ ...vehicleData, fuelTankSize: text })}
@@ -290,7 +282,7 @@ const AddVehicleScreen = ({ navigation }) => {
 
         {shouldShowBatteryCapacity() && (
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>{t("vehicles.batteryCapacity")} (kWh)</Text>
+            <FormLabel style={styles.inputLabel}>{t("vehicles.batteryCapacity")} (kWh)</FormLabel>
             <TextInput
               value={vehicleData.batteryCapacity}
               onChangeText={(text) => setVehicleData({ ...vehicleData, batteryCapacity: text })}
