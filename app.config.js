@@ -2,7 +2,7 @@ export default {
   "expo": {
     "name": "Na Poti",
     "slug": "NaPoti",
-    "version": "1.3.1", 
+    "version": "1.4.0", 
     "orientation": "portrait",
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,7 @@ export default {
       "bundleIdentifier": "com.enejlicina.napoti",
       "deploymentTarget": "15.1",
       "associatedDomains": ["applinks:verify.enejlicina.com"],
-      "buildNumber": "13",
+      "buildNumber": "14",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
