@@ -23,8 +23,11 @@ export default {
       }
     },
     "android": {
+      "package": "com.enejlicina.napoti",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/app-icon-android.png",
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [
@@ -61,7 +64,7 @@ export default {
             "deploymentTarget": "15.1"
           },
           "android": {
-            "minSdkVersion": 21
+            "minSdkVersion": 24
           }
         }
       ]
