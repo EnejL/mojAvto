@@ -9,8 +9,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Import screens
 import MyVehiclesScreen from "../functionality/myVehiclesScreen";
-import PetrolStationsScreen from "../functionality/petrolStationsScreen";
-import PetrolStationDetailsScreen from "../functionality/petrolStationDetailsScreen";
 import SettingsScreen from "../functionality/settingsScreen";
 import VehicleDetailsScreen from "../functionality/vehicleDetailsScreen";
 import AddVehicleScreen from "../functionality/addVehicleScreen";
@@ -130,46 +128,7 @@ function MyVehiclesStack() {
   );
 }
 
-// Petrol Stations stack
-function PetrolStationsStack() {
-  const { t } = useTranslation();
 
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
-      <Stack.Screen
-        name="PetrolStationsMain"
-        component={PetrolStationsScreen}
-        options={{
-          title: t("navigation.petrolStations"),
-          // headerLeft: () => null,
-        }}
-      />
-      <Stack.Screen
-        name="Auth"
-        component={AuthScreen}
-        options={{ title: t("auth.title") }}
-      />
-      <Stack.Screen
-        name="PetrolStationDetails"
-        component={PetrolStationDetailsScreen}
-        options={({ route }) => ({
-          title: route.params.station.name,
-          headerShown: true,
-        })}
-      />
-    </Stack.Navigator>
-  );
-}
 
 // Settings stack
 function SettingsStack() {
@@ -293,22 +252,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
-      {
-      <Tab.Screen
-        name="PetrolStationsTab"
-        component={PetrolStationsStack}
-        options={{
-          title: t("navigation.petrolStations"),
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="gas-station"
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
-      }
+
       {/* Temporarily hidden Settings tab
       <Tab.Screen
         name="SettingsTab"
