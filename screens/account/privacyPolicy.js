@@ -14,13 +14,13 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={styles.sectionTitle}>1. Splošne informacije</Text>
         <Text style={styles.text}>
-          Aplikacijo "Na Poti" razvija Enej Ličina.{"\n"}
+          Aplikacijo "DriveTrack Pro" razvija Enej Ličina.{"\n"}
           Za vsa vprašanja o zasebnosti se lahko obrnete na: enej.dev@gmail.com.
         </Text>
 
         <Text style={styles.sectionTitle}>2. Namen aplikacije</Text>
         <Text style={styles.text}>
-          "Na Poti" omogoča uporabnikom sledenje porabi goriva oziroma električne energije za njihova vozila ter pregled bencinskih servisov v Sloveniji.
+          "DriveTrack Pro" omogoča uporabnikom sledenje porabi goriva oziroma električne energije za njihova vozila ter pregled bencinskih servisov v Sloveniji.
         </Text>
 
         <Text style={styles.sectionTitle}>3. Zbiranje in obdelava osebnih podatkov</Text>
