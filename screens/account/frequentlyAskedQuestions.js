@@ -33,20 +33,12 @@ export default function FrequentlyAskedQuestionsScreen() {
       answer: "Da, aplikacijo lahko uporabljate tudi za priključne hibride. V meniju 'Moja Vozila' lahko dodate svoje hibridno vozilo po istem postopku kot pri bencinskem vozilu."
     },
     {
-      question: "Kako deluje iskanje bencinskih servisov?",
-      answer: "Aplikacija uporablja vašo trenutno lokacijo za prikaz najbližjih bencinskih servisov na zemljevidu. Po želji, lahko tudi ročno vnesete lokacijo za iskanje."
-    },
-    {
       question: "Ali se moji podatki sinhronizirajo med napravami?",
       answer: "Da, vsi vaši podatki se sinhronizirajo. To pomeni, da imate dostop do svojih podatkov na vseh napravah, kjer ste prijavljeni."
     },
     {
       question: "Kako izbrišem svoj račun?",
       answer: "Za izbris računa se obrnite na naslov enej.dev@gmail.com."
-    },
-    {
-      question: "Kako natančni so podatki o cenah goriva?",
-      answer: "Cene goriva se posodabljajo redno, vendar ne moremo zagotoviti 100% točnosti v realnem času. Priporočamo, da preverite ceno na bencinskem servisu."
     },
     {
       question: "Kako deluje izračun porabe goriva?",

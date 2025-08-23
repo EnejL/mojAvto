@@ -13,7 +13,7 @@ export default function TermsOfUseScreen() {
         <Text style={styles.date}>Nazadnje posodobljeno: 10. Avgust 2025</Text>
 
         <Text style={styles.sectionTitle}>1. Opis storitve</Text>
-        <Text style={styles.text}>"Na Poti" omogoča uporabnikom:</Text>
+        <Text style={styles.text}>"DriveTrack Pro" omogoča uporabnikom:</Text>
         <Text style={styles.bulletPoint}>• sledenje porabi goriva/elektrike</Text>
         <Text style={styles.bulletPoint}>• pregled bencinskih servisov (lokacije, delovni časi, cene goriv)</Text>
 

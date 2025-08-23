@@ -50,7 +50,7 @@ export default function WelcomeScreen() {
             source={require("../../assets/app-logo-white.png")}
             style={styles.logo}
           />
-          <Text style={styles.appName}>Na Poti</Text>
+          <Text style={styles.appName}>DriveTrack Pro</Text>
           <Text style={styles.tagline}>{t("auth.welcomeMessage")}</Text>
         </Surface>
 
