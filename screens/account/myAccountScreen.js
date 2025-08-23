@@ -4,6 +4,7 @@ import { Text, Button, Surface, Avatar, List, Divider } from "react-native-paper
 import { useTranslation } from "react-i18next";
 import { signOut, getCurrentUser } from "../../utils/auth";
 import { useNavigation } from "@react-navigation/native";
+import i18n from "../../utils/i18n";
 
 export default function MyAccountScreen() {
   const { t } = useTranslation();
@@ -22,6 +23,14 @@ export default function MyAccountScreen() {
     } catch (error) {
       console.error("Error signing out:", error);
     }
+  };
+
+  const handleLanguageChange = (languageCode) => {
+    i18n.changeLanguage(languageCode);
+  };
+
+  const getCurrentLanguage = () => {
+    return i18n.language;
   };
 
   return (
@@ -50,6 +59,24 @@ export default function MyAccountScreen() {
                 })
             }
           </Text>
+        </Surface>
+
+        <Surface style={styles.section}>
+          <List.Section title={t("settings.language")}>
+            <List.Item
+              title="Slovenščina"
+              left={props => <List.Icon {...props} icon="translate" />}
+              right={props => getCurrentLanguage() === 'sl' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
+              onPress={() => handleLanguageChange('sl')}
+            />
+            <Divider />
+            <List.Item
+              title="English"
+              left={props => <List.Icon {...props} icon="translate" />}
+              right={props => getCurrentLanguage() === 'en' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
+              onPress={() => handleLanguageChange('en')}
+            />
+          </List.Section>
         </Surface>
 
         <Surface style={styles.section}>
