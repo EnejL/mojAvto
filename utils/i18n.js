@@ -2,8 +2,8 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 // Import translation files
-import slTranslations from "../src/translations/sl.json";
-import enTranslations from "../src/translations/en.json";
+import slTranslations from "./translations/sl.json";
+import enTranslations from "./translations/en.json";
 
 // Configure resources
 const resources = {

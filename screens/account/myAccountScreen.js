@@ -10,11 +10,6 @@ export default function MyAccountScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
-  
-  console.log('Current user data:', {
-    displayName: currentUser?.displayName,
-    photoURL: currentUser?.photoURL,
-  });
 
   const handleSignOut = async () => {
     try {
