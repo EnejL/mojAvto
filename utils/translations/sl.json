@@ -118,6 +118,8 @@
   "settings": {
     "title": "Nastavitve",
     "language": "Jezik",
+    "languageSl": "🇸🇮 Slovenščina",
+    "languageEn": "🇬🇧 English",
     "theme": "Tema",
     "notifications": "Obvestila"
   },
@@ -159,6 +161,7 @@
       "emailTaken": "Ta email je že v uporabi",
       "weakPassword": "Geslo mora vsebovati vsaj 6 znakov",
       "googleSignInFailed": "Prijava z Google računom ni uspela. Prosimo poskusite kasneje.",
+      "appleSignInFailed": "Prijava z Apple računom ni uspela. Prosimo poskusite kasneje.",
       "userNotFound": "Uporabnik s tem e-poštnim naslovom ni najden",
       "incorrectEmail": "Nepravilen e-poštni naslov",
       "invalidEmailFormat": "Neveljaven e-poštni naslov",
@@ -188,8 +191,10 @@
     "confirmPassword": "Potrdi geslo",
     "passwords-dont-match": "Gesli se ne ujemata",
     "signInWithGoogle": "Prijava z Google računom",
+    "signInWithApple": "Prijava z Apple računom",
     "or": "ali",
     "googleSignInFailed": "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
+    "appleSignInFailed": "Prijava z Apple računom ni uspela. Prosimo poskusite ponovno.",
     "welcomeMessage": "Vaša vozila, na dlani!"
   },
   "faq": {

@@ -10,6 +10,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 export default function WelcomeScreen() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Set status bar style on screen focus
   useFocusEffect(
@@ -38,7 +39,12 @@ export default function WelcomeScreen() {
       <StatusBar barStyle="light-content" />
       <Image
         source={require("../../assets/welcomeScreenBg.png")} 
-        style={styles.backgroundImage}
+        style={[
+          styles.backgroundImage,
+          { opacity: imageLoaded ? 1 : 0 }
+        ]}
+        onLoad={() => setImageLoaded(true)}
+        fadeDuration={300}
       />
       <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
@@ -85,6 +91,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000', // Fallback color that matches the dark background image
   },
   backgroundImage: {
     position: 'absolute',
@@ -111,14 +118,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   appName: {
-    fontSize: 42,
+    fontSize: 36,
     fontWeight: "bold",
     color: "#ffffff",
+    textAlign: "center",
   },
   tagline: {
     fontSize: 16,
     color: "#cccccc",
     marginTop: 4,
+    textAlign: "center",
   },
   formCard: {
     width: '100%',
@@ -131,6 +140,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     marginBottom: 16,
     borderRadius: 12,
+    fontSize: 16,
   },
   buttonIcon: {
     width: 15,

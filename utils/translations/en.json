@@ -118,6 +118,8 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "languageSl": "🇸🇮 Slovenščina",
+    "languageEn": "🇬🇧 English",
     "theme": "Theme",
     "notifications": "Notifications"
   },
@@ -159,6 +161,7 @@
       "emailTaken": "This email is already in use",
       "weakPassword": "Password must contain at least 6 characters",
       "googleSignInFailed": "Google sign in failed. Please try later.",
+      "appleSignInFailed": "Apple sign in failed. Please try later.",
       "userNotFound": "User with this email address not found",
       "incorrectEmail": "Incorrect email address",
       "invalidEmailFormat": "Invalid email address",
@@ -188,9 +191,11 @@
     "confirmPassword": "Confirm Password",
     "passwords-dont-match": "Passwords don't match",
     "signInWithGoogle": "Sign in with Google",
+    "signInWithApple": "Sign in with Apple",
     "or": "or",
     "googleSignInFailed": "Google sign in failed. Please try again.",
-    "welcomeMessage": "Your vehicles, at your fingertips!"
+    "appleSignInFailed": "Apple sign in failed. Please try again.",
+    "welcomeMessage": "Your vehicles, in the palm of your hand!"
   },
   "faq": {
     "title": "Frequently Asked Questions",

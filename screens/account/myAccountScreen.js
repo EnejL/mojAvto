@@ -4,7 +4,7 @@ import { Text, Button, Surface, Avatar, List, Divider } from "react-native-paper
 import { useTranslation } from "react-i18next";
 import { signOut, getCurrentUser } from "../../utils/auth";
 import { useNavigation } from "@react-navigation/native";
-import i18n from "../../utils/i18n";
+import i18n, { saveLanguage, getCurrentLanguage } from "../../utils/i18n";
 
 export default function MyAccountScreen() {
   const { t } = useTranslation();
@@ -20,13 +20,18 @@ export default function MyAccountScreen() {
     }
   };
 
-  const handleLanguageChange = (languageCode) => {
-    i18n.changeLanguage(languageCode);
+  const handleLanguageChange = async (languageCode) => {
+    try {
+      // Change the language immediately
+      i18n.changeLanguage(languageCode);
+      // Save the language preference to persistent storage
+      await saveLanguage(languageCode);
+    } catch (error) {
+      console.error("Error changing language:", error);
+    }
   };
 
-  const getCurrentLanguage = () => {
-    return i18n.language;
-  };
+
 
   return (
     <View style={styles.container}>
@@ -59,15 +64,13 @@ export default function MyAccountScreen() {
         <Surface style={styles.section}>
           <List.Section title={t("settings.language")}>
             <List.Item
-              title="Slovenščina"
-              left={props => <List.Icon {...props} icon="translate" />}
+              title={t("settings.languageSl")}
               right={props => getCurrentLanguage() === 'sl' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
               onPress={() => handleLanguageChange('sl')}
             />
             <Divider />
             <List.Item
-              title="English"
-              left={props => <List.Icon {...props} icon="translate" />}
+              title={t("settings.languageEn")}
               right={props => getCurrentLanguage() === 'en' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
               onPress={() => handleLanguageChange('en')}
             />
