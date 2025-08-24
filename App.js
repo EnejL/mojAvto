@@ -24,7 +24,7 @@ const Stack = createNativeStackNavigator();
 const prefix = Linking.createURL('/');
 const linking = {
   prefixes: [
-    'com.enejlicina.napoti://', 
+    'com.enejlicina.drivetrackpro://',
     'https://verify.enejlicina.com'
   ],
   config: {
