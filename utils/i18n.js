@@ -17,8 +17,8 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: "sl", // default language
-  fallbackLng: "en", // fallback to English if Slovenian translation is missing
+  lng: "en",
+  fallbackLng: "sl",
   interpolation: {
     escapeValue: false
   }
