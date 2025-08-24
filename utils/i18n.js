@@ -1,215 +1,74 @@
-import { types } from "@babel/core";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Import all translations
+// Import translation files
+import slTranslations from "./translations/sl.json";
+import enTranslations from "./translations/en.json";
+
+// Storage key for language preference
+const LANGUAGE_STORAGE_KEY = "@mojAvto:language";
+
+// Configure resources
 const resources = {
   sl: {
-    translation: {
-      navigation: {
-        home: "Domov",
-        myVehicles: "Moja Vozila",
-        fuelConsumption: "Poraba Goriva",
-        petrolStations: "Črpalke",
-        settings: "Nastavitve",
-        back: "Nazaj",
-      },
-      vehicles: {
-        title: "Moja Vozila",
-        details: "Podrobnosti",
-        add: "Dodaj Vozilo",
-        edit: "Uredi Vozilo",
-        name: "Ime Vozila",
-        make: "Znamka",
-        model: "Model",
-        addFirst: "Dodaj Svoje Prvo Vozilo",
-        numberPlate: "Registrska oznaka",
-        vehicleType: "Tip vozila",
-        fuelTankSize: "Prostornina rezervoarja",
-        batteryCapacity: "Kapaciteta baterije",
-        empty: "Nimate še dodanih vozil",
-        selected: "Izbrano vozilo",
-        deleteVehicle: "Izbriši vozilo",
-        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to vozilo?",
-        makePlaceholder: "Izberite znamko",
-        modelPlaceholder: "Najprej izberite znamko",
-        statistics: "Statistika vozila",
-        history: "Zgodovina",
-        noHistory: "Ni zabeleženih dogodkov",
-        trueRunningCost: "Skupni strošek vožnje",
-        monthlyEstimate: "Predvideni mesečni strošek",
-        avgCostPer100km: "Povp. strošek na 100 km",
-        totalCost: "Skupni strošek dosedanjih točenj / polnjenj",
-        types: {
-          ICE: "Bencin / dizel",
-          HYBRID: "Hibrid (blagi / polni)",
-          PHEV: "PHEV (priključni hibrid)",
-          BEV: "Električno vozilo",
-        }
-      },
-      fillings: {
-        title: "Točenja goriva",
-        nav: "Poraba goriva",
-        date: "Datum",
-        liters: "Litrov",
-        cost: "Strošek",
-        odometer: "Stanje Kilometrov",
-        add: "Točenje +",
-        empty: "Ni zabeleženih točenj",
-        delete: "Odstrani vnos",
-        consumption: "Povprečna poraba goriva",
-        consumptionUnit: "l/100 km",
-        distanceSince: "Prevoženi kilometri od zadnjega točenja",
-        noVehiclesWarning: "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
-        noFillings: "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
-        notEnoughData: "Ni dovolj podatkov. Vnesite vsaj dve točenji.",
-        edit: "Uredi Točenje",
-        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to točenje?",
-        filling: "točenje",
-        statistics: "Statistika vozila",
-        fuelConsumptionUnit: "l/100 km",
-        avgCost: "Povprečni strošek točenja",
-        avgPricePerLiter: "Povprečna cena litra goriva",
-        avgLiters: "Povprečno točenje",
-        totalCost: "Skupni strošek dosedanjih točenj",
-        showConsumptionGraph: "Prikaži graf porabe",
-        consumptionOverTime: "Poraba goriva skozi čas"
-      },
-      charging: {
-        title: "Polnjenja baterije",
-        session: "polnjenje",
-        add: "Polnjenje +",
-        edit: "Uredi Polnjenje",
-        empty: "Ni zabeleženih polnjenj",
-        notEnoughData: "Ni dovolj podatkov. Vnesite vsaj dve polnjenji.",
-        date: "Datum",
-        energyAdded: "Dodana energija",
-        cost: "Strošek",
-        odometer: "Stanje kilometrov",
-        locationType: "Tip lokacije",
-        chargerType: "Tip polnilnika",
-        locationName: "Ime lokacije",
-        locationNamePlaceholder: "npr. Petrol Ljubljana",
-        locationHome: "Doma",
-        locationPublic: "Javno",
-        locationWorkplace: "Služba",
-        avgConsumption: "Poraba el. energije",
-        electricityConsumptionUnit: "kWh/100 km",
-        avgPricePerKWh: "Povprečna cena kWh",
-        avgCost: "Povprečni strošek polnjenja",
-        totalCost: "Skupni strošek dosedanjih poljenj",
-        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to polnjenje?",
-        consumptionUnit: "kWh/100 km",
-        moreDetails: "Dodaj podrobnosti",
-        delete: "Izbriši polnjenje",
-      },
-      petrolStations: {
-        title: "Bencinske Črpalke",
-        list: "Seznam",
-        map: "Zemljevid",
-        fetchError: "Napaka pri nalaganju bencinskih črpalk",
-        description: "Bencinske črpalke bodo tukaj ...",
-        viewDetails: "Več informacij",
-        prices: "Cene goriv",
-        getDirections: "Navigacija",
-        openingHours: "Delovni Čas",
-        open24Hours: "Odprto 24 ur",
-        closed: "Zaprto",
-        noOpeningHours: "Informacije o delovnem času niso na voljo",
-        searchPlaceholder: "Išči po imenu ali naslovu",
-        noSearchResults: "Ni rezultatov iskanja",
-        empty: "Ni črpalk na voljo",
-        favorites: "Priljubljene",
-        noFavorites: "Ni črpalk na voljo",
-      },
-      settings: {
-        title: "Nastavitve",
-        language: "Jezik",
-        theme: "Tema",
-        notifications: "Obvestila",
-      },
-      common: {
-        loading: "Nalaganje...",
-        save: "Shrani",
-        cancel: "Prekliči",
-        error: {
-          save: "Shranjevanje ni uspelo",
-          load: "Nalaganje ni uspelo",
-          required: "Prosim izpolnite vsa polja",
-          delete: "Brisanje ni uspelo",
-        },
-        submit: "Potrdi",
-        ok: "V redu",
-        delete: "Izbriši",
-        done: "Končano",
-        version: "Različica",
-        privacyPolicy: "Politika zasebnosti",
-        terms: "Pogoji uporabe",
-        faq: "Pogosto zastavljena vprašanja",
-        hide: "Skrij",
-      },
-      auth: {
-        title: "Račun",
-        email: "E-pošta",
-        password: "Geslo",
-        signIn: "Prijava",
-        createAccount: "Ustvari Račun",
-        anonymousInfo: "Trenutno uporabljate aplikacijo anonimno. Ustvarite račun za shranjevanje podatkov med napravami.",
-        error: {
-          createAccount: "Ustvarjanje računa ni uspelo",
-          signIn: "Prijava ni uspela",
-          signOut: "Odjava ni uspela",
-          invalidCredentials: "Napačen email ali geslo",
-          userDisabled: "Ta račun je onemogočen",
-          tooManyAttempts: "Preveč poskusov. Prosimo, poskusite kasneje",
-          unknownError: "Prišlo je do napake. Prosimo, poskusite ponovno",
-          emailTaken: "Ta email je že v uporabi",
-          weakPassword: "Geslo mora vsebovati vsaj 6 znakov",
-          googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite kasneje.",
-          userNotFound: "Uporabnik s tem e-poštnim naslovom ni najden",
-          incorrectEmail: "Nepravilen e-poštni naslov",
-          invalidEmailFormat: "Neveljaven e-poštni naslov",
-          passwordsDontMatch: "Gesli se ne ujemata!",
-        },
-        verification: {
-          title: "Potrditev e-pošte",
-          description: "E-pošta je poslana na {{email}}. Prosimo, preverite svojo e-pošto in kliknite na povezavo za potrditev.",
-          instructions: "Prosimo, preverite svojo e-pošto in kliknite na povezavo za potrditev.",
-          checkVerification: "Preveri",
-          resendEmail: "Pošlji E-pošto Ponovno",
-          signOut: "Prekliči",
-        },
-        haveAccount: "Že imate račun? Prijavite se",
-        needAccount: "Potrebujete račun?",
-        signedInAs: "Prijavljeni kot {{email}}",
-        signOut: "Odjava",
-        greeting: "Pozdravljeni, {{name}}",
-        greetingAnonymous: "Pozdravljeni!",
-        accountManage: "Moj Račun",
-        forgotPassword: "Ste pozabili geslo?",
-        forgotPasswordInstructions: "Prosimo, vnesite svoj e-poštni naslov in prejeli boste navodila za ponastavitev gesla.",
-        enterEmailFirst: "Prosimo, najprej vnesite svoj e-poštni naslov",
-        resetEmailSent: "E-pošta za ponastavitev gesla poslana",
-        checkEmail: "Preverite svojo e-pošto za navodila za ponastavitev gesla",
-        resetError: "Napaka pri ponastavitvi gesla",
-        confirmPassword: "Potrdi geslo",
-        "passwords-dont-match": "Gesli se ne ujemata",
-        signInWithGoogle: "Prijava z Google računom",
-        or: "ali",
-        googleSignInFailed: "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
-        welcomeMessage: "Vaša vozila, na dlani!"
-      }
-    }
+    translation: slTranslations
+  },
+  en: {
+    translation: enTranslations
   }
 };
 
-i18n.use(initReactI18next).init({
-  resources,
-  lng: "sl", // default language
-  fallbackLng: "sl",
-  interpolation: {
-    escapeValue: false
+// Function to get saved language from storage
+export const getSavedLanguage = async () => {
+  try {
+    const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return savedLanguage || "en"; // Default to English if no saved preference
+  } catch (error) {
+    console.error("Error loading saved language:", error);
+    return "en"; // Fallback to English on error
   }
-});
+};
+
+// Function to save language preference to storage
+export const saveLanguage = async (languageCode) => {
+  try {
+    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, languageCode);
+  } catch (error) {
+    console.error("Error saving language preference:", error);
+  }
+};
+
+// Function to get current language (from i18n instance)
+export const getCurrentLanguage = () => {
+  return i18n.language;
+};
+
+// Function to get current language with fallback to saved preference
+export const getCurrentLanguageWithFallback = async () => {
+  const currentLanguage = i18n.language;
+  if (currentLanguage) {
+    return currentLanguage;
+  }
+  // If i18n not initialized yet, get from storage
+  return await getSavedLanguage();
+};
+
+// Initialize i18n with persistence
+const initI18n = async () => {
+  const savedLanguage = await getSavedLanguage();
+  
+  i18n.use(initReactI18next).init({
+    resources,
+    lng: savedLanguage,
+    fallbackLng: "en",
+    interpolation: {
+      escapeValue: false
+    }
+  });
+};
+
+// Initialize immediately
+initI18n();
 
 export default i18n;

@@ -4,16 +4,12 @@ import { Text, Button, Surface, Avatar, List, Divider } from "react-native-paper
 import { useTranslation } from "react-i18next";
 import { signOut, getCurrentUser } from "../../utils/auth";
 import { useNavigation } from "@react-navigation/native";
+import i18n, { saveLanguage, getCurrentLanguage } from "../../utils/i18n";
 
 export default function MyAccountScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
-  
-  console.log('Current user data:', {
-    displayName: currentUser?.displayName,
-    photoURL: currentUser?.photoURL,
-  });
 
   const handleSignOut = async () => {
     try {
@@ -23,6 +19,19 @@ export default function MyAccountScreen() {
       console.error("Error signing out:", error);
     }
   };
+
+  const handleLanguageChange = async (languageCode) => {
+    try {
+      // Change the language immediately
+      i18n.changeLanguage(languageCode);
+      // Save the language preference to persistent storage
+      await saveLanguage(languageCode);
+    } catch (error) {
+      console.error("Error changing language:", error);
+    }
+  };
+
+
 
   return (
     <View style={styles.container}>
@@ -50,6 +59,22 @@ export default function MyAccountScreen() {
                 })
             }
           </Text>
+        </Surface>
+
+        <Surface style={styles.section}>
+          <List.Section title={t("settings.language")}>
+            <List.Item
+              title={t("settings.languageSl")}
+              right={props => getCurrentLanguage() === 'sl' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
+              onPress={() => handleLanguageChange('sl')}
+            />
+            <Divider />
+            <List.Item
+              title={t("settings.languageEn")}
+              right={props => getCurrentLanguage() === 'en' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
+              onPress={() => handleLanguageChange('en')}
+            />
+          </List.Section>
         </Surface>
 
         <Surface style={styles.section}>

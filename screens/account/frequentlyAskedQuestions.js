@@ -7,52 +7,7 @@ export default function FrequentlyAskedQuestionsScreen() {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState(null);
 
-  const faqs = [
-    {
-        question: "Ali je aplikacija brezplačna?",
-        answer: "Da, aplikacija je popolnoma brezplačna za uporabo."
-    },
-    {
-      question: "Kako dodam novo vozilo?",
-      answer: "V glavnem meniju izberite 'Moja Vozila' in nato izberite 'Dodaj Vozilo'. Izpolnite zahtevane podatke o vozilu (znamka, model) in kliknite 'Dodaj Vozilo'."
-    },
-    {
-      question: "Kako beležim polnjenje goriva?",
-      answer: "Kliknite na želeno vozilo v meniju 'Moja Vozila', nato izberite 'Točenje +'. Vnesite datum točenja, količino natočenega goriva, skupno ceno točenja in stanje števca kilometrov. Aplikacija bo samodejno izračunala porabo ko bosta vnešeni najmanj dve točenji."
-    },
-    {
-      question: "Kako beležim polnjenje elektrike?",
-      answer: "Kliknite na želeno vozilo v meniju 'Moja Vozila', nato izberite 'Polnjenje +'. Vnesite datum polnjenja, količino električne energije, skupno ceno polnjenja in stanje števca kilometrov. Aplikacija bo samodejno izračunala porabo ko bosta vnešeni najmanj dve polnjenji."
-    },
-    {
-      question: "Ali lahko dodam več vozil?",
-      answer: "Da, lahko dodate več vozil. V meniju 'Moja Vozila' lahko dodate novo vozilo z istim postopkom kot pri prvem vozilu."
-    },
-    {
-      question: "Ali lahko aplikacijo uporabljam tudi če je moje vozilo priključni hibrid (t.i. plug-in hybrid / PHEV)?",
-      answer: "Da, aplikacijo lahko uporabljate tudi za priključne hibride. V meniju 'Moja Vozila' lahko dodate svoje hibridno vozilo po istem postopku kot pri bencinskem vozilu."
-    },
-    {
-      question: "Ali se moji podatki sinhronizirajo med napravami?",
-      answer: "Da, vsi vaši podatki se sinhronizirajo. To pomeni, da imate dostop do svojih podatkov na vseh napravah, kjer ste prijavljeni."
-    },
-    {
-      question: "Kako izbrišem svoj račun?",
-      answer: "Za izbris računa se obrnite na naslov enej.dev@gmail.com."
-    },
-    {
-      question: "Kako deluje izračun porabe goriva?",
-      answer: "Aplikacija izračuna porabo na podlagi razlike v kilometrih med polnjenji in količine natočenega goriva. Formula je: (litri / razlika v kilometrih) * 100."
-    },
-    {
-      question: "Kako deluje izračun porabe elektrike?",
-      answer: "Aplikacija izračuna porabo na podlagi razlike v kilometrih med polnjenji in količino električne energije. Formula je: (kWh / razlika v kilometrih) * 100."
-    },
-    {
-      question: "Ali lahko izvozim svoje podatke?",
-      answer: "Trenutno ta funkcija še ni na voljo. Načrtujemo dodajanje možnosti izvoza podatkov v CSV formatu v prihodnosti."
-    }
-  ];
+  const faqs = t('faq.questions', { returnObjects: true });
 
   const handlePress = (id) => {
     setExpandedId(expandedId === id ? null : id);
@@ -61,7 +16,7 @@ export default function FrequentlyAskedQuestionsScreen() {
   return (
     <ScrollView style={styles.container}>
       <Surface style={styles.section}>
-        <Text style={styles.title}>Pogosta vprašanja</Text>
+        <Text style={styles.title}>{t('faq.title')}</Text>
         
         {faqs.map((faq, index) => (
           <View key={index}>

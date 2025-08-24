@@ -6,7 +6,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
 // Import the auth object
 import { auth } from "./utils/firebase";
-import "./utils/i18n";
+import { getSavedLanguage } from "./utils/i18n";
 import { useTranslation } from "react-i18next";
 import { onAuthStateChanged } from "firebase/auth";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -37,22 +37,39 @@ const linking = {
 export default function App() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState(null);
+  const [languageReady, setLanguageReady] = useState(false);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Initialize language system first
+        await getSavedLanguage();
+        
+        setLanguageReady(true);
+      } catch (error) {
+        console.error("Error initializing language:", error);
+        setLanguageReady(true); // Continue anyway
+      }
+    };
+
+    initializeApp();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (initializing) {
+      if (initializing && languageReady) {
         setInitializing(false);
       }
       console.log("Auth state changed:", user ? user.uid : "No User");
     });
 
     return unsubscribe;
-  }, []);
+  }, [languageReady]);
 
-  // Show a spinner.
-  if (initializing) {
+  // Show a spinner until both auth and language are ready
+  if (initializing || !languageReady) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
