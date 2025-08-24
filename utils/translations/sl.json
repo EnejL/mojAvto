@@ -191,5 +191,155 @@
     "or": "ali",
     "googleSignInFailed": "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
     "welcomeMessage": "Vaša vozila, na dlani!"
+  },
+  "faq": {
+    "title": "Pogosta vprašanja",
+    "questions": [
+      {
+        "question": "Ali je aplikacija brezplačna?",
+        "answer": "Da, aplikacija je popolnoma brezplačna za uporabo."
+      },
+      {
+        "question": "Kako dodam novo vozilo?",
+        "answer": "V glavnem meniju izberite 'Moja Vozila' in nato izberite 'Dodaj Vozilo'. Izpolnite zahtevane podatke o vozilu (znamka, model) in kliknite 'Dodaj Vozilo'."
+      },
+      {
+        "question": "Kako beležim polnjenje goriva?",
+        "answer": "Kliknite na želeno vozilo v meniju 'Moja Vozila', nato izberite 'Točenje +'. Vnesite datum točenja, količino natočenega goriva, skupno ceno točenja in stanje števca kilometrov. Aplikacija bo samodejno izračunala porabo ko bosta vnešeni najmanj dve točenji."
+      },
+      {
+        "question": "Kako beležim polnjenje elektrike?",
+        "answer": "Kliknite na želeno vozilo v meniju 'Moja Vozila', nato izberite 'Polnjenje +'. Vnesite datum polnjenja, količino električne energije, skupno ceno polnjenja in stanje števca kilometrov. Aplikacija bo samodejno izračunala porabo ko bosta vnešeni najmanj dve polnjenji."
+      },
+      {
+        "question": "Ali lahko dodam več vozil?",
+        "answer": "Da, lahko dodate več vozil. V meniju 'Moja Vozila' lahko dodate novo vozilo z istim postopkom kot pri prvem vozilu."
+      },
+      {
+        "question": "Ali lahko aplikacijo uporabljam tudi če je moje vozilo priključni hibrid (t.i. plug-in hybrid / PHEV)?",
+        "answer": "Da, aplikacijo lahko uporabljate tudi za priključne hibride. V meniju 'Moja Vozila' lahko dodate svoje hibridno vozilo po istem postopku kot pri bencinskem vozilu."
+      },
+      {
+        "question": "Ali se moji podatki sinhronizirajo med napravami?",
+        "answer": "Da, vsi vaši podatki se sinhronizirajo. To pomeni, da imate dostop do svojih podatkov na vseh napravah, kjer ste prijavljeni."
+      },
+      {
+        "question": "Kako izbrišem svoj račun?",
+        "answer": "Za izbris računa se obrnite na naslov enej.dev@gmail.com."
+      },
+      {
+        "question": "Kako deluje izračun porabe goriva?",
+        "answer": "Aplikacija izračuna porabo na podlagi razlike v kilometrih med polnjenji in količine natočenega goriva. Formula je: (litri / razlika v kilometrih) * 100."
+      },
+      {
+        "question": "Kako deluje izračun porabe elektrike?",
+        "answer": "Aplikacija izračuna porabo na podlagi razlike v kilometrih med polnjenji in količino električne energije. Formula je: (kWh / razlika v kilometrih) * 100."
+      },
+      {
+        "question": "Ali lahko izvozim svoje podatke?",
+        "answer": "Trenutno ta funkcija še ni na voljo. Načrtujemo dodajanje možnosti izvoza podatkov v CSV formatu v prihodnosti."
+      }
+    ]
+  },
+  "termsOfUse": {
+    "title": "Pogoji uporabe",
+    "lastUpdated": "Nazadnje posodobljeno: 10. Avgust 2025",
+    "sections": [
+      {
+        "title": "1. Opis storitve",
+        "content": "\"DriveTrack Pro\" omogoča uporabnikom:",
+        "bulletPoints": [
+          "sledenje porabi goriva/elektrike"
+        ]
+      },
+      {
+        "title": "2. Uporabniški račun",
+        "content": "Uporaba aplikacije je možna izključno z registriranim računom."
+      },
+      {
+        "title": "3. Omejitev odgovornosti",
+        "content": "Razvijalec ne jamči za popolno točnost prikazanih podatkov (cene goriva, lokacije, delovni časi).\nRazvijalec ne odgovarja za morebitno škodo, nastalo zaradi uporabe aplikacije."
+      },
+      {
+        "title": "4. Pravice razvijalca",
+        "content": "Razvijalec lahko anonimno analizira podatke za izboljšanje aplikacije."
+      },
+      {
+        "title": "5. Prenehanje uporabe",
+        "content": "Uporabnik lahko zahteva izbris svojega uporabniškega računa. Za izbris računa se lahko obrnete na: enej.dev@gmail.com.\n\nZ izbrisom računa se izbrišejo vsi osebni podatki."
+      },
+      {
+        "title": "6. Veljavna zakonodaja",
+        "content": "Za vse morebitne spore velja slovensko pravo.\nPristojna so sodišča v Sloveniji."
+      },
+      {
+        "title": "7. Starostne omejitve",
+        "content": "Aplikacija je namenjena uporabnikom starejšim od 18 let."
+      }
+    ]
+  },
+  "privacyPolicy": {
+    "title": "Politika zasebnosti",
+    "lastUpdated": "Nazadnje posodobljeno: 10. Avgust 2025",
+    "sections": [
+      {
+        "title": "1. Splošne informacije",
+        "content": "Aplikacijo \"DriveTrack Pro\" razvija Enej Ličina.\nZa vsa vprašanja o zasebnosti se lahko obrnete na: enej.dev@gmail.com."
+      },
+      {
+        "title": "2. Namen aplikacije",
+        "content": "\"DriveTrack Pro\" omogoča uporabnikom sledenje porabi goriva oziroma električne energije za njihova vozila."
+      },
+      {
+        "title": "3. Zbiranje in obdelava osebnih podatkov",
+        "content": "Zbiramo naslednje podatke:",
+        "bulletPoints": [
+          "Ime in priimek",
+          "E-naslov",
+          "Podatke o vozilu (znamka, model, registrska številka)",
+          "Lokacijo (za iskanje bencinskih servisov)",
+          "Podatke o polnjenju goriva",
+          "Podatke o polnjenju elektrike"
+        ],
+        "subsections": [
+          {
+            "title": "Podlaga za obdelavo:",
+            "content": "Uporabniška privolitev pri registraciji računa."
+          },
+          {
+            "title": "Obdelava tretjih oseb:",
+            "content": "Uporabljamo Googlovo storitev Firebase za avtentikacijo in hranjenje podatkov."
+          },
+          {
+            "title": "Obdobje hrambe podatkov:",
+            "content": "Vaše podatke hranimo do izbrisa uporabniškega računa oz. največ 6 mesecev po izbrisu računa."
+          },
+          {
+            "title": "Vaše pravice:",
+            "bulletPoints": [
+              "Pravica do dostopa do podatkov",
+              "Pravica do izbrisa podatkov (\"pravica do pozabe\")"
+            ],
+            "content": "Za uveljavljanje pravic nas kontaktirajte na zgoraj navedeni e-naslov."
+          }
+        ]
+      },
+      {
+        "title": "4. Piškotki in analitika",
+        "content": "Aplikacija uporablja Google Analytics for Firebase za zbiranje anonimnih podatkov o uporabi. Namen je izključno analiza uporabe aplikacije.\nPiškotkov ni možno onemogočiti znotraj aplikacije."
+      },
+      {
+        "title": "5. Posredovanje podatkov v tretje države",
+        "content": "Podatki se ne prenašajo izven EU/EGP."
+      },
+      {
+        "title": "6. Starostna omejitev",
+        "content": "Aplikacijo lahko uporabljajo samo osebe, stare 18 let ali več."
+      },
+      {
+        "title": "7. Blagovne znamke",
+        "content": "Vse blagovne znamke in logotipi (znamke vozil, logotipi bencinskih servisov ipd.) so last njihovih zakonitih imetnikov."
+      }
+    ]
   }
 }

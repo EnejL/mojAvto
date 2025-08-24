@@ -5,45 +5,23 @@ import { useTranslation } from "react-i18next";
 
 export default function TermsOfUseScreen() {
   const { t } = useTranslation();
+  const sections = t('termsOfUse.sections', { returnObjects: true });
 
   return (
     <ScrollView style={styles.container}>
       <Surface style={styles.section}>
-        <Text style={styles.title}>Pogoji uporabe</Text>
-        <Text style={styles.date}>Nazadnje posodobljeno: 10. Avgust 2025</Text>
+        <Text style={styles.title}>{t('termsOfUse.title')}</Text>
+        <Text style={styles.date}>{t('termsOfUse.lastUpdated')}</Text>
 
-        <Text style={styles.sectionTitle}>1. Opis storitve</Text>
-        <Text style={styles.text}>"DriveTrack Pro" omogoča uporabnikom:</Text>
-        <Text style={styles.bulletPoint}>• sledenje porabi goriva/elektrike</Text>
-        <Text style={styles.bulletPoint}>• pregled bencinskih servisov (lokacije, delovni časi, cene goriv)</Text>
-
-        <Text style={styles.sectionTitle}>2. Uporabniški račun</Text>
-        <Text style={styles.text}>Uporaba aplikacije je možna izključno z registriranim računom.</Text>
-
-        <Text style={styles.sectionTitle}>3. Omejitev odgovornosti</Text>
-        <Text style={styles.text}>
-          Razvijalec ne jamči za popolno točnost prikazanih podatkov (cene goriva, lokacije, delovni časi).{"\n"}
-          Razvijalec ne odgovarja za morebitno škodo, nastalo zaradi uporabe aplikacije.
-        </Text>
-
-        <Text style={styles.sectionTitle}>4. Pravice razvijalca</Text>
-        <Text style={styles.text}>Razvijalec lahko anonimno analizira podatke za izboljšanje aplikacije.</Text>
-
-        <Text style={styles.sectionTitle}>5. Prenehanje uporabe</Text>
-        <Text style={styles.text}>
-          Uporabnik lahko zahteva izbris svojega uporabniškega računa. Za izbris računa se lahko obrnete na: enej.dev@gmail.com.{"\n"}
-          {"\n"}
-          Z izbrisom računa se izbrišejo vsi osebni podatki.
-        </Text>
-
-        <Text style={styles.sectionTitle}>6. Veljavna zakonodaja</Text>
-        <Text style={styles.text}>
-          Za vse morebitne spore velja slovensko pravo.{"\n"}
-          Pristojna so sodišča v Sloveniji.
-        </Text>
-
-        <Text style={styles.sectionTitle}>7. Starostne omejitve</Text>
-        <Text style={styles.text}>Aplikacija je namenjena uporabnikom starejšim od 18 let.</Text>
+        {sections.map((section, index) => (
+          <View key={index}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={styles.text}>{section.content}</Text>
+            {section.bulletPoints && section.bulletPoints.map((point, pointIndex) => (
+              <Text key={pointIndex} style={styles.bulletPoint}>• {point}</Text>
+            ))}
+          </View>
+        ))}
       </Surface>
     </ScrollView>
   );
