@@ -9,7 +9,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Na Poti</string>
+    <string>DriveTrack Pro</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.4.0</string>
+    <string>1.5.0</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -29,8 +29,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.enejlicina.napoti</string>
-          <string>com.enejlicina.napoti</string>
+          <string>com.enejlicina.drivetrackpro</string>
+          <string>com.enejlicina.drivetrackpro</string>
         </array>
       </dict>
       <dict>
@@ -47,7 +47,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>14</string>
+    <string>15</string>
     <key>GMSApiKey</key>
     <string>AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA</string>
     <key>ITSAppUsesNonExemptEncryption</key>

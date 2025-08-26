@@ -8,30 +8,30 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		263D759BE76107CD03A05C0B /* Pods_NaPoti.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA273915A5653700DA4618C7 /* Pods_NaPoti.framework */; };
-		31128AC98F6E63C283D14B70 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BCA27313540D68DF81A46A /* ExpoModulesProvider.swift */; };
+		1E51869CBE229F20332C1220 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 656C3046C9DDCEFB60E518C9 /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		6AB13444E8D54D0F98C13576 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B959BA68CD5D47EAA58BF2C6 /* GoogleService-Info.plist */; };
+		3F19F74318036FE2B0FB1340 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 631CF2AC9EFCFE427D290B2D /* ExpoModulesProvider.swift */; };
+		7F1DA5F21F9549B1AFDB681E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 6359566306E3464AA712A612 /* GoogleService-Info.plist */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		D670382C45A0A1129A1FCB2C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C3E11123826C1287BFAB3078 /* PrivacyInfo.xcprivacy */; };
+		C14A003972F8D3FFBCFCDEBA /* Pods_DriveTrackPro.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB511E1110BB1D87BEC00144 /* Pods_DriveTrackPro.framework */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* NaPoti.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NaPoti.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = NaPoti/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = NaPoti/Info.plist; sourceTree = "<group>"; };
-		63BCA27313540D68DF81A46A /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-NaPoti/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		A05B6372C50B6E7BDBC34897 /* Pods-NaPoti.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NaPoti.debug.xcconfig"; path = "Target Support Files/Pods-NaPoti/Pods-NaPoti.debug.xcconfig"; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = NaPoti/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B959BA68CD5D47EAA58BF2C6 /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "NaPoti/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* DriveTrackPro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DriveTrackPro.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = DriveTrackPro/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = DriveTrackPro/Info.plist; sourceTree = "<group>"; };
+		631CF2AC9EFCFE427D290B2D /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-DriveTrackPro/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		6359566306E3464AA712A612 /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "DriveTrackPro/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		656C3046C9DDCEFB60E518C9 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = DriveTrackPro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = DriveTrackPro/SplashScreen.storyboard; sourceTree = "<group>"; };
+		AB511E1110BB1D87BEC00144 /* Pods_DriveTrackPro.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DriveTrackPro.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C3E11123826C1287BFAB3078 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = NaPoti/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		DF60691C0924158DD41EBD6D /* Pods-NaPoti.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NaPoti.release.xcconfig"; path = "Target Support Files/Pods-NaPoti/Pods-NaPoti.release.xcconfig"; sourceTree = "<group>"; };
-		EA273915A5653700DA4618C7 /* Pods_NaPoti.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NaPoti.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C56624DFE3A60D10B7052C8F /* Pods-DriveTrackPro.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DriveTrackPro.debug.xcconfig"; path = "Target Support Files/Pods-DriveTrackPro/Pods-DriveTrackPro.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = NaPoti/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* NaPoti-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "NaPoti-Bridging-Header.h"; path = "NaPoti/NaPoti-Bridging-Header.h"; sourceTree = "<group>"; };
+		EE3772C1B4B1C762B2D9C128 /* Pods-DriveTrackPro.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DriveTrackPro.release.xcconfig"; path = "Target Support Files/Pods-DriveTrackPro/Pods-DriveTrackPro.release.xcconfig"; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = DriveTrackPro/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* DriveTrackPro-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "DriveTrackPro-Bridging-Header.h"; path = "DriveTrackPro/DriveTrackPro-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,53 +39,61 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				263D759BE76107CD03A05C0B /* Pods_NaPoti.framework in Frameworks */,
+				C14A003972F8D3FFBCFCDEBA /* Pods_DriveTrackPro.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* NaPoti */ = {
+		13B07FAE1A68108700A75B9A /* DriveTrackPro */ = {
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
-				F11748442D0722820044C1D9 /* NaPoti-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* DriveTrackPro-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				B959BA68CD5D47EAA58BF2C6 /* GoogleService-Info.plist */,
-				C3E11123826C1287BFAB3078 /* PrivacyInfo.xcprivacy */,
+				6359566306E3464AA712A612 /* GoogleService-Info.plist */,
+				656C3046C9DDCEFB60E518C9 /* PrivacyInfo.xcprivacy */,
 			);
-			name = NaPoti;
+			name = DriveTrackPro;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				EA273915A5653700DA4618C7 /* Pods_NaPoti.framework */,
+				AB511E1110BB1D87BEC00144 /* Pods_DriveTrackPro.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		324910590ED28F1E47D92CFA /* Pods */ = {
+		5B47671D33887948366468FD /* DriveTrackPro */ = {
 			isa = PBXGroup;
 			children = (
-				A05B6372C50B6E7BDBC34897 /* Pods-NaPoti.debug.xcconfig */,
-				DF60691C0924158DD41EBD6D /* Pods-NaPoti.release.xcconfig */,
+				631CF2AC9EFCFE427D290B2D /* ExpoModulesProvider.swift */,
+			);
+			name = DriveTrackPro;
+			sourceTree = "<group>";
+		};
+		6EFCA43F1AA31CD529188D89 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				5B47671D33887948366468FD /* DriveTrackPro */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
+		74CFEFCA1707A22FABFCBBA5 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				C56624DFE3A60D10B7052C8F /* Pods-DriveTrackPro.debug.xcconfig */,
+				EE3772C1B4B1C762B2D9C128 /* Pods-DriveTrackPro.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
-			sourceTree = "<group>";
-		};
-		61E8C3F03AE550901462A685 /* NaPoti */ = {
-			isa = PBXGroup;
-			children = (
-				63BCA27313540D68DF81A46A /* ExpoModulesProvider.swift */,
-			);
-			name = NaPoti;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -98,12 +106,12 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* NaPoti */,
+				13B07FAE1A68108700A75B9A /* DriveTrackPro */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				324910590ED28F1E47D92CFA /* Pods */,
-				E3F2720C41CDCFAB40D1053A /* ExpoModulesProviders */,
+				74CFEFCA1707A22FABFCBBA5 /* Pods */,
+				6EFCA43F1AA31CD529188D89 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -113,7 +121,7 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* NaPoti.app */,
+				13B07F961A680F5B00A75B9A /* DriveTrackPro.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -124,41 +132,33 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = NaPoti/Supporting;
-			sourceTree = "<group>";
-		};
-		E3F2720C41CDCFAB40D1053A /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				61E8C3F03AE550901462A685 /* NaPoti */,
-			);
-			name = ExpoModulesProviders;
+			path = DriveTrackPro/Supporting;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* NaPoti */ = {
+		13B07F861A680F5B00A75B9A /* DriveTrackPro */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "NaPoti" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "DriveTrackPro" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				95EEA3734A16D1FB0791AFE1 /* [Expo] Configure project */,
+				7631AE3213890ECD2CB03A3E /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				F9122F4AD85E08A643EFF1DD /* [CP] Embed Pods Frameworks */,
-				3360144BAF5EECD4E1ECCCD9 /* [CP-User] [RNFB] Core Configuration */,
+				21BDF190AD8E6932A534EA4F /* [CP] Embed Pods Frameworks */,
+				7FDA22266D27C830032460B4 /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = NaPoti;
-			productName = NaPoti;
-			productReference = 13B07F961A680F5B00A75B9A /* NaPoti.app */;
+			name = DriveTrackPro;
+			productName = DriveTrackPro;
+			productReference = 13B07F961A680F5B00A75B9A /* DriveTrackPro.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -170,13 +170,11 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = 433786BYGK;
 						LastSwiftMigration = 1250;
-						ProvisioningStyle = Automatic;
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "NaPoti" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "DriveTrackPro" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -189,7 +187,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* NaPoti */,
+				13B07F861A680F5B00A75B9A /* DriveTrackPro */,
 			);
 		};
 /* End PBXProject section */
@@ -202,8 +200,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				6AB13444E8D54D0F98C13576 /* GoogleService-Info.plist in Resources */,
-				D670382C45A0A1129A1FCB2C /* PrivacyInfo.xcprivacy in Resources */,
+				7F1DA5F21F9549B1AFDB681E /* GoogleService-Info.plist in Resources */,
+				1E51869CBE229F20332C1220 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,14 +238,51 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-NaPoti-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-DriveTrackPro-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		3360144BAF5EECD4E1ECCCD9 /* [CP-User] [RNFB] Core Configuration */ = {
+		21BDF190AD8E6932A534EA4F /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-DriveTrackPro/Pods-DriveTrackPro-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DriveTrackPro/Pods-DriveTrackPro-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		7631AE3213890ECD2CB03A3E /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-DriveTrackPro/expo-configure-project.sh\"\n";
+		};
+		7FDA22266D27C830032460B4 /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -266,7 +301,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-NaPoti/Pods-NaPoti-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-DriveTrackPro/Pods-DriveTrackPro-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/AppAuth/AppAuthCore_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/BoringSSL-GRPC/openssl_grpc.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
@@ -335,44 +370,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-NaPoti/Pods-NaPoti-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		95EEA3734A16D1FB0791AFE1 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-NaPoti/expo-configure-project.sh\"\n";
-		};
-		F9122F4AD85E08A643EFF1DD /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-NaPoti/Pods-NaPoti-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-NaPoti/Pods-NaPoti-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DriveTrackPro/Pods-DriveTrackPro-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -383,7 +381,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				31128AC98F6E63C283D14B70 /* ExpoModulesProvider.swift in Sources */,
+				3F19F74318036FE2B0FB1340 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -392,21 +390,18 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A05B6372C50B6E7BDBC34897 /* Pods-NaPoti.debug.xcconfig */;
+			baseConfigurationReference = C56624DFE3A60D10B7052C8F /* Pods-DriveTrackPro.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = NaPoti/NaPoti.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = DriveTrackPro/DriveTrackPro.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 433786BYGK;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = NaPoti/Info.plist;
+				INFOPLIST_FILE = DriveTrackPro/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -419,9 +414,9 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.enejlicina.napoti;
-				PRODUCT_NAME = NaPoti;
-				SWIFT_OBJC_BRIDGING_HEADER = "NaPoti/NaPoti-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = com.enejlicina.drivetrackpro;
+				PRODUCT_NAME = DriveTrackPro;
+				SWIFT_OBJC_BRIDGING_HEADER = "DriveTrackPro/DriveTrackPro-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -431,16 +426,13 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = DF60691C0924158DD41EBD6D /* Pods-NaPoti.release.xcconfig */;
+			baseConfigurationReference = EE3772C1B4B1C762B2D9C128 /* Pods-DriveTrackPro.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = NaPoti/NaPoti.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = DriveTrackPro/DriveTrackPro.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 433786BYGK;
-				INFOPLIST_FILE = NaPoti/Info.plist;
+				INFOPLIST_FILE = DriveTrackPro/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -453,9 +445,9 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.enejlicina.napoti;
-				PRODUCT_NAME = NaPoti;
-				SWIFT_OBJC_BRIDGING_HEADER = "NaPoti/NaPoti-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = com.enejlicina.drivetrackpro;
+				PRODUCT_NAME = DriveTrackPro;
+				SWIFT_OBJC_BRIDGING_HEADER = "DriveTrackPro/DriveTrackPro-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -611,7 +603,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "NaPoti" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "DriveTrackPro" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -620,7 +612,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "NaPoti" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "DriveTrackPro" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
