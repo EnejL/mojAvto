@@ -15,7 +15,6 @@ import {
   addVehicle,
   deleteVehicle,
 } from "../../utils/firestore";
-import { getCurrentUser } from "../../utils/auth";
 import { Swipeable } from "react-native-gesture-handler";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import BrandLogo from "../../components/BrandLogo";
@@ -42,7 +41,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
       const addNewVehicle = async () => {
         try {
           await addVehicle(route.params.newVehicle);
-          await loadVehicles(); // Reload the list
+          await loadVehicles();
           navigation.setParams({ newVehicle: undefined });
         } catch (error) {
           alert(t("common.error.save"));
@@ -54,12 +53,10 @@ export default function MyVehiclesScreen({ navigation, route }) {
 
   const loadVehicles = async () => {
     try {
-      console.log("Loading vehicles..."); // Debug log
       const loadedVehicles = await getAllVehicles();
-      console.log("Loaded vehicles:", loadedVehicles); // Debug log
       setVehicles(loadedVehicles);
     } catch (error) {
-      console.error("Error loading vehicles:", error); // Debug log
+      console.error("Error loading vehicles:", error);
       alert(t("common.error.load"));
     } finally {
       setLoading(false);
@@ -68,8 +65,8 @@ export default function MyVehiclesScreen({ navigation, route }) {
 
   const handleDeleteVehicle = (vehicleId) => {
     Alert.alert(
-      t("common.delete"), // Title
-      t("vehicles.deleteConfirmMessage"), // Message
+      t("common.delete"),
+      t("vehicles.deleteConfirmMessage"),
       [
         {
           text: t("common.cancel"),
@@ -81,7 +78,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
           onPress: async () => {
             try {
               await deleteVehicle(vehicleId);
-              // Reload the vehicles list
               loadVehicles();
             } catch (error) {
               console.error("Error deleting vehicle:", error);
@@ -224,13 +220,12 @@ const styles = StyleSheet.create({
   brandLogo: {
     width: "auto",
     minWidth: 70,
-    // height: "100%",
-    // position: "absolute",
     left: 0,
     top: 0,
     marginRight: 0,
     borderRadius: 0,
     borderWidth: 0,
+    padding: 10,
     backgroundColor: "white",
   },
   vehicleContent: {

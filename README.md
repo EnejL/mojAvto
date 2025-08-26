@@ -37,7 +37,7 @@ cd ios && pod install && cd ..
 # Using npm script
 npm run ios
 
-# Using React Native CLI directly
+# Using React Native CLI directly (this is the preffered method)
 npx react-native run-ios
 ```
 
@@ -137,13 +137,14 @@ npm outdated
 mojAvto/
 ├── android/          # Android native code
 ├── ios/             # iOS native code
-├── src/             # Source code
-│   ├── components/  # Reusable components
-│   ├── screens/     # Screen components
-│   ├── navigation/  # Navigation configuration
-│   ├── services/    # API and other services
-│   ├── utils/       # Utility functions
-│   └── assets/      # Images, fonts, etc.
+├── components/      # Reusable components
+├── screens/         # Screen components
+├── utils/           # Utility functions and services
+│   ├── translations/ # Internationalization files
+│   ├── auth.js      # Authentication utilities
+│   ├── firebase.js  # Firebase configuration
+│   └── ...          # Other utility files
+├── assets/          # Images, fonts, etc.
 ├── App.js           # Main application component
 └── package.json     # Project dependencies
 ```

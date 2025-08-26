@@ -1,11 +1,18 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Image, View, StyleSheet } from "react-native";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 // Base URL for all logos
 const BASE_LOGO_URL =
   "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/master/logos/optimized/";
 
 const BrandLogo = ({ brand, style }) => {
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+  }, [brand]);
+
   if (!brand) return <View style={[styles.placeholder, style]} />;
 
   // Normalize the brand name for lookup
@@ -19,14 +26,16 @@ const BrandLogo = ({ brand, style }) => {
 
   return (
     <View style={[styles.container, style]}>
-      <Image
-        source={logoSource}
-        style={styles.logo}
-        resizeMode="contain"
-        onError={(e) => {
-          console.log("Error loading image:", e.nativeEvent.error);
-        }}
-      />
+      {error ? (
+        <MaterialCommunityIcons name="car-side" size={30} color="#A9A9A9" />
+      ) : (
+        <Image
+          source={logoSource}
+          style={styles.logo}
+          resizeMode="contain"
+          onError={() => setError(true)}
+        />
+      )}
     </View>
   );
 };
@@ -44,8 +53,8 @@ const styles = StyleSheet.create({
     borderColor: "#EEEEEE",
   },
   logo: {
-    width: "80%",
-    height: "80%",
+    width: "100%",
+    height: "100%",
   },
   placeholder: {
     width: "100%",

@@ -9,16 +9,19 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Import screens
 import MyVehiclesScreen from "../functionality/myVehiclesScreen";
-import PetrolStationsScreen from "../functionality/petrolStationsScreen";
 import SettingsScreen from "../functionality/settingsScreen";
 import VehicleDetailsScreen from "../functionality/vehicleDetailsScreen";
 import AddVehicleScreen from "../functionality/addVehicleScreen";
 import EditVehicleScreen from "../functionality/editVehicleScreen";
 import AuthScreen from "../navigation/authScreen";
-import MyAccountScreen from "../functionality/myAccountScreen";
+import MyAccountScreen from "../account/myAccountScreen";
 import AddFillingScreen from "../functionality/addFillingScreen";
 import EditFillingScreen from "../functionality/editFillingScreen";
-import ForgotPasswordScreen from "../navigation/forgotPasswordScreen";
+import AddChargingScreen from "../functionality/addChargingScreen";
+import EditChargingScreen from "../functionality/editChargingScreen";
+import PrivacyPolicyScreen from "../account/privacyPolicy";
+import TermsOfUseScreen from "../account/termsOfUse";
+import FrequentlyAskedQuestionsScreen from "../account/frequentlyAskedQuestions";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -44,7 +47,7 @@ function MyVehiclesStack() {
         component={MyVehiclesScreen}
         options={{
           title: t("vehicles.title"),
-          headerLeft: () => null,
+          headerBackVisible: false,
         }}
       />
       <Stack.Screen
@@ -60,7 +63,6 @@ function MyVehiclesStack() {
               size={24}
               style={styles.headerIcon}
               onPress={() => {
-                // Navigate within the same stack
                 navigation.navigate("EditVehicle", {
                   vehicle: route.params.vehicle,
                 });
@@ -102,44 +104,19 @@ function MyVehiclesStack() {
         }}
       />
       <Stack.Screen
-        name="Auth"
-        component={AuthScreen}
-        options={{ title: t("auth.title") }}
-      />
-      <Stack.Screen
-        name="ForgotPassword"
-        component={ForgotPasswordScreen}
+        name="AddCharging"
+        component={AddChargingScreen}
         options={{
-          title: t("auth.forgotPassword"),
+          title: t("charging.add"),
           headerBackTitle: t("navigation.back"),
         }}
       />
-    </Stack.Navigator>
-  );
-}
-
-// Petrol Stations stack
-function PetrolStationsStack() {
-  const { t } = useTranslation();
-
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          color: "#fff",
-        },
-      }}
-    >
       <Stack.Screen
-        name="PetrolStationsMain"
-        component={PetrolStationsScreen}
+        name="EditCharging"
+        component={EditChargingScreen}
         options={{
-          title: t("navigation.petrolStations"),
-          headerLeft: () => null, // Remove back button
+          title: t("charging.edit"),
+          headerBackTitle: t("navigation.back"),
         }}
       />
       <Stack.Screen
@@ -150,6 +127,8 @@ function PetrolStationsStack() {
     </Stack.Navigator>
   );
 }
+
+
 
 // Settings stack
 function SettingsStack() {
@@ -173,6 +152,20 @@ function SettingsStack() {
         options={{
           title: t("navigation.settings"),
           headerLeft: () => null, // Remove back button
+        }}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{
+          title: t("common.privacyPolicy"),
+        }}
+      />
+      <Stack.Screen
+        name="TermsOfUse"
+        component={TermsOfUseScreen}
+        options={{
+          title: t("common.terms"),
         }}
       />
       <Stack.Screen
@@ -209,11 +202,24 @@ function AccountStack() {
         }}
       />
       <Stack.Screen
-        name="ForgotPassword"
-        component={ForgotPasswordScreen}
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
         options={{
-          title: t("auth.forgotPassword"),
-          headerBackTitle: t("navigation.back"),
+          title: t("common.privacyPolicy"),
+        }}
+      />
+      <Stack.Screen
+        name="TermsOfUse"
+        component={TermsOfUseScreen}
+        options={{
+          title: t("common.terms"),
+        }}
+      />
+      <Stack.Screen
+        name="FrequentlyAskedQuestions"
+        component={FrequentlyAskedQuestionsScreen}
+        options={{
+          title: t("common.faq"),
         }}
       />
     </Stack.Navigator>
@@ -246,20 +252,7 @@ export default function MainAppNavigator() {
           ),
         }}
       />
-      <Tab.Screen
-        name="PetrolStationsTab"
-        component={PetrolStationsStack}
-        options={{
-          title: t("navigation.petrolStations"),
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="gas-station"
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
+
       {/* Temporarily hidden Settings tab
       <Tab.Screen
         name="SettingsTab"

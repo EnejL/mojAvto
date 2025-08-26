@@ -1,278 +1,74 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Import all translations
+// Import translation files
+import slTranslations from "./translations/sl.json";
+import enTranslations from "./translations/en.json";
+
+// Storage key for language preference
+const LANGUAGE_STORAGE_KEY = "@mojAvto:language";
+
+// Configure resources
 const resources = {
-  en: {
-    translation: {
-      navigation: {
-        home: "Home",
-        myVehicles: "My Vehicles",
-        fuelConsumption: "Fuel Consumption",
-        petrolStations: "Petrol Stations",
-        settings: "Settings",
-        back: "Back",
-      },
-      vehicles: {
-        title: "My Vehicles",
-        add: "Add Vehicle",
-        empty: "No vehicles added yet",
-        name: "Vehicle Name",
-        namePlaceholder: "Enter a display name for your vehicle",
-        make: "Vehicle Make",
-        makePlaceholder: "Select vehicle manufacturer",
-        model: "Vehicle Model",
-        modelPlaceholder: "Select make first",
-        edit: "Edit Vehicle",
-        numberPlate: "Number Plate",
-        addFirst: "Add Your First Vehicle",
-        select: "Select Vehicle",
-        selectPrompt: "Choose a vehicle",
-      },
-      fillings: {
-        title: "Fuel Fillings",
-        date: "Date",
-        liters: "Liters",
-        cost: "Cost",
-        odometer: "Odometer Reading",
-        add: "Add Filling",
-        consumption: "Fuel Consumption",
-        consumptionUnit: "l/100 km",
-        notEnoughData: "Not enough fuel entries",
-        distanceSince: "Distance since last filling",
-        noVehiclesWarning:
-          "You need to add a vehicle before you can record fuel fillings.",
-        noFillings:
-          "There are currently no fillings to be displayed. Please enter your first filling.",
-        edit: "Edit Filling",
-        deleteConfirmMessage: "Are you sure you want to delete this filling?",
-        filling: "filling",
-        statistics: "Statistics",
-        avgConsumption: "Average Consumption",
-        avgCost: "Average Cost",
-        avgLiters: "Average Fuel Amount",
-        totalCost: "Total Cost",
-      },
-      common: {
-        loading: "Loading...",
-        save: "Save",
-        cancel: "Cancel",
-        error: {
-          save: "Failed to save",
-          load: "Failed to load",
-          required: "Please fill in all fields",
-          delete: "Brisanje ni uspelo",
-        },
-      },
-      auth: {
-        title: "Account",
-        email: "Email",
-        password: "Password",
-        signIn: "Sign In",
-        createAccount: "Create Account",
-        anonymousInfo:
-          "You're currently using the app anonymously. Create an account to save your data across devices.",
-        error: {
-          createAccount: "Failed to create account",
-          signIn: "Failed to sign in",
-          signOut: "Failed to sign out",
-          "invalid-credentials": "Invalid email or password",
-          "invalid-email": "Invalid email address",
-          "user-disabled": "This account has been disabled",
-          "too-many-attempts": "Too many attempts. Please try again later",
-          "unknown-error": "An error occurred. Please try again",
-          "email-taken": "This email is already in use",
-          "weak-password": "Password should be at least 6 characters",
-        },
-        haveAccount: "Already have an account? Sign in",
-        needAccount: "Need an account? Create one",
-        signedInAs: "Signed in as {{email}}",
-        signOut: "Sign Out",
-        greeting: "Hello, {{email}}",
-        accountManage: "Manage Account",
-        forgotPassword: "Forgot Password?",
-        enterEmailFirst: "Please enter your email address first",
-        resetEmailSent: "Password Reset Email Sent",
-        checkEmail:
-          "Please check your email for instructions to reset your password",
-        resetError: "Error Resetting Password",
-        confirmPassword: "Confirm Password",
-        "passwords-dont-match": "Passwords don't match",
-        signInWithGoogle: "Sign in with Google",
-        or: "or",
-        googleSignInFailed: "Google Sign-In failed. Please try again.",
-      },
-      welcome: {
-        message:
-          "Track your vehicle's fuel consumption and maintenance with ease.",
-      },
-      petrolStations: {
-        title: "Petrol Stations",
-        list: "List",
-        map: "Map",
-        fetchError: "Failed to load petrol stations",
-        description: "Find petrol stations and compare fuel prices",
-        viewDetails: "View Details",
-        prices: "Fuel Prices",
-        getDirections: "Get Directions",
-        openingHours: "Opening Hours",
-        open24Hours: "Open 24 hours",
-        closed: "Closed",
-        noOpeningHours: "Opening hours information not available",
-      },
-    },
-  },
   sl: {
-    translation: {
-      navigation: {
-        home: "Domov",
-        myVehicles: "Moja Vozila",
-        fuelConsumption: "Poraba Goriva",
-        petrolStations: "Črpalke",
-        settings: "Nastavitve",
-        back: "Nazaj",
-      },
-      vehicles: {
-        title: "Moja Vozila",
-        add: "Dodaj Vozilo",
-        empty: "Še ni dodanih vozil",
-        details: "Informacije o vozilu",
-        name: "Ime Vozila",
-        make: "Znamka",
-        model: "Model",
-        modelPlaceholder: "Najprej izberite znamko",
-        edit: "Uredi Vozilo",
-        numberPlate: "Registrska Oznaka",
-        addFirst: "Dodaj Svoje Prvo Vozilo",
-        selected: "Izbrano Vozilo",
-        deleteVehicle: "Izbriši Vozilo",
-        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to vozilo?",
-      },
-      fillings: {
-        title: "Točenja goriva",
-        nav: "Poraba Goriva",
-        date: "Datum",
-        liters: "Litrov",
-        cost: "Strošek",
-        odometer: "Stanje Kilometrov",
-        add: "Dodaj Točenje",
-        empty: "Ni zabeleženih točenj",
-        delete: "Odstrani vnos",
-        consumption: "Povprečna Poraba Goriva",
-        consumptionUnit: "l/100 km",
-        notEnoughData: "Ni dovolj podatkov. Vnesite vsaj dve točenji.",
-        distanceSince: "Prevoženi kilometri od zadnjega točenja",
-        noVehiclesWarning:
-          "Najprej morate dodati vozilo, preden lahko zabeležite točenja goriva.",
-        noFillings:
-          "Trenutno ni zabeleženih točenj goriva. Prosimo, vnesite vaše prvo točenje.",
-        edit: "Uredi Točenje",
-        deleteConfirmMessage: "Ste prepričani, da želite izbrisati to točenje?",
-        filling: "točenje",
-        statistics: "Statistika vozila",
-        avgConsumption: "Povprečna poraba",
-        avgCost: "Povprečni strošek",
-        avgLiters: "Povprečno točenje",
-        totalCost: "Skupni strošek",
-      },
-      petrolStations: {
-        title: "Bencinske Črpalke",
-        list: "Seznam",
-        map: "Zemljevid",
-        fetchError: "Napaka pri nalaganju bencinskih črpalk",
-        description: "Bencinske črpalke bodo tukaj ...",
-        viewDetails: "Več informacij",
-        prices: "Cene goriv",
-        getDirections: "Navigacija",
-        openingHours: "Delovni Čas",
-        open24Hours: "Odprto 24 ur",
-        closed: "Zaprto",
-        noOpeningHours: "Informacije o delovnem času niso na voljo",
-      },
-      settings: {
-        title: "Nastavitve",
-        language: "Jezik",
-        theme: "Tema",
-        notifications: "Obvestila",
-      },
-      common: {
-        loading: "Nalaganje...",
-        save: "Shrani",
-        cancel: "Prekliči",
-        error: {
-          save: "Shranjevanje ni uspelo",
-          load: "Nalaganje ni uspelo",
-          required: "Prosim izpolnite vsa polja",
-          delete: "Brisanje ni uspelo",
-        },
-        submit: "Potrdi",
-        ok: "V redu",
-        delete: "Izbriši",
-      },
-      auth: {
-        title: "Račun",
-        email: "E-pošta",
-        password: "Geslo",
-        signIn: "Prijava",
-        createAccount: "Ustvari Račun",
-        anonymousInfo:
-          "Trenutno uporabljate aplikacijo anonimno. Ustvarite račun za shranjevanje podatkov med napravami.",
-        error: {
-          createAccount: "Ustvarjanje računa ni uspelo",
-          signIn: "Prijava ni uspela",
-          signOut: "Odjava ni uspela",
-          invalidCredentials: "Napačen email ali geslo",
-          // invalidEmail: "Napačen email naslov",
-          userDisabled: "Ta račun je onemogočen",
-          tooManyAttempts: "Preveč poskusov. Prosimo poskusite kasneje",
-          unknownError: "Prišlo je do napake. Prosimo poskusite ponovno",
-          emailTaken: "Ta email je že v uporabi",
-          weakPassword: "Geslo mora vsebovati vsaj 6 znakov",
-        },
-        haveAccount: "Že imate račun? Prijavite se",
-        needAccount: "Potrebujete račun?",
-        signedInAs: "Prijavljeni kot {{email}}",
-        signOut: "Odjava",
-        greeting: "Pozdravljeni, {{email}}",
-        accountManage: "Moj Račun",
-        forgotPassword: "Ste pozabili geslo?",
-        enterEmailFirst: "Prosimo, najprej vnesite svoj e-poštni naslov",
-        resetEmailSent: "E-pošta za ponastavitev gesla poslana",
-        checkEmail: "Preverite svojo e-pošto za navodila za ponastavitev gesla",
-        resetError: "Napaka pri ponastavitvi gesla",
-        confirmPassword: "Potrdi Geslo",
-        "passwords-dont-match": "Gesli se ne ujemata",
-        forgotPasswordInstructions:
-          "Prosimo, vnesite svoj e-poštni naslov, da dobite navodila za ponastavitev gesla.",
-        resetEmailInstructions:
-          "V kolikor obstaja račun z vnešenim e-poštnim naslovom, boste v kratkem prejeli povezavo za ponastavitev gesla. Ne pozabite preveriti tudi mape z neželeno pošto.",
-        signInWithGoogle: "Prijava z Google",
-        or: "ali",
-        googleSignInFailed: "Prijava z Google ni uspela. Poskusite ponovno.",
-      },
-      welcome: {
-        message: "Enostavno sledite porabi goriva vaših vozil.",
-      },
-      days: {
-        monday: "Ponedeljek",
-        tuesday: "Torek",
-        wednesday: "Sreda",
-        thursday: "Četrtek",
-        friday: "Petek",
-        saturday: "Sobota",
-        sunday: "Nedelja",
-      },
-    },
+    translation: slTranslations
   },
+  en: {
+    translation: enTranslations
+  }
 };
 
-i18n.use(initReactI18next).init({
-  resources,
-  lng: "sl", // default language changed to Slovenian
-  fallbackLng: "en",
-  interpolation: {
-    escapeValue: false,
-  },
-});
+// Function to get saved language from storage
+export const getSavedLanguage = async () => {
+  try {
+    const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return savedLanguage || "en"; // Default to English if no saved preference
+  } catch (error) {
+    console.error("Error loading saved language:", error);
+    return "en"; // Fallback to English on error
+  }
+};
+
+// Function to save language preference to storage
+export const saveLanguage = async (languageCode) => {
+  try {
+    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, languageCode);
+  } catch (error) {
+    console.error("Error saving language preference:", error);
+  }
+};
+
+// Function to get current language (from i18n instance)
+export const getCurrentLanguage = () => {
+  return i18n.language;
+};
+
+// Function to get current language with fallback to saved preference
+export const getCurrentLanguageWithFallback = async () => {
+  const currentLanguage = i18n.language;
+  if (currentLanguage) {
+    return currentLanguage;
+  }
+  // If i18n not initialized yet, get from storage
+  return await getSavedLanguage();
+};
+
+// Initialize i18n with persistence
+const initI18n = async () => {
+  const savedLanguage = await getSavedLanguage();
+  
+  i18n.use(initReactI18next).init({
+    resources,
+    lng: savedLanguage,
+    fallbackLng: "en",
+    interpolation: {
+      escapeValue: false
+    }
+  });
+};
+
+// Initialize immediately
+initI18n();
 
 export default i18n;

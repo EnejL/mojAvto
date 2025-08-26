@@ -1,20 +1,14 @@
-// firebase.js
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+// utils/firebase.js - FINAL CORRECTED VERSION
 
-// Replace the below configuration with your own from the Firebase Console.
-const firebaseConfig = {
-  apiKey: "AIzaSyAgyenYvKy85JCjRb_xkN-XmH90CRtx_pc",
-  authDomain: "mojavto-c67fe.firebaseapp.com",
-  projectId: "mojavto-c67fe",
-  storageBucket: "mojavto-c67fe.firebasestorage.app",
-  messagingSenderId: "130352948782",
-  appId: "1:130352948782:web:2578faad7e60bf5fe361bf",
-};
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// @react-native-firebase initializes automatically from the native config files.
+// There is no manual initialization step.
 
-export { db, auth };
+// Get the service instances by calling the imported modules as functions.
+const authInstance = auth();
+const dbInstance = firestore();
+
+// Export them for use in your app.
+export { authInstance as auth, dbInstance as db };

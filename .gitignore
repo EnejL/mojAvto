@@ -39,6 +39,9 @@ yarn-error.*
 # Firebase
 firestore-debug.log
 
+# Firebase local cache and emulators
+.firebase/
+
 # iOS
 ios/Pods/
 ios/build/
