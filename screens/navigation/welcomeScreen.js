@@ -53,7 +53,7 @@ export default function WelcomeScreen() {
       >
         <Surface style={styles.headerCard}>
           <Image
-            source={require("../../assets/app-logo-white.png")}
+            source={require("../../assets/drivetrack-pro-logo.png")}
             style={styles.logo}
           />
           <Text style={styles.appName}>DriveTrack Pro</Text>
@@ -113,12 +113,12 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 225,
+    height: 225,
     marginBottom: 16,
   },
   appName: {
-    fontSize: 36,
+    fontSize: 35,
     fontWeight: "bold",
     color: "#ffffff",
     textAlign: "center",
