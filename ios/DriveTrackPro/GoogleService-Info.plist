@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>130352948782-s3sa4o899noegmhnjh6sofe898ieqgaf.apps.googleusercontent.com</string>
+	<string>130352948782-vfh9eres2o7e5qlg78sdg8i3rfv7m4qc.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.130352948782-s3sa4o899noegmhnjh6sofe898ieqgaf</string>
+	<string>com.googleusercontent.apps.130352948782-vfh9eres2o7e5qlg78sdg8i3rfv7m4qc</string>
 	<key>API_KEY</key>
 	<string>AIzaSyBJ786a5civdr7FeLQ-_nLrr6Pgej_cXA4</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.enejlicina.napoti</string>
+	<string>com.enejlicina.drivetrackpro</string>
 	<key>PROJECT_ID</key>
 	<string>mojavto-c67fe</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:130352948782:ios:0dc2c8f1ecdd9140e361bf</string>
+	<string>1:130352948782:ios:b1e0754c1539faabe361bf</string>
 </dict>
 </plist>
