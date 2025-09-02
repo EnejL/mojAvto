@@ -2,7 +2,7 @@ export default {
   "expo": {
     "name": "DriveTrack Pro",
     "slug": "NaPoti",
-    "version": "1.5.0", 
+    "version": "1.5.1", 
     "orientation": "portrait",
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,7 @@ export default {
       "bundleIdentifier": "com.enejlicina.drivetrackpro",
       "deploymentTarget": "15.1",
       "associatedDomains": ["applinks:verify.enejlicina.com"],
-      "buildNumber": "16",
+      "buildNumber": "17",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -24,7 +24,7 @@ export default {
     },
     "android": {
       "package": "com.enejlicina.drivetrackpro",
-      "versionCode": 1,
+      "versionCode": 2,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/app-icon-android.png",
