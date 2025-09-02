@@ -146,3 +146,78 @@ export const reloadUser = async () => {
     throw error;
   }
 };
+
+// Delete user account and all associated data
+export const deleteAccount = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("No user is currently signed in");
+    }
+
+    const userId = user.uid;
+
+    // First, delete all user data from Firestore
+    await deleteAllUserData(userId);
+
+    // Then delete the user account from Firebase Auth
+    await user.delete();
+
+    console.log("Account deleted successfully");
+    return true;
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    throw error;
+  }
+};
+
+// Helper function to delete all user data from Firestore
+const deleteAllUserData = async (userId) => {
+  try {
+    // Import db here to avoid circular dependency
+    const { db } = await import('./firebase');
+    
+    // Get all vehicles for the user
+    const vehiclesRef = db.collection('users').doc(userId).collection('vehicles');
+    const vehiclesSnapshot = await vehiclesRef.get();
+
+    // Delete all subcollections for each vehicle (fillings, chargingSessions)
+    const deletePromises = [];
+    
+    vehiclesSnapshot.docs.forEach(vehicleDoc => {
+      const vehicleId = vehicleDoc.id;
+      
+      // Delete fillings subcollection
+      deletePromises.push(
+        deleteSubcollection(vehiclesRef.doc(vehicleId).collection('fillings'))
+      );
+      
+      // Delete chargingSessions subcollection
+      deletePromises.push(
+        deleteSubcollection(vehiclesRef.doc(vehicleId).collection('chargingSessions'))
+      );
+    });
+
+    // Wait for all subcollections to be deleted
+    await Promise.all(deletePromises);
+
+    // Delete all vehicles
+    const vehicleDeletePromises = vehiclesSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(vehicleDeletePromises);
+
+    // Delete the user document itself
+    await db.collection('users').doc(userId).delete();
+
+    console.log(`Deleted all data for user ${userId}`);
+  } catch (error) {
+    console.error("Error deleting user data:", error);
+    throw error;
+  }
+};
+
+// Helper function to delete all documents in a subcollection
+const deleteSubcollection = async (subcollectionRef) => {
+  const snapshot = await subcollectionRef.get();
+  const deletePromises = snapshot.docs.map(doc => doc.ref.delete());
+  await Promise.all(deletePromises);
+};
