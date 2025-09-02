@@ -36,7 +36,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.googleusercontent.apps.130352948782-s3sa4o899noegmhnjh6sofe898ieqgaf</string>
+          <string>com.googleusercontent.apps.130352948782-vfh9eres2o7e5qlg78sdg8i3rfv7m4qc</string>
         </array>
       </dict>
       <dict>
@@ -47,7 +47,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>15</string>
+    <string>16</string>
     <key>GMSApiKey</key>
     <string>AIzaSyCB7pakhzxdYuzfvZbMrcHJ7jcuZmVFprA</string>
     <key>ITSAppUsesNonExemptEncryption</key>
