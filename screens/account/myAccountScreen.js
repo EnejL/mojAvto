@@ -1,8 +1,8 @@
-import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
-import { Text, Button, Surface, Avatar, List, Divider } from "react-native-paper";
+import React, { useState } from "react";
+import { View, StyleSheet, ScrollView, Alert } from "react-native";
+import { Text, Button, Surface, Avatar, List, Divider, ActivityIndicator } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { signOut, getCurrentUser } from "../../utils/auth";
+import { signOut, getCurrentUser, deleteAccount } from "../../utils/auth";
 import { useNavigation } from "@react-navigation/native";
 import i18n, { saveLanguage, getCurrentLanguage } from "../../utils/i18n";
 
@@ -10,6 +10,7 @@ export default function MyAccountScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -28,6 +29,64 @@ export default function MyAccountScreen() {
       await saveLanguage(languageCode);
     } catch (error) {
       console.error("Error changing language:", error);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t("auth.deleteAccount"),
+      t("auth.deleteAccountConfirm") + "\n\n" + t("auth.deleteAccountWarning"),
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("auth.deleteAccount"),
+          style: "destructive",
+          onPress: confirmDeleteAccount,
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      t("auth.deleteAccount"),
+      t("auth.deleteAccountWarning"),
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("auth.deleteAccount"),
+          style: "destructive",
+          onPress: performDeleteAccount,
+        },
+      ]
+    );
+  };
+
+  const performDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+      Alert.alert(
+        t("common.ok"),
+        t("auth.deleteAccountSuccess"),
+        [{ text: t("common.ok") }]
+      );
+      // Navigation will be handled by the auth state listener in App.js
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      Alert.alert(
+        t("common.error.delete"),
+        t("auth.deleteAccountError"),
+        [{ text: t("common.ok") }]
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -102,6 +161,19 @@ export default function MyAccountScreen() {
             left={props => <List.Icon {...props} icon="information" />}
           />
         </Surface>
+
+        {/* Account Deletion Section - Only show for authenticated users */}
+        {currentUser && !currentUser.isAnonymous && (
+          <Surface style={styles.dangerSection}>
+            <List.Item
+              title={t("auth.deleteAccount")}
+              left={props => <List.Icon {...props} icon="delete-forever" color="#f44336" />}
+              onPress={handleDeleteAccount}
+              disabled={isDeleting}
+              right={props => isDeleting ? <ActivityIndicator {...props} size="small" color="#f44336" /> : null}
+            />
+          </Surface>
+        )}
       </ScrollView>
 
       <View style={styles.bottomContainer}>
@@ -145,6 +217,13 @@ const styles = StyleSheet.create({
     margin: 16,
     borderRadius: 8,
     elevation: 2,
+  },
+  dangerSection: {
+    margin: 16,
+    borderRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#ffebee",
   },
   bottomContainer: {
     padding: 16,

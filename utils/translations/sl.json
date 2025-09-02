@@ -195,7 +195,12 @@
     "or": "ali",
     "googleSignInFailed": "Prijava z Google računom ni uspela. Prosimo poskusite ponovno.",
     "appleSignInFailed": "Prijava z Apple računom ni uspela. Prosimo poskusite ponovno.",
-    "welcomeMessage": "Vaša vozila, na dlani!"
+    "welcomeMessage": "Vaša vozila, na dlani!",
+    "deleteAccount": "Izbriši račun",
+    "deleteAccountConfirm": "Ste prepričani, da želite izbrisati svoj račun?",
+    "deleteAccountWarning": "Tega dejanja ni mogoče razveljaviti. Vsi vaši podatki bodo trajno izbrisani.",
+    "deleteAccountSuccess": "Račun je bil uspešno izbrisan",
+    "deleteAccountError": "Izbris računa ni uspel. Prosimo poskusite ponovno."
   },
   "faq": {
     "title": "Pogosta vprašanja",
@@ -230,7 +235,7 @@
       },
       {
         "question": "Kako izbrišem svoj račun?",
-        "answer": "Za izbris računa se obrnite na naslov enej.dev@gmail.com."
+        "answer": "Svoj račun lahko izbrišete neposredno iz aplikacije. Pojdite v Račun -> Moj Račun in se pomaknite navzdol, da najdete možnost 'Izbriši račun'. To bo trajno izbrisalo vse vaše podatke in tega ni mogoče razveljaviti."
       },
       {
         "question": "Kako deluje izračun porabe goriva?",
@@ -271,7 +276,7 @@
       },
       {
         "title": "5. Prenehanje uporabe",
-        "content": "Uporabnik lahko zahteva izbris svojega uporabniškega računa. Za izbris računa se lahko obrnete na: enej.dev@gmail.com.\n\nZ izbrisom računa se izbrišejo vsi osebni podatki."
+        "content": "Uporabnik lahko izbriše svoj uporabniški račun kadarkoli neposredno iz aplikacije. Pojdite v Nastavitve > Moj Račun in izberite 'Izbriši račun'. Lahko se tudi obrnete na: enej.dev@gmail.com.\n\nZ izbrisom računa se vsi osebni podatki trajno izbrišejo in jih ni mogoče obnoviti."
       },
       {
         "title": "6. Veljavna zakonodaja",
