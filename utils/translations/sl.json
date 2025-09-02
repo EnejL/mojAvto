@@ -235,7 +235,7 @@
       },
       {
         "question": "Kako izbrišem svoj račun?",
-        "answer": "Svoj račun lahko izbrišete neposredno iz aplikacije. Pojdite v Račun -> Moj Račun in se pomaknite navzdol, da najdete možnost 'Izbriši račun'. To bo trajno izbrisalo vse vaše podatke in tega ni mogoče razveljaviti."
+        "answer": "Svoj račun lahko izbrišete neposredno iz aplikacije. Pojdite na zavihek Račun in se pomaknite navzdol, da najdete možnost 'Izbriši račun'. To bo trajno izbrisalo vse vaše podatke in tega ni mogoče razveljaviti."
       },
       {
         "question": "Kako deluje izračun porabe goriva?",
@@ -276,7 +276,7 @@
       },
       {
         "title": "5. Prenehanje uporabe",
-        "content": "Uporabnik lahko izbriše svoj uporabniški račun kadarkoli neposredno iz aplikacije. Pojdite v Nastavitve > Moj Račun in izberite 'Izbriši račun'. Lahko se tudi obrnete na: enej.dev@gmail.com.\n\nZ izbrisom računa se vsi osebni podatki trajno izbrišejo in jih ni mogoče obnoviti."
+        "content": "Uporabnik lahko izbriše svoj uporabniški račun kadarkoli neposredno iz aplikacije. Pojdite na zavihek Račun in izberite 'Izbriši račun'.\n\nZ izbrisom računa se vsi osebni podatki trajno izbrišejo in jih ni mogoče obnoviti."
       },
       {
         "title": "6. Veljavna zakonodaja",

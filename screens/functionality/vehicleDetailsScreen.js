@@ -762,9 +762,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         )}
 
         {/* Fuel Consumption Graph (only for vehicles with fuel) */}
-        {shouldShowFuelButton() && fillings.length > 0 && (
+        {/* Temporarily disabled graph functionality */}
+        {/* {shouldShowFuelButton() && fillings.length > 0 && (
           <FuelConsumptionGraph fillings={fillings} />
-        )}
+        )} */}
 
         {/* History Section for PHEV, individual sections for others */}
         {vehicleType === 'PHEV' ? (

@@ -235,7 +235,7 @@
       },
       {
         "question": "How do I delete my account?",
-        "answer": "You can delete your account directly from the app. Go to Settings > My Account and scroll down to find the 'Delete Account' option. This will permanently delete all your data and cannot be undone."
+        "answer": "You can delete your account directly from the app. Go to the Account tab in the bottom bar and scroll down to find the 'Delete Account' option. This will permanently delete all your data and cannot be undone."
       },
       {
         "question": "How does fuel consumption calculation work?",
@@ -276,7 +276,7 @@
       },
       {
         "title": "5. Termination of Use",
-        "content": "Users may delete their user account at any time directly from the app. Go to Settings > My Account and select 'Delete Account'. You can also contact us at: enej.dev@gmail.com.\n\nWith account deletion, all personal data is permanently deleted and cannot be recovered."
+        "content": "Users may delete their user account at any time directly from the app. Go to Account and select 'Delete Account'.\n\nWith account deletion, all personal data is permanently deleted and cannot be recovered."
       },
       {
         "title": "6. Applicable Law",
