@@ -33,8 +33,8 @@
     "monthlyEstimate": "Predvideni mesečni strošek",
     "avgCostPer100km": "Povp. strošek na 100 km",
     "totalCost": "Skupni strošek dosedanjih točenj / polnjenj",
-    "showConsumptionGraph": "Prikaži Graf Porabe",
-    "hideConsumptionGraph": "Skrij Graf Porabe",
+    "showConsumptionGraph": "Prikaži graf porabe",
+    "hideConsumptionGraph": "Skrij graf porabe",
     "consumptionOverTime": "Poraba Skozi Čas",
     "types": {
       "ICE": "Bencin / dizel",
@@ -52,7 +52,7 @@
     "odometer": "Stanje Kilometrov",
     "add": "Točenje +",
     "empty": "Ni zabeleženih točenj",
-    "delete": "Odstrani vnos",
+    "delete": "Izbriši",
     "consumption": "Povprečna poraba goriva",
     "consumptionUnit": "l/100 km",
     "distanceSince": "Prevoženi kilometri od zadnjega točenja",
@@ -97,7 +97,7 @@
     "deleteConfirmMessage": "Ste prepričani, da želite izbrisati to polnjenje?",
     "consumptionUnit": "kWh/100 km",
     "moreDetails": "Dodaj podrobnosti",
-    "delete": "Izbriši polnjenje"
+    "delete": "Izbriši"
   },
   "petrolStations": {
     "title": "Bencinske Črpalke",

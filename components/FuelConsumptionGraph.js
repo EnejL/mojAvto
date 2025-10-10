@@ -332,7 +332,6 @@ const styles = StyleSheet.create({
   container: {
     margin: 16,
     padding: 16,
-    paddingBottom: 0,
     borderRadius: 12,
     elevation: 2,
     backgroundColor: '#fff',
@@ -359,7 +358,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingRight: 5,
   },
-  yAxisLabel: { fontSize: 10, color: '#666' },
+  yAxisLabel: {
+    fontSize: 10,
+    color: '#666',
+  },
 
   scrollContainer: { flex: 1 },
   chartArea: {
@@ -425,6 +427,7 @@ const styles = StyleSheet.create({
     top: 120,
     width: 80,
     alignItems: 'center',
+    transform: [{ rotate: '-90deg' }],
   },
   axisTitle: {
     fontSize: 11,

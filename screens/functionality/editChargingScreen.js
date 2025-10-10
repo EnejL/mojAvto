@@ -270,45 +270,45 @@ export default function EditChargingScreen({ route, navigation }) {
               placeholder={t("charging.locationNamePlaceholder")}
             />
           </Surface>
+        </ScrollView>
 
-          <View style={styles.bottomContainer}>
+        <View style={styles.bottomContainer}>
+          <Button
+            mode="outlined"
+            onPress={handleDelete}
+            style={styles.deleteButton}
+            labelStyle={styles.deleteButtonLabel}
+            icon={({ size, color }) => (
+              <MaterialCommunityIcons
+                name="trash-can"
+                size={size}
+                color={color}
+              />
+            )}
+          >
+            {t("charging.delete")}
+          </Button>
+
+          <View style={styles.buttonContainer}>
             <Button
               mode="outlined"
-              onPress={handleDelete}
-              style={styles.deleteButton}
-              labelStyle={styles.deleteButtonLabel}
-              icon={({ size, color }) => (
-                <MaterialCommunityIcons
-                  name="trash-can"
-                  size={size}
-                  color={color}
-                />
-              )}
+              onPress={() => navigation.goBack()}
+              style={[styles.button, styles.cancelButton]}
+              disabled={loading}
             >
-              {t("charging.delete")}
+              {t("common.cancel")}
             </Button>
-
-            <View style={styles.buttonContainer}>
-              <Button
-                mode="outlined"
-                onPress={() => navigation.goBack()}
-                style={[styles.button, styles.cancelButton]}
-                disabled={loading}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                mode="contained"
-                onPress={handleSave}
-                style={[styles.button, styles.saveButton]}
-                loading={loading}
-                disabled={loading}
-              >
-                {t("common.save")}
-              </Button>
-            </View>
+            <Button
+              mode="contained"
+              onPress={handleSave}
+              style={[styles.button, styles.saveButton]}
+              loading={loading}
+              disabled={loading}
+            >
+              {t("common.save")}
+            </Button>
           </View>
-        </ScrollView>
+        </View>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -318,15 +318,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    padding: 16,
   },
   formCard: {
+    margin: 16,
     padding: 16,
-    borderRadius: 8,
-    elevation: 2,
-    marginTop: 6,
-    marginHorizontal: 6,
-    marginBottom: 16,
+    borderRadius: 12,
+    elevation: 1,
+    backgroundColor: "#fff",
   },
   input: {
     marginBottom: 16,
@@ -369,27 +367,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   bottomContainer: {
-    marginTop: 16,
+    backgroundColor: "#f5f5f5",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   deleteButton: {
     marginBottom: 16,
     borderColor: "#d32f2f",
+    backgroundColor: "transparent",
+    width: "95%",
+    alignSelf: "center",
   },
   deleteButtonLabel: {
+    fontSize: 16,
+    paddingVertical: 4,
     color: "#d32f2f",
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 32,
   },
   button: {
-    width: "48%",
+    flex: 1,
+    marginHorizontal: 8,
   },
   cancelButton: {
-    borderColor: "#666",
+    borderColor: "#495057",
   },
   saveButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#6c757d",
   },
 }); 
