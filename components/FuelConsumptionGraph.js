@@ -427,7 +427,6 @@ const styles = StyleSheet.create({
     top: 120,
     width: 80,
     alignItems: 'center',
-    transform: [{ rotate: '-90deg' }],
   },
   axisTitle: {
     fontSize: 11,
