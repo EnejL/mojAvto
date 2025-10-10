@@ -33,6 +33,9 @@
     "monthlyEstimate": "Predvideni mesečni strošek",
     "avgCostPer100km": "Povp. strošek na 100 km",
     "totalCost": "Skupni strošek dosedanjih točenj / polnjenj",
+    "showConsumptionGraph": "Prikaži Graf Porabe",
+    "hideConsumptionGraph": "Skrij Graf Porabe",
+    "consumptionOverTime": "Poraba Skozi Čas",
     "types": {
       "ICE": "Bencin / dizel",
       "HYBRID": "Hibrid (blagi / polni)",
