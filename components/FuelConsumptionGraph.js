@@ -62,7 +62,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
         dateObj = new Date(cur.date);
       }
 
-      const label = `${String(dateObj.getDate()).padStart(2,'0')}. ${String(dateObj.getMonth()+1).padStart(2,'0')}.`;
+      const label = `${String(dateObj.getDate()).padStart(2,'0')}. ${String(dateObj.getMonth()+1).padStart(2,'0')}. ${String(dateObj.getFullYear()).slice(-2)}`;
       
       const point = { 
         date: label, 
@@ -332,6 +332,7 @@ const styles = StyleSheet.create({
   container: {
     margin: 16,
     padding: 16,
+    paddingBottom: 0,
     borderRadius: 12,
     elevation: 2,
     backgroundColor: '#fff',
@@ -346,7 +347,11 @@ const styles = StyleSheet.create({
   button: { marginVertical: 8 },
   closeButton: { marginLeft: 8 },
 
-  graphContainer: { flexDirection: 'row', height: 250 },
+  graphContainer: {
+    flexDirection: 'row',
+    height: 280,
+  },
+
   yAxisLabels: {
     width: 40,
     height: 200,
@@ -357,7 +362,11 @@ const styles = StyleSheet.create({
   yAxisLabel: { fontSize: 10, color: '#666' },
 
   scrollContainer: { flex: 1 },
-  chartArea: { height: 200, position: 'relative', marginBottom: 40 },
+  chartArea: {
+    height: 200,
+    position: 'relative',
+    marginBottom: 60,
+  },
 
   gridLine: {
     position: 'absolute',
@@ -397,10 +406,11 @@ const styles = StyleSheet.create({
   xAxisLabels: {
     position: 'absolute',
     left: 5,
-    bottom: -55,
+    bottom: -80,
     flexDirection: 'row',
-    height: 40,
+    height: 50,
   },
+
   xAxisLabel: {
     position: 'absolute',
     fontSize: 11,
@@ -411,9 +421,9 @@ const styles = StyleSheet.create({
 
   yAxisTitle: {
     position: 'absolute',
-    left: -10,
+    left: -35,
     top: 120,
-    width: 30,
+    width: 80,
     alignItems: 'center',
   },
   axisTitle: {
@@ -421,7 +431,7 @@ const styles = StyleSheet.create({
     color: '#666',
     transform: [{ rotate: '-90deg' }],
     textAlign: 'center',
-    width: 60,
+    width: 150,
   },
 });
 
