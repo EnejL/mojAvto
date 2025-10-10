@@ -33,6 +33,9 @@
     "monthlyEstimate": "Estimated Monthly Cost",
     "avgCostPer100km": "Avg. cost per 100 km",
     "totalCost": "Total cost of fuel-ups / charging sessions",
+    "showConsumptionGraph": "Show Consumption Graph",
+    "hideConsumptionGraph": "Hide Consumption Graph",
+    "consumptionOverTime": "Consumption Over Time",
     "types": {
       "ICE": "Gasoline / Diesel",
       "HYBRID": "Hybrid (mild / full)",
