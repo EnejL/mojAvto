@@ -68,6 +68,12 @@ npx react-native run-ios
 npm run android
 # or
 npx react-native run-android
+
+### Clean and regenerate native files
+Cleans and regenerates the native `ios` and `android` directories. This is useful when native dependencies have been added or changed.
+
+```bash
+npx expo prebuild --platform ios --clean
 ```
 
 ### Common Development Commands
@@ -82,6 +88,13 @@ cd ios && rm -rf build/ && pod install && cd .. && npx react-native run-ios
 
 # For Android
 cd android && ./gradlew clean && cd .. && npx react-native run-android
+```
+
+### Start development server
+Starts the local development server and launches the app in a simulator or on a connected device.
+
+```bash
+npx expo start --dev-client
 ```
 
 ### Testing

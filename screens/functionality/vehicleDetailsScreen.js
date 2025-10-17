@@ -57,8 +57,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const { vehicle } = route.params;
   const [fillings, setFillings] = useState([]);
   const [chargingSessions, setChargingSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
   const [combinedHistory, setCombinedHistory] = useState([]);
 
   // Get vehicle type or default to ICE for backwards compatibility
@@ -104,8 +102,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         }
       } catch (error) {
         console.error("Error loading data:", error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -274,12 +270,12 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   }, [chargingSessions, shouldShowChargeButton]);
 
   const renderHistoryItem = ({ item }) => {
-    const renderRightActions = (progress, dragX) => {
+    const renderRightActions = () => {
       return (
         <View style={styles.deleteAction}>
           <Button
             icon="trash-can"
-            color="#fff"
+            textColor="#fff"
             onPress={() => handleDeleteHistoryItem(item)}
             style={styles.deleteActionButton}
           />

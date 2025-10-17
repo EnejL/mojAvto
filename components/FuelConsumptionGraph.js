@@ -424,9 +424,10 @@ const styles = StyleSheet.create({
   yAxisTitle: {
     position: 'absolute',
     left: -35,
-    top: 120,
+    top: 100,
     width: 80,
     alignItems: 'center',
+    zIndex: 10,
   },
   axisTitle: {
     fontSize: 11,
