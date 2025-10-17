@@ -24,7 +24,7 @@ export default {
     },
     "android": {
       "package": "com.enejlicina.drivetrackpro",
-      "versionCode": 1,
+      "versionCode": 2,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/app-icon-android.png",
