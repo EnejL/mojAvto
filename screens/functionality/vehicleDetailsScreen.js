@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { getVehicleFillings, deleteFilling, getVehicleChargingSessions, deleteChargingSession, getVehicleHistory } from "../../utils/firestore";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 import BrandLogo from "../../components/BrandLogo";
-import FuelConsumptionGraph from "../../components/FuelConsumptionGraph";
+import ConsumptionGraph from "../../components/FuelConsumptionGraph";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
@@ -57,8 +57,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const { vehicle } = route.params;
   const [fillings, setFillings] = useState([]);
   const [chargingSessions, setChargingSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
   const [combinedHistory, setCombinedHistory] = useState([]);
 
   // Get vehicle type or default to ICE for backwards compatibility
@@ -104,8 +102,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         }
       } catch (error) {
         console.error("Error loading data:", error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -274,12 +270,12 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   }, [chargingSessions, shouldShowChargeButton]);
 
   const renderHistoryItem = ({ item }) => {
-    const renderRightActions = (progress, dragX) => {
+    const renderRightActions = () => {
       return (
         <View style={styles.deleteAction}>
           <Button
             icon="trash-can"
-            color="#fff"
+            textColor="#fff"
             onPress={() => handleDeleteHistoryItem(item)}
             style={styles.deleteActionButton}
           />
@@ -761,11 +757,36 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           })()
         )}
 
-        {/* Fuel Consumption Graph (only for vehicles with fuel) */}
-        {/* Temporarily disabled graph functionality */}
-        {/* {shouldShowFuelButton() && fillings.length > 0 && (
-          <FuelConsumptionGraph fillings={fillings} />
-        )} */}
+        {/* Consumption Graph - Show for all vehicle types when 5+ entries exist */}
+        {(() => {
+          // Calculate total entries based on vehicle type
+          let totalEntries = 0;
+          let graphData = [];
+          let graphDataType = 'fuel';
+
+          if (vehicleType === 'PHEV') {
+            // For PHEV, use combined history
+            totalEntries = combinedHistory.length;
+            graphData = combinedHistory;
+            graphDataType = 'combined'; // Will handle mixed types
+          } else if (shouldShowFuelButton()) {
+            // For ICE/HYBRID, use fillings
+            totalEntries = fillings.length;
+            graphData = fillings;
+            graphDataType = 'fuel';
+          } else if (shouldShowChargeButton()) {
+            // For BEV, use charging sessions
+            totalEntries = chargingSessions.length;
+            graphData = chargingSessions;
+            graphDataType = 'electricity';
+          }
+
+          // Only show graph if we have 5 or more entries
+          if (totalEntries >= 5 && graphData.length >= 5) {
+            return <ConsumptionGraph data={graphData} dataType={graphDataType} />;
+          }
+          return null;
+        })()}
 
         {/* History Section for PHEV, individual sections for others */}
         {vehicleType === 'PHEV' ? (
