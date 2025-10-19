@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Text, Surface, Button } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +6,21 @@ import { useTranslation } from 'react-i18next';
 const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
   const { t } = useTranslation();
   const [showGraph, setShowGraph] = useState(false);
+  const [textLaidOut, setTextLaidOut] = useState(false);
   const screenWidth = Dimensions.get('window').width - 32; // margins
+
+  // Reset layout state when graph visibility changes or when data/dataType changes
+  // This ensures rotation works correctly after Fast Refresh during development
+  useEffect(() => {
+    if (showGraph) {
+      setTextLaidOut(false);
+      // Small delay to ensure layout completes after state reset
+      const timer = setTimeout(() => setTextLaidOut(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setTextLaidOut(false);
+    }
+  }, [showGraph, dataType, data?.length]);
 
   const chartData = useMemo(() => {
     if (!data || data.length < 2) return { dataPoints: [], fuelPoints: [], electricPoints: [], min: 0, max: 0, unit: '' };
@@ -115,6 +129,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
   
   // Determine if we're showing dual lines for PHEV
   const isDualLine = dataType === 'combined' && fuelPoints.length > 0 && electricPoints.length > 0;
+  
   if (!showGraph) {
     return (
       <Surface style={styles.container}>
@@ -304,11 +319,17 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
                   key={`label-${i}`}
                   style={[
                     styles.xAxisLabel,
+                    textLaidOut && { transform: [{ rotate: '-90deg' }] },
                     {
                       left: i * pointWidth - 35,
                       width: 70,
                     },
                   ]}
+                  onLayout={() => {
+                    if (i === 0 && !textLaidOut) {
+                      setTextLaidOut(true);
+                    }
+                  }}
                 >
                   {pt.date}
                 </Text>
@@ -319,7 +340,18 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
 
         {/* Y-Axis Title */}
         <View style={styles.yAxisTitle}>
-          <Text style={styles.axisTitle} numberOfLines={1}>
+          <Text 
+            style={[
+              styles.axisTitle,
+              textLaidOut && { transform: [{ rotate: '-90deg' }] }
+            ]}
+            onLayout={() => {
+              if (!textLaidOut) {
+                setTextLaidOut(true);
+              }
+            }}
+            numberOfLines={1}
+          >
             {unit}
           </Text>
         </View>
@@ -418,7 +450,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     textAlign: 'center',
-    transform: [{ rotate: '-90deg' }],
   },
 
   yAxisTitle: {
@@ -432,7 +463,6 @@ const styles = StyleSheet.create({
   axisTitle: {
     fontSize: 11,
     color: '#666',
-    transform: [{ rotate: '-90deg' }],
     textAlign: 'center',
     width: 150,
   },

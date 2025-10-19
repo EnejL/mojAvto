@@ -52,6 +52,12 @@ const formatNumber = (value, decimals = 1) => {
   return parseFloat(value).toFixed(decimals).replace(".", ",");
 };
 
+// Helper function to format odometer readings with thousand separators
+const formatOdometer = (value) => {
+  if (value === null || value === undefined) return "0";
+  return Math.round(parseFloat(value)).toLocaleString('de-DE');
+};
+
 export default function VehicleDetailsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
@@ -370,7 +376,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <View style={styles.fillingValues}>
                     <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
                     <Text style={styles.fillingValue}>
-                      {formatNumber(item.odometer, 0)} km
+                      {formatOdometer(item.odometer)} km
                     </Text>
                     <Text style={styles.fillingValue}>
                       {isCharging 
