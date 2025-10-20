@@ -15,7 +15,7 @@ MojAvto is a React Native application for managing and tracking your vehicle-rel
 1. Clone the repository:
 ```bash
 git clone [repository-url]
-cd mojAvto
+cd SloGas
 ```
 
 2. Install dependencies:
@@ -30,44 +30,26 @@ cd ios && pod install && cd ..
 
 ## Development
 
-### Running the App
+A collection of useful commands for building and running the application during development.
 
-#### iOS
+### Build commands
+Builds the application for the specified platform and profile using EAS.
+
+**Production Builds**
 ```bash
-# Using npm script
-npm run ios
-
-# Using React Native CLI directly (this is the preffered method)
-npx react-native run-ios
+eas build --platform ios --profile production --clear-cache
+```
+```bash
+eas build --platform android --profile production --clear-cache
 ```
 
-#### Android
+**Development Builds**
 ```bash
-# Using npm script
-npm run android
-
-# Using React Native CLI directly
-npx react-native run-android
+eas build --profile development --platform ios --clear-cache
 ```
-
-### Development Workflow
-
-1. Start Metro bundler (in one terminal):
 ```bash
-npx react-native start
+eas build --profile development --platform android --clear-cache
 ```
-
-2. Run the app (in another terminal):
-```bash
-# For iOS
-npm run ios
-# or
-npx react-native run-ios
-
-# For Android
-npm run android
-# or
-npx react-native run-android
 
 ### Clean and regenerate native files
 Cleans and regenerates the native `ios` and `android` directories. This is useful when native dependencies have been added or changed.
@@ -76,18 +58,17 @@ Cleans and regenerates the native `ios` and `android` directories. This is usefu
 npx expo prebuild --platform ios --clean
 ```
 
-### Common Development Commands
+### Submit to App Store Connect
+Submits the latest successful build to the Apple App Store for review.
 
 ```bash
-# Clear Metro bundler cache
-npx react-native start --reset-cache
+eas submit --platform ios --latest
+```
+### Submit to Google Play Console
+Submits the latest successful build to the Google Play Console for review.
 
-# Clean build (if you encounter build issues)
-# For iOS
-cd ios && rm -rf build/ && pod install && cd .. && npx react-native run-ios
-
-# For Android
-cd android && ./gradlew clean && cd .. && npx react-native run-android
+```bash
+eas submit --platform android --latest
 ```
 
 ### Start development server
@@ -97,52 +78,62 @@ Starts the local development server and launches the app in a simulator or on a 
 npx expo start --dev-client
 ```
 
-### Testing
+## Splash Screen Management
 
+The app includes an automated script to easily update the splash screen across all platforms.
+
+### Updating the Splash Screen
+
+To update the splash screen image:
+
+1. **Replace the main splash screen image:**
+   ```bash
+   # Place your new splash screen image at:
+   assets/splashscreen.png
+   ```
+
+2. **Run the update script:**
+   ```bash
+   ./update-splash.sh
+   ```
+
+3. **Rebuild the app to see changes:**
+   ```bash
+   # For iOS
+   expo run:ios
+   
+   # For Android
+   expo run:android
+   ```
+
+**What the script does:**
+- Automatically copies your new image to all required locations
+- Updates iOS splash screen in the Xcode project
+- Updates Android splash screen for all screen densities (hdpi, mdpi, xhdpi, xxhdpi, xxxhdpi)
+- Provides feedback on what was updated
+
+**Note:** If using Expo Go, the splash screen will update automatically without rebuilding.
+
+## Firebase Cloud Functions
+
+The app uses Firebase Cloud Functions to fetch and parse petrol station data from an external API.
+
+### Prerequisites
+
+Before deploying Firebase Functions, ensure you have:
+
+1. **Firebase CLI installed globally:**
 ```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm test -- --watch
+npm install -g firebase-tools
 ```
 
-### Debugging
-
+2. **Authenticated with Firebase:**
 ```bash
-# Open React Native Debugger
-npx react-native-debugger
-
-# Enable remote debugging in the app
-# Shake your device or press Cmd+D (iOS) / Cmd+M (Android) in the simulator
+firebase login
 ```
 
-### Troubleshooting
+This will open a browser window to authenticate with your Google account that has access to the Firebase project.
 
-```bash
-# Clear watchman watches
-watchman watch-del-all
-
-# Clear npm cache
-npm cache clean --force
-
-# Reinstall node modules
-rm -rf node_modules
-npm install
-```
-
-### Updating Dependencies
-
-```bash
-# Update all dependencies
-npm update
-
-# Update specific package
-npm update package-name
-
-# Check for outdated packages
-npm outdated
-```
 
 ## Project Structure
 
