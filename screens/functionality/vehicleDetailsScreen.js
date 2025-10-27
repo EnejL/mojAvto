@@ -64,6 +64,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const [fillings, setFillings] = useState([]);
   const [chargingSessions, setChargingSessions] = useState([]);
   const [combinedHistory, setCombinedHistory] = useState([]);
+  const [showAdvancedStats, setShowAdvancedStats] = useState(false);
 
   // Get vehicle type or default to ICE for backwards compatibility
   const vehicleType = vehicle.vehicleType || 'ICE';
@@ -216,6 +217,146 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     if (chargingSessions.length === 0) return null;
     return chargingSessions.reduce((sum, session) => sum + session.cost, 0);
   }, [chargingSessions]);
+
+  // Calculate total distance driven for fuel
+  const totalFuelDistance = useMemo(() => {
+    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    const sortedFillings = [...fillings].sort((a, b) => a.odometer - b.odometer);
+    return sortedFillings[sortedFillings.length - 1].odometer - sortedFillings[0].odometer;
+  }, [fillings, shouldShowFuelButton]);
+
+  // Calculate total distance driven for electricity
+  const totalElectricityDistance = useMemo(() => {
+    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    const sortedSessions = [...chargingSessions].sort((a, b) => a.odometer - b.odometer);
+    return sortedSessions[sortedSessions.length - 1].odometer - sortedSessions[0].odometer;
+  }, [chargingSessions, shouldShowChargeButton]);
+
+  // Calculate average distance per filling
+  const averageDistancePerFilling = useMemo(() => {
+    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    return totalFuelDistance / (fillings.length - 1);
+  }, [totalFuelDistance, fillings.length, shouldShowFuelButton]);
+
+  // Calculate average distance per charging session
+  const averageDistancePerCharging = useMemo(() => {
+    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    return totalElectricityDistance / (chargingSessions.length - 1);
+  }, [totalElectricityDistance, chargingSessions.length, shouldShowChargeButton]);
+
+  // Calculate days since last filling/charging
+  const daysSinceLastFilling = useMemo(() => {
+    if (fillings.length === 0 || !shouldShowFuelButton()) return null;
+    const lastFilling = fillings.sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateB - dateA;
+    })[0];
+    const lastDate = lastFilling.date?.seconds ? new Date(lastFilling.date.seconds * 1000) : new Date(lastFilling.date);
+    const today = new Date();
+    const diffTime = Math.abs(today - lastDate);
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }, [fillings, shouldShowFuelButton]);
+
+  const daysSinceLastCharging = useMemo(() => {
+    if (chargingSessions.length === 0 || !shouldShowChargeButton()) return null;
+    const lastSession = chargingSessions.sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateB - dateA;
+    })[0];
+    const lastDate = lastSession.date?.seconds ? new Date(lastSession.date.seconds * 1000) : new Date(lastSession.date);
+    const today = new Date();
+    const diffTime = Math.abs(today - lastDate);
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }, [chargingSessions, shouldShowChargeButton]);
+
+  // Calculate longest distance on single tank/charge
+  const longestDistanceSingleTank = useMemo(() => {
+    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    const sortedFillings = [...fillings].sort((a, b) => a.odometer - b.odometer);
+    let maxDistance = 0;
+    for (let i = 1; i < sortedFillings.length; i++) {
+      const distance = sortedFillings[i].odometer - sortedFillings[i - 1].odometer;
+      if (distance > 0 && distance > maxDistance) maxDistance = distance;
+    }
+    return maxDistance;
+  }, [fillings, shouldShowFuelButton]);
+
+  const longestDistanceSingleCharge = useMemo(() => {
+    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    const sortedSessions = [...chargingSessions].sort((a, b) => a.odometer - b.odometer);
+    let maxDistance = 0;
+    for (let i = 1; i < sortedSessions.length; i++) {
+      const distance = sortedSessions[i].odometer - sortedSessions[i - 1].odometer;
+      if (distance > 0 && distance > maxDistance) maxDistance = distance;
+    }
+    return maxDistance;
+  }, [chargingSessions, shouldShowChargeButton]);
+
+  // Calculate average distance on single tank/charge (already calculated above as averageDistancePerFilling/Charging)
+  const averageDistanceSingleTank = averageDistancePerFilling;
+  const averageDistanceSingleCharge = averageDistancePerCharging;
+
+  // Calculate average number of days between fillings/charging
+  const averageDaysBetweenFillings = useMemo(() => {
+    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    const sortedFillings = fillings.sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateA - dateB;
+    });
+    let totalDays = 0;
+    for (let i = 1; i < sortedFillings.length; i++) {
+      const dateA = sortedFillings[i - 1].date?.seconds ? new Date(sortedFillings[i - 1].date.seconds * 1000) : new Date(sortedFillings[i - 1].date);
+      const dateB = sortedFillings[i].date?.seconds ? new Date(sortedFillings[i].date.seconds * 1000) : new Date(sortedFillings[i].date);
+      totalDays += Math.floor((dateB - dateA) / (1000 * 60 * 60 * 24));
+    }
+    return totalDays / (sortedFillings.length - 1);
+  }, [fillings, shouldShowFuelButton]);
+
+  const averageDaysBetweenCharging = useMemo(() => {
+    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    const sortedSessions = chargingSessions.sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateA - dateB;
+    });
+    let totalDays = 0;
+    for (let i = 1; i < sortedSessions.length; i++) {
+      const dateA = sortedSessions[i - 1].date?.seconds ? new Date(sortedSessions[i - 1].date.seconds * 1000) : new Date(sortedSessions[i - 1].date);
+      const dateB = sortedSessions[i].date?.seconds ? new Date(sortedSessions[i].date.seconds * 1000) : new Date(sortedSessions[i].date);
+      totalDays += Math.floor((dateB - dateA) / (1000 * 60 * 60 * 24));
+    }
+    return totalDays / (sortedSessions.length - 1);
+  }, [chargingSessions, shouldShowChargeButton]);
+
+  // Calculate average cost per day
+  const averageCostPerDayFuel = useMemo(() => {
+    if (fillings.length === 0 || !shouldShowFuelButton()) return null;
+    const sortedFillings = fillings.sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateA - dateB;
+    });
+    const firstDate = sortedFillings[0].date?.seconds ? new Date(sortedFillings[0].date.seconds * 1000) : new Date(sortedFillings[0].date);
+    const today = new Date();
+    const totalDays = Math.floor((today - firstDate) / (1000 * 60 * 60 * 24));
+    return totalDays > 0 ? totalFuelCost / totalDays : null;
+  }, [totalFuelCost, fillings, shouldShowFuelButton]);
+
+  const averageCostPerDayCharging = useMemo(() => {
+    if (chargingSessions.length === 0 || !shouldShowChargeButton()) return null;
+    const sortedSessions = chargingSessions.sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateA - dateB;
+    });
+    const firstDate = sortedSessions[0].date?.seconds ? new Date(sortedSessions[0].date.seconds * 1000) : new Date(sortedSessions[0].date);
+    const today = new Date();
+    const totalDays = Math.floor((today - firstDate) / (1000 * 60 * 60 * 24));
+    return totalDays > 0 ? totalChargingCost / totalDays : null;
+  }, [totalChargingCost, chargingSessions, shouldShowChargeButton]);
 
   // Calculate average cost per 100km for fuel
   const averageFuelCostPer100km = useMemo(() => {
@@ -763,6 +904,145 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           })()
         )}
 
+        {/* Advanced Statistics Section - Only show if enough data exists */}
+        {((shouldShowFuelButton() && fillings.length >= 3) || 
+          (shouldShowChargeButton() && chargingSessions.length >= 3)) && (
+          <>
+            {!showAdvancedStats ? (
+              <Surface style={styles.statsCard}>
+                <Button mode="contained" onPress={() => setShowAdvancedStats(true)}>
+                  {t("vehicles.advancedStatistics")}
+                </Button>
+              </Surface>
+            ) : (
+              <Surface style={styles.statsCard}>
+            <View style={styles.advancedStatsHeader}>
+              <Text style={styles.sectionTitle}>{t("vehicles.advancedStatistics")}</Text>
+              <Button mode="text" onPress={() => setShowAdvancedStats(false)}>
+                {t("common.hide")}
+              </Button>
+            </View>
+
+            <View style={styles.advancedStatsContent}>
+              {/* Fuel Statistics */}
+              {shouldShowFuelButton() && fillings.length >= 2 && (
+                <View style={styles.advancedStatsSection}>
+                  <Text style={styles.advancedStatsSectionTitle}>⛽ {t("fillings.nav")}</Text>
+                  <View style={styles.advancedStatsGrid}>
+                    {averageDistancePerFilling !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(averageDistancePerFilling)} km
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDistancePerFilling")}</Text>
+                      </View>
+                    )}
+                    {longestDistanceSingleTank !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(longestDistanceSingleTank)} km
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.longestDistanceSingleTank")}</Text>
+                      </View>
+                    )}
+                    {daysSinceLastFilling !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {daysSinceLastFilling}
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.daysSinceLastFilling")}</Text>
+                      </View>
+                    )}
+                    {averageDaysBetweenFillings !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(averageDaysBetweenFillings, 1)}
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDaysBetweenFillings")}</Text>
+                      </View>
+                    )}
+                    {averageCostPerDayFuel !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(averageCostPerDayFuel, 2)} €
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgCostPerDayFuel")}</Text>
+                      </View>
+                    )}
+                    {totalFuelDistance !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatOdometer(totalFuelDistance)} km
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.totalDistance")}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {/* Charging Statistics */}
+              {shouldShowChargeButton() && chargingSessions.length >= 2 && (
+                <View style={styles.advancedStatsSection}>
+                  <Text style={styles.advancedStatsSectionTitle}>⚡ {t("charging.title")}</Text>
+                  <View style={styles.advancedStatsGrid}>
+                    {averageDistancePerCharging !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(averageDistancePerCharging)} km
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDistancePerCharging")}</Text>
+                      </View>
+                    )}
+                    {longestDistanceSingleCharge !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(longestDistanceSingleCharge)} km
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.longestDistanceSingleCharge")}</Text>
+                      </View>
+                    )}
+                    {daysSinceLastCharging !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {daysSinceLastCharging}
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.daysSinceLastCharging")}</Text>
+                      </View>
+                    )}
+                    {averageDaysBetweenCharging !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(averageDaysBetweenCharging, 1)}
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDaysBetweenCharging")}</Text>
+                      </View>
+                    )}
+                    {averageCostPerDayCharging !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatNumber(averageCostPerDayCharging, 2)} €
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgCostPerDayCharging")}</Text>
+                      </View>
+                    )}
+                    {totalElectricityDistance !== null && (
+                      <View style={styles.advancedStatItem}>
+                        <Text style={styles.advancedStatValue}>
+                          {formatOdometer(totalElectricityDistance)} km
+                        </Text>
+                        <Text style={styles.advancedStatLabel}>{t("vehicles.totalDistance")}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+              </View>
+            </Surface>
+            )}
+          </>
+        )}
+
         {/* Consumption Graph - Show for all vehicle types when 5+ entries exist */}
         {(() => {
           // Calculate total entries based on vehicle type
@@ -1167,5 +1447,51 @@ const styles = StyleSheet.create({
     backgroundColor: "#2196F3",
     flex: 1,
     marginLeft: 8,
+  },
+  // Advanced Statistics Styles
+  advancedStatsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  advancedStatsContent: {
+    paddingTop: 8,
+  },
+  advancedStatsSection: {
+    marginBottom: 24,
+  },
+  advancedStatsSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+    color: "#333",
+  },
+  advancedStatsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  advancedStatItem: {
+    width: "48%",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+  },
+  advancedStatValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2e7d32",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  advancedStatLabel: {
+    fontSize: 11,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 14,
   },
 });
