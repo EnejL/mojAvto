@@ -149,6 +149,20 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
         </Button>
       </View>
 
+      {/* Legend for PHEV vehicles */}
+      {isDualLine && (
+        <View style={styles.legendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: '#2e7d32' }]} />
+            <Text style={styles.legendText}>{t('vehicles.fuelConsumption')}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: '#2196F3' }]} />
+            <Text style={styles.legendText}>{t('vehicles.electricConsumption')}</Text>
+          </View>
+        </View>
+      )}
+
       <View style={styles.graphContainer}>
         {/* Y-Axis Labels */}
         <View style={styles.yAxisLabels}>
@@ -377,6 +391,29 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: 'bold' },
   button: { marginVertical: 8 },
   closeButton: { marginLeft: 8 },
+
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 24,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendColor: {
+    width: 16,
+    height: 3,
+    borderRadius: 1.5,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
 
   graphContainer: {
     flexDirection: 'row',

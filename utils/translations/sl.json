@@ -36,6 +36,8 @@
     "showConsumptionGraph": "Prikaži graf porabe",
     "hideConsumptionGraph": "Skrij graf porabe",
     "consumptionOverTime": "Poraba Skozi Čas",
+    "fuelConsumption": "Poraba Goriva",
+    "electricConsumption": "Poraba Elektrike",
     "types": {
       "ICE": "Bencin / dizel",
       "HYBRID": "Hibrid (blagi / polni)",

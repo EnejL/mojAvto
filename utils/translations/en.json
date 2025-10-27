@@ -36,6 +36,8 @@
     "showConsumptionGraph": "Show Consumption Graph",
     "hideConsumptionGraph": "Hide Consumption Graph",
     "consumptionOverTime": "Consumption Over Time",
+    "fuelConsumption": "Fuel Consumption",
+    "electricConsumption": "Electric Consumption",
     "types": {
       "ICE": "Gasoline / Diesel",
       "HYBRID": "Hybrid (mild / full)",
