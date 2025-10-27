@@ -101,6 +101,22 @@ export default function MyVehiclesScreen({ navigation, route }) {
       );
     };
 
+    // Get vehicle type icon
+    const getVehicleTypeIcon = () => {
+      const vehicleType = item.vehicleType || 'ICE';
+      
+      switch (vehicleType) {
+        case 'BEV':
+          return '⚡';
+        case 'PHEV':
+          return '🔌';
+        case 'ICE':
+        case 'HYBRID':
+        default:
+          return '⛽';
+      }
+    };
+
     return (
       <Swipeable renderRightActions={renderRightActions}>
         <TouchableOpacity
@@ -112,10 +128,15 @@ export default function MyVehiclesScreen({ navigation, route }) {
           <View style={styles.vehicleContent}>
             <BrandLogo brand={item.make} style={styles.brandLogo} />
             <View style={styles.vehicleInfo}>
-              <Text style={styles.vehicleName}>{item.name}</Text>
-              <Text style={styles.vehicleSubtitle}>
-                {item.make} {item.model}
-              </Text>
+              <View style={styles.vehicleNameRow}>
+                <Text style={styles.vehicleName}>{item.name}</Text>
+                <Text style={styles.vehicleTypeIcon}>{getVehicleTypeIcon()}</Text>
+              </View>
+              <View style={styles.vehicleSubtitleRow}>
+                <Text style={styles.vehicleSubtitle}>
+                  {item.make} {item.model}
+                </Text>
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -234,13 +255,40 @@ const styles = StyleSheet.create({
   },
   vehicleInfo: {
     marginLeft: 16,
+    flex: 1,
+  },
+  vehicleNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
   vehicleName: {
     fontSize: 16,
     fontWeight: "bold",
+    flex: 1,
+  },
+  vehicleTypeIcon: {
+    fontSize: 20,
+    marginLeft: 8,
+    position: "absolute",
+    right: 10,
+    top: "50%",
+  },
+  vehicleSubtitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   vehicleSubtitle: {
     fontSize: 14,
     color: "#666",
+    flex: 1,
+  },
+  vehicleTypeText: {
+    fontSize: 12,
+    color: "#888",
+    fontStyle: "italic",
+    marginLeft: 8,
   },
 });
