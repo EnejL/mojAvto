@@ -36,12 +36,27 @@
     "showConsumptionGraph": "Prikaži graf porabe",
     "hideConsumptionGraph": "Skrij graf porabe",
     "consumptionOverTime": "Poraba Skozi Čas",
+    "fuelConsumption": "Poraba Goriva",
+    "electricConsumption": "Poraba Elektrike",
     "types": {
       "ICE": "Bencin / dizel",
       "HYBRID": "Hibrid (blagi / polni)",
       "PHEV": "PHEV (priključni hibrid)",
       "BEV": "Električno vozilo"
-    }
+    },
+    "advancedStatistics": "Napredna statistika",
+    "totalDistance": "Skupna prevožena razdalja (od prvega vnosa)",
+    "avgDistancePerFilling": "Povp. prevožena razdalja z enim točenjem",
+    "avgDistancePerCharging": "Povp. prevožena razdalja z enim polnjenjem",
+    "daysSinceLastFilling": "Dni od zadnjega točenja",
+    "daysSinceLastCharging": "Dni od zadnjega polnjenja",
+    "longestDistanceSingleTank": "Najdaljša razdalja z enim točenjem",
+    "longestDistanceSingleCharge": "Najdaljša razdalja z enim polnjenjem",
+    "avgDistanceSingleTank": "Povp. prevožena razdalja z enim tankom",
+    "avgDaysBetweenFillings": "Povp. število dni med točenji",
+    "avgDaysBetweenCharging": "Povp. število dni med polnjenji",
+    "avgCostPerDayFuel": "Povp. strošek na dan (gorivo)",
+    "avgCostPerDayCharging": "Povp. strošek na dan (elektrika)"
   },
   "fillings": {
     "title": "Točenja goriva",
@@ -144,7 +159,8 @@
     "privacyPolicy": "Politika zasebnosti",
     "terms": "Pogoji uporabe",
     "faq": "Pogosto zastavljena vprašanja",
-    "hide": "Skrij"
+    "hide": "Skrij",
+    "show": "Prikaži"
   },
   "auth": {
     "title": "Račun",

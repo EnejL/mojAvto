@@ -36,12 +36,28 @@
     "showConsumptionGraph": "Show Consumption Graph",
     "hideConsumptionGraph": "Hide Consumption Graph",
     "consumptionOverTime": "Consumption Over Time",
+    "fuelConsumption": "Fuel Consumption",
+    "electricConsumption": "Electric Consumption",
     "types": {
       "ICE": "Gasoline / Diesel",
       "HYBRID": "Hybrid (mild / full)",
       "PHEV": "PHEV (plug-in hybrid)",
       "BEV": "Electric Vehicle"
-    }
+    },
+    "advancedStatistics": "Advanced Statistics",
+    "totalDistance": "Total distance (from first entry)",
+    "avgDistancePerFilling": "Avg. distance per filling",
+    "avgDistancePerCharging": "Avg. distance per charging",
+    "daysSinceLastFilling": "Days since last filling",
+    "daysSinceLastCharging": "Days since last charging",
+    "longestDistanceSingleTank": "Longest distance on single tank",
+    "longestDistanceSingleCharge": "Longest distance on single charge",
+    "avgDistanceSingleTank": "Avg. distance on single tank",
+    "avgDistanceSingleCharge": "Avg. distance on single charge",
+    "avgDaysBetweenFillings": "Avg. days between fillings",
+    "avgDaysBetweenCharging": "Avg. days between charging sessions",
+    "avgCostPerDayFuel": "Avg. cost per day (fuel)",
+    "avgCostPerDayCharging": "Avg. cost per day (charging)"
   },
   "fillings": {
     "title": "Fuel Fill-ups",
@@ -144,7 +160,8 @@
     "privacyPolicy": "Privacy Policy",
     "terms": "Terms of Use",
     "faq": "Frequently Asked Questions",
-    "hide": "Hide"
+    "hide": "Hide",
+    "show": "Show"
   },
   "auth": {
     "title": "Account",
