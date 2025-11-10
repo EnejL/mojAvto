@@ -28,7 +28,7 @@ export default {
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/app-icon-android.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#1A1A1A"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
