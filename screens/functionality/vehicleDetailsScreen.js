@@ -271,6 +271,26 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   }, [chargingSessions, shouldShowChargeButton]);
 
+  // Sort fillings by date (newest first) for display
+  const sortedFillings = useMemo(() => {
+    if (!shouldShowFuelButton()) return [];
+    return [...fillings].sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateB - dateA; // Newest first
+    });
+  }, [fillings, shouldShowFuelButton]);
+
+  // Sort charging sessions by date (newest first) for display
+  const sortedChargingSessions = useMemo(() => {
+    if (!shouldShowChargeButton()) return [];
+    return [...chargingSessions].sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateB - dateA; // Newest first
+    });
+  }, [chargingSessions, shouldShowChargeButton]);
+
   // Calculate longest distance on single tank/charge
   const longestDistanceSingleTank = useMemo(() => {
     if (fillings.length < 2 || !shouldShowFuelButton()) return null;
@@ -1105,7 +1125,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
                 ) : (
                   <FlatList
-                    data={fillings.map(f => ({ ...f, type: 'filling' }))}
+                    data={sortedFillings.map(f => ({ ...f, type: 'filling' }))}
                     renderItem={renderHistoryItem}
                     keyExtractor={(item) => item.id}
                     scrollEnabled={false}
@@ -1125,7 +1145,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <Text style={styles.emptyText}>{t("charging.empty")}</Text>
                 ) : (
                   <FlatList
-                    data={chargingSessions.map(s => ({ ...s, type: 'charging' }))}
+                    data={sortedChargingSessions.map(s => ({ ...s, type: 'charging' }))}
                     renderItem={renderHistoryItem}
                     keyExtractor={(item) => item.id}
                     scrollEnabled={false}
