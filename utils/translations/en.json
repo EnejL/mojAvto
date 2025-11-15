@@ -106,7 +106,7 @@
     "locationHome": "Home",
     "locationPublic": "Public",
     "locationWorkplace": "Workplace",
-    "avgConsumption": "Avg. electric energy consumption",
+    "avgConsumption": "Avg. electricity consumption",
     "electricityConsumptionUnit": "kWh/100 km",
     "avgPricePerKWh": "Average price per kWh",
     "avgCost": "Average charging cost",
@@ -247,6 +247,18 @@
       {
         "question": "How does electricity consumption calculation work?",
         "answer": "The application calculates consumption based on the difference in kilometers between charging sessions and the amount of electrical energy. The formula is: (kWh / difference in kilometers) * 100."
+      },
+      {
+        "question": "What statistics are shown on vehicle cards in 'My Vehicles'?",
+        "answer": "Each vehicle card displays up to 2 key statistics. For electric vehicles (BEV), you'll see average electricity consumption and average price per kWh. For plug-in hybrids (PHEV), you'll see both average fuel consumption and average electricity consumption. For gasoline/diesel vehicles (ICE/HYBRID), you'll see average fuel consumption and average fuel price per liter. Statistics only appear when you have at least 2 fill-ups or charging sessions recorded."
+      },
+      {
+        "question": "How do I quickly add a fill-up or charging session?",
+        "answer": "You can swipe right on any vehicle card in the 'My Vehicles' screen to reveal quick action buttons. For electric vehicles, you'll see a button to add a charging session. For gasoline/diesel vehicles, you'll see a button to add a fill-up. For plug-in hybrids, you'll see both options stacked vertically. Simply tap the button to navigate directly to the add entry screen."
+      },
+      {
+        "question": "How do I delete a vehicle?",
+        "answer": "Swipe left on any vehicle card in the 'My Vehicles' screen to reveal the delete button. Tap the delete button and confirm to permanently remove the vehicle and all its associated data."
       },
       {
         "question": "Can I export my data?",

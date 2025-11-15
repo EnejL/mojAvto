@@ -1,9 +1,10 @@
 // screens/MyVehiclesScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   FlatList,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -26,6 +27,8 @@ export default function MyVehiclesScreen({ navigation, route }) {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [vehicleStats, setVehicleStats] = useState({});
+  const swipeableRefs = useRef({});
+  const [openSwipeableId, setOpenSwipeableId] = useState(null);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -172,6 +175,58 @@ export default function MyVehiclesScreen({ navigation, route }) {
   };
 
   const renderItem = ({ item }) => {
+    const vehicleType = item.vehicleType || 'ICE';
+    
+    const renderLeftActions = () => {
+      if (vehicleType === 'PHEV') {
+        // PHEV: Show two stacked buttons
+        return (
+          <View style={styles.addActionsContainer}>
+            <TouchableOpacity
+              style={[styles.addAction, styles.chargeAction]}
+              onPress={() => navigation.navigate("AddCharging", { vehicle: item })}
+            >
+              <MaterialCommunityIcons name="lightning-bolt" size={24} color="white" />
+              <Text style={styles.addActionText}>{t("charging.add")}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.addAction, styles.fuelAction]}
+              onPress={() => navigation.navigate("AddFilling", { vehicle: item })}
+            >
+              <MaterialCommunityIcons name="gas-station" size={24} color="white" />
+              <Text style={styles.addActionText}>{t("fillings.add")}</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      } else if (vehicleType === 'BEV') {
+        // BEV: Show charging button only
+        return (
+          <View style={styles.addActionsContainer}>
+            <TouchableOpacity
+              style={[styles.addAction, styles.chargeAction]}
+              onPress={() => navigation.navigate("AddCharging", { vehicle: item })}
+            >
+              <MaterialCommunityIcons name="lightning-bolt" size={24} color="white" />
+              <Text style={styles.addActionText}>{t("charging.add")}</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      } else {
+        // ICE/HYBRID: Show filling button only
+        return (
+          <View style={styles.addActionsContainer}>
+            <TouchableOpacity
+              style={[styles.addAction, styles.fuelAction]}
+              onPress={() => navigation.navigate("AddFilling", { vehicle: item })}
+            >
+              <MaterialCommunityIcons name="gas-station" size={24} color="white" />
+              <Text style={styles.addActionText}>{t("fillings.add")}</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+    };
+
     const renderRightActions = () => {
       return (
         <TouchableOpacity
@@ -185,8 +240,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
 
     // Get vehicle type icon
     const getVehicleTypeIcon = () => {
-      const vehicleType = item.vehicleType || 'ICE';
-      
       switch (vehicleType) {
         case 'BEV':
           return '⚡';
@@ -200,7 +253,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
     };
 
     const stats = vehicleStats[item.id] || {};
-    const vehicleType = item.vehicleType || 'ICE';
     
     const formatNumber = (num, decimals = 1) => {
       if (num === null || num === undefined) return '—';
@@ -257,8 +309,36 @@ export default function MyVehiclesScreen({ navigation, route }) {
     // Limit to max 2 stats
     const displayStats = statCards.slice(0, 2);
 
+    const closeSwipeable = () => {
+      if (swipeableRefs.current[item.id]) {
+        swipeableRefs.current[item.id].close();
+      }
+    };
+
     return (
-      <Swipeable renderRightActions={renderRightActions}>
+      <Swipeable 
+        ref={(ref) => {
+          if (ref) {
+            swipeableRefs.current[item.id] = ref;
+          }
+        }}
+        renderLeftActions={renderLeftActions}
+        renderRightActions={renderRightActions}
+        onSwipeableWillOpen={() => {
+          // Close any other open swipeable
+          Object.keys(swipeableRefs.current).forEach((id) => {
+            if (id !== item.id && swipeableRefs.current[id]) {
+              swipeableRefs.current[id].close();
+            }
+          });
+          setOpenSwipeableId(item.id);
+        }}
+        onSwipeableWillClose={() => {
+          if (openSwipeableId === item.id) {
+            setOpenSwipeableId(null);
+          }
+        }}
+      >
         <TouchableOpacity
           style={styles.vehicleItem}
           onPress={() =>
@@ -306,39 +386,53 @@ export default function MyVehiclesScreen({ navigation, route }) {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" />
-      ) : (
-        <>
-          {vehicles.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>{t("vehicles.empty")}</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={vehicles}
-              keyExtractor={(item) => item.id}
-              renderItem={renderItem}
-              contentContainerStyle={styles.listContent}
-            />
-          )}
+  const handleContainerPress = () => {
+    // Close any open swipeable when tapping outside
+    if (openSwipeableId) {
+      Object.keys(swipeableRefs.current).forEach((id) => {
+        if (swipeableRefs.current[id]) {
+          swipeableRefs.current[id].close();
+        }
+      });
+      setOpenSwipeableId(null);
+    }
+  };
 
-          <View style={styles.actionButtonsContainer}>
-            <Button
-              mode="contained"
-              onPress={() => navigation.navigate("AddVehicle")}
-              style={styles.addButton}
-              labelStyle={styles.buttonLabel}
-              buttonColor="#3169ad"
-            >
-              {t("vehicles.add")}
-            </Button>
-          </View>
-        </>
-      )}
-    </View>
+  return (
+    <TouchableWithoutFeedback onPress={handleContainerPress}>
+      <View style={styles.container}>
+        {loading ? (
+          <ActivityIndicator size="large" />
+        ) : (
+          <>
+            {vehicles.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{t("vehicles.empty")}</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={vehicles}
+                keyExtractor={(item) => item.id}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContent}
+              />
+            )}
+
+            <View style={styles.actionButtonsContainer}>
+              <Button
+                mode="contained"
+                onPress={() => navigation.navigate("AddVehicle")}
+                style={styles.addButton}
+                labelStyle={styles.buttonLabel}
+                buttonColor="#3169ad"
+              >
+                {t("vehicles.add")}
+              </Button>
+            </View>
+          </>
+        )}
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -407,8 +501,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#f44336",
     justifyContent: "center",
     alignItems: "center",
+    width: "17.5%",
+    height: "90%",
+    borderRadius: 8,
+    marginVertical: 8,
+    marginLeft: 8,
+  },
+  addActionsContainer: {
+    display: "flex",
+    justifyContent: "space-between",
     width: 80,
     height: "100%",
+    paddingVertical: 8,
+    gap: 8,
+  },
+  addAction: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: "90%",
+    borderRadius: 8,
+    flex: 1,
+    height: "45%",
+  },
+  chargeAction: {
+    backgroundColor: "#2196F3",
+  },
+  fuelAction: {
+    backgroundColor: "#4CAF50",
+  },
+  addActionText: {
+    color: "white",
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: "center",
   },
   brandLogo: {
     width: "auto",
