@@ -695,7 +695,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               <Surface style={styles.statsCard}>
                 <View style={styles.statCardHeader}>
                   <Text style={styles.statCardIcon}>⚡</Text>
-                  <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
+                  <Text style={styles.statCardTitle}>{t("charging.nav")}</Text>
                 </View>
                 <View style={styles.statCardContent}>
                   {/* Primary consumption metric */}
@@ -864,7 +864,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 <Surface style={styles.statsCard}>
                   <View style={styles.statCardHeader}>
                     <Text style={styles.statCardIcon}>⚡</Text>
-                    <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
+                    <Text style={styles.statCardTitle}>{t("charging.nav")}</Text>
                   </View>
                   <View style={styles.statCardContent}>
                     {/* Primary consumption metric */}
@@ -931,13 +931,13 @@ export default function VehicleDetailsScreen({ route, navigation }) {
             {!showAdvancedStats ? (
               <Surface style={styles.statsCard}>
                 <Button mode="contained" onPress={() => setShowAdvancedStats(true)}>
-                  {t("vehicles.advancedStatistics")}
+                  {t("vehicles.additionalStatistics")}
                 </Button>
               </Surface>
             ) : (
               <Surface style={styles.statsCard}>
             <View style={styles.advancedStatsHeader}>
-              <Text style={styles.sectionTitle}>{t("vehicles.advancedStatistics")}</Text>
+              <Text style={styles.sectionTitle}>{t("vehicles.additionalStatistics")}</Text>
               <Button mode="text" onPress={() => setShowAdvancedStats(false)}>
                 {t("common.hide")}
               </Button>
@@ -1296,16 +1296,14 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     width: "100%",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-    padding: 12,
   },
   secondaryMetricItem: {
     alignItems: "center",
     width: "48%",
     marginBottom: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: "#f8f9fa",
   },
   secondaryMetricValue: {
     fontSize: 18,
