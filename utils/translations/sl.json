@@ -44,7 +44,7 @@
       "PHEV": "PHEV (priključni hibrid)",
       "BEV": "Električno vozilo"
     },
-    "advancedStatistics": "Napredna statistika",
+    "additionalStatistics": "Prikaži dodatno statistiko",
     "totalDistance": "Skupna prevožena razdalja (od prvega vnosa)",
     "avgDistancePerFilling": "Povp. prevožena razdalja z enim točenjem",
     "avgDistancePerCharging": "Povp. prevožena razdalja z enim polnjenjem",

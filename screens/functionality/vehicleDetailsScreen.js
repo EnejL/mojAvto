@@ -931,13 +931,13 @@ export default function VehicleDetailsScreen({ route, navigation }) {
             {!showAdvancedStats ? (
               <Surface style={styles.statsCard}>
                 <Button mode="contained" onPress={() => setShowAdvancedStats(true)}>
-                  {t("vehicles.advancedStatistics")}
+                  {t("vehicles.additionalStatistics")}
                 </Button>
               </Surface>
             ) : (
               <Surface style={styles.statsCard}>
             <View style={styles.advancedStatsHeader}>
-              <Text style={styles.sectionTitle}>{t("vehicles.advancedStatistics")}</Text>
+              <Text style={styles.sectionTitle}>{t("vehicles.additionalStatistics")}</Text>
               <Button mode="text" onPress={() => setShowAdvancedStats(false)}>
                 {t("common.hide")}
               </Button>
