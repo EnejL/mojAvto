@@ -7,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Button, Surface, Divider, FAB } from "react-native-paper";
 import { useTranslation } from "react-i18next";
@@ -14,6 +15,8 @@ import { getVehicleFillings, deleteFilling, getVehicleChargingSessions, deleteCh
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 import BrandLogo from "../../components/BrandLogo";
 import ConsumptionGraph from "../../components/FuelConsumptionGraph";
+import { exportToCSV, exportToPDF } from "../../utils/exportVehicleData";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
@@ -65,6 +68,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const [chargingSessions, setChargingSessions] = useState([]);
   const [combinedHistory, setCombinedHistory] = useState([]);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Get vehicle type or default to ICE for backwards compatibility
   const vehicleType = vehicle.vehicleType || 'ICE';
@@ -436,6 +440,108 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return (totalCost / totalDistance) * 100;
   }, [chargingSessions, shouldShowChargeButton]);
 
+  // Export handler
+  const handleExport = () => {
+    Alert.alert(
+      t("export.title"),
+      t("export.selectFormat"),
+      [
+        {
+          text: t("export.exportToCSV"),
+          onPress: async () => {
+            setIsExporting(true);
+            try {
+              const stats = {
+                avgFuelConsumption: averageFuelConsumption,
+                avgElectricityConsumption: averageElectricityConsumption,
+                avgPricePerLiter: averagePricePerLiter,
+                avgPricePerKWh: averagePricePerKWh,
+                totalFuelCost: totalFuelCost,
+                totalChargingCost: totalChargingCost,
+                // Additional statistics
+                averageDistancePerFilling: averageDistancePerFilling,
+                longestDistanceSingleTank: longestDistanceSingleTank,
+                daysSinceLastFilling: daysSinceLastFilling,
+                averageDaysBetweenFillings: averageDaysBetweenFillings,
+                averageCostPerDayFuel: averageCostPerDayFuel,
+                totalFuelDistance: totalFuelDistance,
+                averageFuelCostPer100km: averageFuelCostPer100km,
+                averageDistancePerCharging: averageDistancePerCharging,
+                longestDistanceSingleCharge: longestDistanceSingleCharge,
+                daysSinceLastCharging: daysSinceLastCharging,
+                averageDaysBetweenCharging: averageDaysBetweenCharging,
+                averageCostPerDayCharging: averageCostPerDayCharging,
+                totalElectricityDistance: totalElectricityDistance,
+                averageElectricityCostPer100km: averageElectricityCostPer100km,
+              };
+              
+              const result = await exportToCSV(vehicle, fillings, chargingSessions, stats, t);
+              
+              if (result.success) {
+                Alert.alert(t("common.ok"), t("export.exportSuccess"));
+              } else {
+                Alert.alert(t("common.error"), result.error || t("export.exportError"));
+              }
+            } catch (error) {
+              console.error("Export error:", error);
+              Alert.alert(t("common.error"), t("export.exportError"));
+            } finally {
+              setIsExporting(false);
+            }
+          },
+        },
+        {
+          text: t("export.exportToPDF"),
+          onPress: async () => {
+            setIsExporting(true);
+            try {
+              const stats = {
+                avgFuelConsumption: averageFuelConsumption,
+                avgElectricityConsumption: averageElectricityConsumption,
+                avgPricePerLiter: averagePricePerLiter,
+                avgPricePerKWh: averagePricePerKWh,
+                totalFuelCost: totalFuelCost,
+                totalChargingCost: totalChargingCost,
+                // Additional statistics
+                averageDistancePerFilling: averageDistancePerFilling,
+                longestDistanceSingleTank: longestDistanceSingleTank,
+                daysSinceLastFilling: daysSinceLastFilling,
+                averageDaysBetweenFillings: averageDaysBetweenFillings,
+                averageCostPerDayFuel: averageCostPerDayFuel,
+                totalFuelDistance: totalFuelDistance,
+                averageFuelCostPer100km: averageFuelCostPer100km,
+                averageDistancePerCharging: averageDistancePerCharging,
+                longestDistanceSingleCharge: longestDistanceSingleCharge,
+                daysSinceLastCharging: daysSinceLastCharging,
+                averageDaysBetweenCharging: averageDaysBetweenCharging,
+                averageCostPerDayCharging: averageCostPerDayCharging,
+                totalElectricityDistance: totalElectricityDistance,
+                averageElectricityCostPer100km: averageElectricityCostPer100km,
+              };
+              
+              const result = await exportToPDF(vehicle, fillings, chargingSessions, stats, t);
+              
+              if (result.success) {
+                Alert.alert(t("common.ok"), t("export.exportSuccess"));
+              } else {
+                Alert.alert(t("common.error"), result.error || t("export.exportError"));
+              }
+            } catch (error) {
+              console.error("Export error:", error);
+              Alert.alert(t("common.error"), t("export.exportError"));
+            } finally {
+              setIsExporting(false);
+            }
+          },
+        },
+        {
+          text: t("export.cancel"),
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
   const renderHistoryItem = ({ item }) => {
     const renderRightActions = () => {
       return (
@@ -627,6 +733,19 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 </View>
               </View>
             </View>
+            
+            {/* Export Button */}
+            <TouchableOpacity 
+              style={styles.exportButton}
+              onPress={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <ActivityIndicator size="small" color="#3169ad" />
+              ) : (
+                <MaterialCommunityIcons name="download" size={24} color="#3169ad" />
+              )}
+            </TouchableOpacity>
           </View>
         </Surface>
 
@@ -1179,6 +1298,14 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  exportButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#f0f7ff",
+    marginLeft: 12,
+    justifyContent: "center",
     alignItems: "center",
   },
   vehicleInfoContainer: {

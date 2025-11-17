@@ -38,13 +38,14 @@
     "consumptionOverTime": "Poraba Skozi Čas",
     "fuelConsumption": "Poraba Goriva",
     "electricConsumption": "Poraba Elektrike",
+    "type": "Tip vozila",
     "types": {
       "ICE": "Bencin / dizel",
       "HYBRID": "Hibrid (blagi / polni)",
       "PHEV": "PHEV (priključni hibrid)",
       "BEV": "Električno vozilo"
     },
-    "additionalStatistics": "Prikaži dodatno statistiko",
+    "additionalStatistics": "Dodatna statistika",
     "totalDistance": "Skupna prevožena razdalja (od prvega vnosa)",
     "avgDistancePerFilling": "Povp. prevožena razdalja z enim točenjem",
     "avgDistancePerCharging": "Povp. prevožena razdalja z enim polnjenjem",
@@ -56,7 +57,11 @@
     "avgDaysBetweenFillings": "Povp. število dni med točenji",
     "avgDaysBetweenCharging": "Povp. število dni med polnjenji",
     "avgCostPerDayFuel": "Povp. strošek na dan (gorivo)",
-    "avgCostPerDayCharging": "Povp. strošek na dan (elektrika)"
+    "avgCostPerDayCharging": "Povp. strošek na dan (elektrika)",
+    "totalFuelCost": "Skupni stroški goriva",
+    "totalChargingCost": "Skupni stroški polnjenja",
+    "vin": "VIN",
+    "licensePlate": "Registrska številka"
   },
   "fillings": {
     "title": "Točenja goriva",
@@ -143,7 +148,8 @@
     "faq": "Pogosto zastavljena vprašanja",
     "hide": "Skrij",
     "show": "Prikaži",
-    "notEnoughData": "Ni dovolj podatkov. Vnesite vsaj dve točenji ali polnjenji."
+    "notEnoughData": "Ni dovolj podatkov. Vnesite vsaj dve točenji ali polnjenji.",
+    "date": "Datum"
   },
   "auth": {
     "title": "Račun",
@@ -261,9 +267,24 @@
       },
       {
         "question": "Ali lahko izvozim svoje podatke?",
-        "answer": "Trenutno ta funkcija še ni na voljo. Načrtujemo dodajanje možnosti izvoza podatkov v CSV formatu v prihodnosti."
+        "answer": "Da! Podatke o vozilu lahko izvozite iz zaslona s podrobnostmi vozila. Tapnite gumb za izvoz in shranite podatke kot CSV datoteko (združljivo z Excelom) ali HTML datoteko (za tiskanje v PDF). Izvoz vključuje vse podatke o vozilu, statistiko, točenja in polnjenja."
       }
     ]
+  },
+  "export": {
+    "title": "Izvoz Podatkov",
+    "exportToCSV": "Izvozi v Excel (CSV)",
+    "exportToPDF": "Izvozi v PDF (HTML)",
+    "vehicleInfo": "Podatki o vozilu",
+    "statistics": "Statistika",
+    "vehicleReport": "Poročilo o vozilu",
+    "generatedOn": "Generirano",
+    "shareTitle": "Izvoz podatkov o vozilu",
+    "sharingNotAvailable": "Deljenje ni na voljo na tej napravi",
+    "exportSuccess": "Podatki so bili uspešno izvoženi!",
+    "exportError": "Izvoz ni uspel. Prosim poskusite znova.",
+    "selectFormat": "Izberite format izvoza",
+    "cancel": "Prekliči"
   },
   "termsOfUse": {
     "title": "Pogoji uporabe",
