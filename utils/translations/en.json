@@ -38,13 +38,14 @@
     "consumptionOverTime": "Consumption Over Time",
     "fuelConsumption": "Fuel Consumption",
     "electricConsumption": "Electric Consumption",
+    "type": "Vehicle Type",
     "types": {
       "ICE": "Gasoline / Diesel",
       "HYBRID": "Hybrid (mild / full)",
       "PHEV": "PHEV (plug-in hybrid)",
       "BEV": "Electric Vehicle"
     },
-    "additionalStatistics": "Show additional statistics",
+    "additionalStatistics": "Additional statistics",
     "totalDistance": "Total distance (from first entry)",
     "avgDistancePerFilling": "Avg. distance per filling",
     "avgDistancePerCharging": "Avg. distance per charging",
@@ -57,7 +58,11 @@
     "avgDaysBetweenFillings": "Avg. days between fillings",
     "avgDaysBetweenCharging": "Avg. days between charging sessions",
     "avgCostPerDayFuel": "Avg. cost per day (fuel)",
-    "avgCostPerDayCharging": "Avg. cost per day (charging)"
+    "avgCostPerDayCharging": "Avg. cost per day (charging)",
+    "totalFuelCost": "Total fuel costs",
+    "totalChargingCost": "Total charging costs",
+    "vin": "VIN",
+    "licensePlate": "License Plate"
   },
   "fillings": {
     "title": "Fuel Fill-ups",
@@ -144,7 +149,8 @@
     "faq": "Frequently Asked Questions",
     "hide": "Hide",
     "show": "Show",
-    "notEnoughData": "Not enough data. Enter at least two fill-ups or charging sessions."
+    "notEnoughData": "Not enough data. Enter at least two fill-ups or charging sessions.",
+    "date": "Date"
   },
   "auth": {
     "title": "Account",
@@ -262,9 +268,24 @@
       },
       {
         "question": "Can I export my data?",
-        "answer": "This feature is not currently available. We are planning to add the option to export data in CSV format in the future."
+        "answer": "Yes! You can export your vehicle data from the vehicle details screen. Tap the export button to save your data as a CSV file (Excel-compatible) or HTML file (for printing to PDF). The export includes all vehicle information, statistics, fill-ups, and charging sessions."
       }
     ]
+  },
+  "export": {
+    "title": "Export Data",
+    "exportToCSV": "Export to Excel (CSV)",
+    "exportToPDF": "Export to PDF (HTML)",
+    "vehicleInfo": "Vehicle Information",
+    "statistics": "Statistics",
+    "vehicleReport": "Vehicle Report",
+    "generatedOn": "Generated on",
+    "shareTitle": "Export Vehicle Data",
+    "sharingNotAvailable": "Sharing is not available on this device",
+    "exportSuccess": "Data exported successfully!",
+    "exportError": "Export failed. Please try again.",
+    "selectFormat": "Select Export Format",
+    "cancel": "Cancel"
   },
   "termsOfUse": {
     "title": "Terms of Use",
