@@ -33,18 +33,19 @@
     "monthlyEstimate": "Estimated Monthly Cost",
     "avgCostPer100km": "Avg. cost per 100 km",
     "totalCost": "Total cost of fuel-ups / charging sessions",
-    "showConsumptionGraph": "Show Consumption Graph",
-    "hideConsumptionGraph": "Hide Consumption Graph",
+    "showConsumptionGraph": "Show consumption graph",
+    "hideConsumptionGraph": "Hide consumption graph",
     "consumptionOverTime": "Consumption Over Time",
     "fuelConsumption": "Fuel Consumption",
     "electricConsumption": "Electric Consumption",
+    "type": "Vehicle Type",
     "types": {
       "ICE": "Gasoline / Diesel",
       "HYBRID": "Hybrid (mild / full)",
       "PHEV": "PHEV (plug-in hybrid)",
       "BEV": "Electric Vehicle"
     },
-    "advancedStatistics": "Advanced Statistics",
+    "additionalStatistics": "Additional statistics",
     "totalDistance": "Total distance (from first entry)",
     "avgDistancePerFilling": "Avg. distance per filling",
     "avgDistancePerCharging": "Avg. distance per charging",
@@ -57,7 +58,11 @@
     "avgDaysBetweenFillings": "Avg. days between fillings",
     "avgDaysBetweenCharging": "Avg. days between charging sessions",
     "avgCostPerDayFuel": "Avg. cost per day (fuel)",
-    "avgCostPerDayCharging": "Avg. cost per day (charging)"
+    "avgCostPerDayCharging": "Avg. cost per day (charging)",
+    "totalFuelCost": "Total fuel costs",
+    "totalChargingCost": "Total charging costs",
+    "vin": "VIN",
+    "licensePlate": "License Plate"
   },
   "fillings": {
     "title": "Fuel Fill-ups",
@@ -80,8 +85,8 @@
     "filling": "fill-up",
     "statistics": "Vehicle Statistics",
     "fuelConsumptionUnit": "l/100 km",
-    "avgCost": "Average Fill-up Cost",
-    "avgPricePerLiter": "Average Fuel Price per Liter",
+    "avgCost": "Average fill-up cost",
+    "avgPricePerLiter": "Average price per liter",
     "avgLiters": "Average Fill-up",
     "totalCost": "Total cost of fill-ups",
     "showConsumptionGraph": "Show consumption graph",
@@ -89,6 +94,7 @@
   },
   "charging": {
     "title": "Battery Charging",
+    "nav": "Electric Energy Consumption",
     "session": "charging session",
     "add": "Charging +",
     "edit": "Edit Charging",
@@ -105,34 +111,15 @@
     "locationHome": "Home",
     "locationPublic": "Public",
     "locationWorkplace": "Workplace",
-    "avgConsumption": "Electric Energy Consumption",
+    "avgConsumption": "Avg. electricity consumption",
     "electricityConsumptionUnit": "kWh/100 km",
-    "avgPricePerKWh": "Average Price per kWh",
-    "avgCost": "Average Charging Cost",
+    "avgPricePerKWh": "Average price per kWh",
+    "avgCost": "Average charging cost",
     "totalCost": "Total cost of charging sessions",
     "deleteConfirmMessage": "Are you sure you want to delete this charging session?",
     "consumptionUnit": "kWh/100 km",
     "moreDetails": "Add Details",
     "delete": "Delete"
-  },
-  "petrolStations": {
-    "title": "Gas Stations",
-    "list": "List",
-    "map": "Map",
-    "fetchError": "Error loading gas stations",
-    "description": "Gas stations will be here ...",
-    "viewDetails": "More Information",
-    "prices": "Fuel Prices",
-    "getDirections": "Navigation",
-    "openingHours": "Opening Hours",
-    "open24Hours": "Open 24 hours",
-    "closed": "Closed",
-    "noOpeningHours": "Opening hours information not available",
-    "searchPlaceholder": "Search by name or address",
-    "noSearchResults": "No search results",
-    "empty": "No stations available",
-    "favorites": "Favorites",
-    "noFavorites": "No stations available"
   },
   "settings": {
     "title": "Settings",
@@ -161,7 +148,9 @@
     "terms": "Terms of Use",
     "faq": "Frequently Asked Questions",
     "hide": "Hide",
-    "show": "Show"
+    "show": "Show",
+    "notEnoughData": "Not enough data. Enter at least two fill-ups or charging sessions.",
+    "date": "Date"
   },
   "auth": {
     "title": "Account",
@@ -266,10 +255,37 @@
         "answer": "The application calculates consumption based on the difference in kilometers between charging sessions and the amount of electrical energy. The formula is: (kWh / difference in kilometers) * 100."
       },
       {
+        "question": "What statistics are shown on vehicle cards in 'My Vehicles'?",
+        "answer": "Each vehicle card displays up to 2 key statistics. For electric vehicles (BEV), you'll see average electricity consumption and average price per kWh. For plug-in hybrids (PHEV), you'll see both average fuel consumption and average electricity consumption. For gasoline/diesel vehicles (ICE/HYBRID), you'll see average fuel consumption and average fuel price per liter. Statistics only appear when you have at least 2 fill-ups or charging sessions recorded."
+      },
+      {
+        "question": "How do I quickly add a fill-up or charging session?",
+        "answer": "You can swipe right on any vehicle card in the 'My Vehicles' screen to reveal quick action buttons. For electric vehicles, you'll see a button to add a charging session. For gasoline/diesel vehicles, you'll see a button to add a fill-up. For plug-in hybrids, you'll see both options stacked vertically. Simply tap the button to navigate directly to the add entry screen."
+      },
+      {
+        "question": "How do I delete a vehicle?",
+        "answer": "Swipe left on any vehicle card in the 'My Vehicles' screen to reveal the delete button. Tap the delete button and confirm to permanently remove the vehicle and all its associated data."
+      },
+      {
         "question": "Can I export my data?",
-        "answer": "This feature is not currently available. We are planning to add the option to export data in CSV format in the future."
+        "answer": "Yes! You can export your vehicle data from the vehicle details screen. Tap the export button to save your data as a CSV file (Excel-compatible) or HTML file (for printing to PDF). The export includes all vehicle information, statistics, fill-ups, and charging sessions."
       }
     ]
+  },
+  "export": {
+    "title": "Export Data",
+    "exportToCSV": "Export to Excel (CSV)",
+    "exportToPDF": "Export to PDF (HTML)",
+    "vehicleInfo": "Vehicle Information",
+    "statistics": "Statistics",
+    "vehicleReport": "Vehicle Report",
+    "generatedOn": "Generated on",
+    "shareTitle": "Export Vehicle Data",
+    "sharingNotAvailable": "Sharing is not available on this device",
+    "exportSuccess": "Data exported successfully!",
+    "exportError": "Export failed. Please try again.",
+    "selectFormat": "Select Export Format",
+    "cancel": "Cancel"
   },
   "termsOfUse": {
     "title": "Terms of Use",

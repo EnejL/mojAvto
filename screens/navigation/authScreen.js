@@ -67,18 +67,14 @@ export default function AuthScreen() {
     setLoading(true);
     setError(null);
     try {
-      console.log("Attempting to sign in with:", email);
       const signedInUser = await signIn(email, password);
-      console.log("Sign in successful:", signedInUser);
       setUser(signedInUser);
       setEmail("");
       setPassword("");
       navigation.navigate("Home");
     } catch (error) {
-      console.error("Sign in error:", error);
       if (error.message && error.message.includes("auth/")) {
         const errorCode = error.message.replace("auth/", "");
-        console.log("Error code:", errorCode);
         setError(t(`auth.error.${errorCode}`));
       } else {
         setError(t("auth.error.unknown-error"));
@@ -122,7 +118,6 @@ export default function AuthScreen() {
         ]);
       })
       .catch((error) => {
-        console.error("Error sending password reset email:", error);
         Alert.alert(t("auth.resetError"), t("auth.error.unknown-error"), [
           { text: t("common.ok") },
         ]);

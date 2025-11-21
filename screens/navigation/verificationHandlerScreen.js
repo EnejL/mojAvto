@@ -26,7 +26,6 @@ const VerificationHandlerScreen = () => {
           setStatus('Email successfully verified!');
           setIsVerified(true);
         } catch (err) {
-          console.error('Verification error:', err);
           setStatus('Verification Failed');
           Alert.alert('Error', 'The verification link is invalid, has expired, or has already been used.');
         }

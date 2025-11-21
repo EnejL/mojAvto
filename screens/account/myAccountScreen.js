@@ -17,7 +17,7 @@ export default function MyAccountScreen() {
       await signOut();
       // Navigation will be handled by the auth state listener in App.js
     } catch (error) {
-      console.error("Error signing out:", error);
+      // Error handled silently - navigation will handle auth state
     }
   };
 
@@ -28,7 +28,7 @@ export default function MyAccountScreen() {
       // Save the language preference to persistent storage
       await saveLanguage(languageCode);
     } catch (error) {
-      console.error("Error changing language:", error);
+      // Error handled silently - language change may still work
     }
   };
 
@@ -79,7 +79,6 @@ export default function MyAccountScreen() {
       );
       // Navigation will be handled by the auth state listener in App.js
     } catch (error) {
-      console.error("Error deleting account:", error);
       Alert.alert(
         t("common.error.delete"),
         t("auth.deleteAccountError"),
@@ -157,7 +156,7 @@ export default function MyAccountScreen() {
           <Divider />
           <List.Item
             title={t("common.version")}
-            description="1.7.0"
+            description="1.8.0"
             left={props => <List.Icon {...props} icon="information" />}
           />
         </Surface>

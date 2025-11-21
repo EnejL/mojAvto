@@ -122,7 +122,6 @@ export default function EditChargingScreen({ route, navigation }) {
 
       navigation.goBack();
     } catch (error) {
-      console.error("Error updating charging session:", error);
       alert(t("common.error.save"));
     } finally {
       setLoading(false);
@@ -144,7 +143,6 @@ export default function EditChargingScreen({ route, navigation }) {
             await deleteChargingSession(vehicleId, chargingSession.id);
             navigation.goBack();
           } catch (error) {
-            console.error("Error deleting charging session:", error);
             alert(t("common.error.delete"));
           } finally {
             setLoading(false);

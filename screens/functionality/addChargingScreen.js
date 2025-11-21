@@ -129,7 +129,6 @@ export default function AddChargingScreen({ route, navigation }) {
 
       navigation.goBack();
     } catch (error) {
-      console.error("Error saving charging session:", error);
       alert(t("common.error.save"));
     } finally {
       setLoading(false);

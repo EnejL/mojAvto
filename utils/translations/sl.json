@@ -38,25 +38,30 @@
     "consumptionOverTime": "Poraba Skozi Čas",
     "fuelConsumption": "Poraba Goriva",
     "electricConsumption": "Poraba Elektrike",
+    "type": "Tip vozila",
     "types": {
       "ICE": "Bencin / dizel",
       "HYBRID": "Hibrid (blagi / polni)",
       "PHEV": "PHEV (priključni hibrid)",
       "BEV": "Električno vozilo"
     },
-    "advancedStatistics": "Napredna statistika",
+    "additionalStatistics": "Dodatna statistika",
     "totalDistance": "Skupna prevožena razdalja (od prvega vnosa)",
     "avgDistancePerFilling": "Povp. prevožena razdalja z enim točenjem",
     "avgDistancePerCharging": "Povp. prevožena razdalja z enim polnjenjem",
     "daysSinceLastFilling": "Dni od zadnjega točenja",
     "daysSinceLastCharging": "Dni od zadnjega polnjenja",
-    "longestDistanceSingleTank": "Najdaljša razdalja z enim točenjem",
-    "longestDistanceSingleCharge": "Najdaljša razdalja z enim polnjenjem",
+    "longestDistanceSingleTank": "Najdaljša prev. razdalja z enim točenjem",
+    "longestDistanceSingleCharge": "Najdaljša prev. razdalja z enim polnjenjem",
     "avgDistanceSingleTank": "Povp. prevožena razdalja z enim tankom",
     "avgDaysBetweenFillings": "Povp. število dni med točenji",
     "avgDaysBetweenCharging": "Povp. število dni med polnjenji",
     "avgCostPerDayFuel": "Povp. strošek na dan (gorivo)",
-    "avgCostPerDayCharging": "Povp. strošek na dan (elektrika)"
+    "avgCostPerDayCharging": "Povp. strošek na dan (elektrika)",
+    "totalFuelCost": "Skupni stroški goriva",
+    "totalChargingCost": "Skupni stroški polnjenja",
+    "vin": "VIN",
+    "licensePlate": "Registrska številka"
   },
   "fillings": {
     "title": "Točenja goriva",
@@ -88,6 +93,7 @@
   },
   "charging": {
     "title": "Polnjenja baterije",
+    "nav": "Poraba električne energije",
     "session": "polnjenje",
     "add": "Polnjenje +",
     "edit": "Uredi Polnjenje",
@@ -104,7 +110,7 @@
     "locationHome": "Doma",
     "locationPublic": "Javno",
     "locationWorkplace": "Služba",
-    "avgConsumption": "Poraba el. energije",
+    "avgConsumption": "Povp. poraba el. energije",
     "electricityConsumptionUnit": "kWh/100 km",
     "avgPricePerKWh": "Povprečna cena kWh",
     "avgCost": "Povprečni strošek polnjenja",
@@ -113,25 +119,6 @@
     "consumptionUnit": "kWh/100 km",
     "moreDetails": "Dodaj podrobnosti",
     "delete": "Izbriši"
-  },
-  "petrolStations": {
-    "title": "Bencinske Črpalke",
-    "list": "Seznam",
-    "map": "Zemljevid",
-    "fetchError": "Napaka pri nalaganju bencinskih črpalk",
-    "description": "Bencinske črpalke bodo tukaj ...",
-    "viewDetails": "Več informacij",
-    "prices": "Cene goriv",
-    "getDirections": "Navigacija",
-    "openingHours": "Delovni Čas",
-    "open24Hours": "Odprto 24 ur",
-    "closed": "Zaprto",
-    "noOpeningHours": "Informacije o delovnem času niso na voljo",
-    "searchPlaceholder": "Išči po imenu ali naslovu",
-    "noSearchResults": "Ni rezultatov iskanja",
-    "empty": "Ni črpalk na voljo",
-    "favorites": "Priljubljene",
-    "noFavorites": "Ni črpalk na voljo"
   },
   "settings": {
     "title": "Nastavitve",
@@ -160,7 +147,9 @@
     "terms": "Pogoji uporabe",
     "faq": "Pogosto zastavljena vprašanja",
     "hide": "Skrij",
-    "show": "Prikaži"
+    "show": "Prikaži",
+    "notEnoughData": "Ni dovolj podatkov. Vnesite vsaj dve točenji ali polnjenji.",
+    "date": "Datum"
   },
   "auth": {
     "title": "Račun",
@@ -265,10 +254,37 @@
         "answer": "Aplikacija izračuna porabo na podlagi razlike v kilometrih med polnjenji in količino električne energije. Formula je: (kWh / razlika v kilometrih) * 100."
       },
       {
+        "question": "Katere statistike so prikazane na karticah vozil v 'Moja Vozila'?",
+        "answer": "Vsaka kartica vozila prikazuje do 2 ključni statistiki. Za električna vozila (BEV) boste videli povprečno porabo elektrike in povprečno ceno na kWh. Za priključne hibride (PHEV) boste videli tako povprečno porabo goriva kot povprečno porabo elektrike. Za bencinska/dizelska vozila (ICE/HYBRID) boste videli povprečno porabo goriva in povprečno ceno goriva na liter. Statistike se prikažejo le, ko imate zabeležene vsaj 2 točenji ali polnjenji."
+      },
+      {
+        "question": "Kako hitro dodam točenje ali polnjenje?",
+        "answer": "Na kateri koli kartici vozila v zaslonu 'Moja Vozila' lahko povlečete desno, da se prikažejo gumbi za hitre akcije. Za električna vozila boste videli gumb za dodajanje polnjenja. Za bencinska/dizelska vozila boste videli gumb za dodajanje točenja. Za priključne hibride boste videli obe možnosti, nameščeni navpično. Preprosto tapnite gumb, da se neposredno premaknete na zaslon za dodajanje vnosa."
+      },
+      {
+        "question": "Kako izbrišem vozilo?",
+        "answer": "Na kateri koli kartici vozila v zaslonu 'Moja Vozila' povlecite levo, da se prikaže gumb za brisanje. Tapnite gumb za brisanje in potrdite, da trajno odstranite vozilo in vse povezane podatke."
+      },
+      {
         "question": "Ali lahko izvozim svoje podatke?",
-        "answer": "Trenutno ta funkcija še ni na voljo. Načrtujemo dodajanje možnosti izvoza podatkov v CSV formatu v prihodnosti."
+        "answer": "Da! Podatke o vozilu lahko izvozite iz zaslona s podrobnostmi vozila. Tapnite gumb za izvoz in shranite podatke kot CSV datoteko (združljivo z Excelom) ali HTML datoteko (za tiskanje v PDF). Izvoz vključuje vse podatke o vozilu, statistiko, točenja in polnjenja."
       }
     ]
+  },
+  "export": {
+    "title": "Izvoz Podatkov",
+    "exportToCSV": "Izvozi v Excel (CSV)",
+    "exportToPDF": "Izvozi v PDF (HTML)",
+    "vehicleInfo": "Podatki o vozilu",
+    "statistics": "Statistika",
+    "vehicleReport": "Poročilo o vozilu",
+    "generatedOn": "Generirano",
+    "shareTitle": "Izvoz podatkov o vozilu",
+    "sharingNotAvailable": "Deljenje ni na voljo na tej napravi",
+    "exportSuccess": "Podatki so bili uspešno izvoženi!",
+    "exportError": "Izvoz ni uspel. Prosim poskusite znova.",
+    "selectFormat": "Izberite format izvoza",
+    "cancel": "Prekliči"
   },
   "termsOfUse": {
     "title": "Pogoji uporabe",

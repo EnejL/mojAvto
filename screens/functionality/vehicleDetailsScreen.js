@@ -1,5 +1,5 @@
 // screens/VehicleConsumptionScreen.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -7,13 +7,16 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import { Text, Button, Surface, Divider, FAB } from "react-native-paper";
+import { Text, Button, Surface, FAB } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getVehicleFillings, deleteFilling, getVehicleChargingSessions, deleteChargingSession, getVehicleHistory } from "../../utils/firestore";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 import BrandLogo from "../../components/BrandLogo";
 import ConsumptionGraph from "../../components/FuelConsumptionGraph";
+import { exportToCSV, exportToPDF } from "../../utils/exportVehicleData";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
@@ -65,6 +68,9 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const [chargingSessions, setChargingSessions] = useState([]);
   const [combinedHistory, setCombinedHistory] = useState([]);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const openSwipeableRef = useRef(null);
+  const swipeableRefs = useRef(new Map());
 
   // Get vehicle type or default to ICE for backwards compatibility
   const vehicleType = vehicle.vehicleType || 'ICE';
@@ -108,7 +114,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           setCombinedHistory(history);
         }
       } catch (error) {
-        console.error("Error loading data:", error);
+        // Error handled silently - user-facing errors shown via UI
       }
     };
 
@@ -271,6 +277,26 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   }, [chargingSessions, shouldShowChargeButton]);
 
+  // Sort fillings by date (newest first) for display
+  const sortedFillings = useMemo(() => {
+    if (!shouldShowFuelButton()) return [];
+    return [...fillings].sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateB - dateA; // Newest first
+    });
+  }, [fillings, shouldShowFuelButton]);
+
+  // Sort charging sessions by date (newest first) for display
+  const sortedChargingSessions = useMemo(() => {
+    if (!shouldShowChargeButton()) return [];
+    return [...chargingSessions].sort((a, b) => {
+      const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
+      const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
+      return dateB - dateA; // Newest first
+    });
+  }, [chargingSessions, shouldShowChargeButton]);
+
   // Calculate longest distance on single tank/charge
   const longestDistanceSingleTank = useMemo(() => {
     if (fillings.length < 2 || !shouldShowFuelButton()) return null;
@@ -416,17 +442,128 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return (totalCost / totalDistance) * 100;
   }, [chargingSessions, shouldShowChargeButton]);
 
+  // Export handler
+  const handleExport = () => {
+    Alert.alert(
+      t("export.title"),
+      t("export.selectFormat"),
+      [
+        {
+          text: t("export.exportToCSV"),
+          onPress: async () => {
+            setIsExporting(true);
+            try {
+              const stats = {
+                avgFuelConsumption: averageFuelConsumption,
+                avgElectricityConsumption: averageElectricityConsumption,
+                avgPricePerLiter: averagePricePerLiter,
+                avgPricePerKWh: averagePricePerKWh,
+                totalFuelCost: totalFuelCost,
+                totalChargingCost: totalChargingCost,
+                // Additional statistics
+                averageDistancePerFilling: averageDistancePerFilling,
+                longestDistanceSingleTank: longestDistanceSingleTank,
+                daysSinceLastFilling: daysSinceLastFilling,
+                averageDaysBetweenFillings: averageDaysBetweenFillings,
+                averageCostPerDayFuel: averageCostPerDayFuel,
+                totalFuelDistance: totalFuelDistance,
+                averageFuelCostPer100km: averageFuelCostPer100km,
+                averageDistancePerCharging: averageDistancePerCharging,
+                longestDistanceSingleCharge: longestDistanceSingleCharge,
+                daysSinceLastCharging: daysSinceLastCharging,
+                averageDaysBetweenCharging: averageDaysBetweenCharging,
+                averageCostPerDayCharging: averageCostPerDayCharging,
+                totalElectricityDistance: totalElectricityDistance,
+                averageElectricityCostPer100km: averageElectricityCostPer100km,
+              };
+              
+              const result = await exportToCSV(vehicle, fillings, chargingSessions, stats, t);
+              
+              if (result.success) {
+                Alert.alert(t("common.ok"), t("export.exportSuccess"));
+              } else {
+                Alert.alert(t("common.error"), result.error || t("export.exportError"));
+              }
+            } catch (error) {
+              Alert.alert(t("common.error"), t("export.exportError"));
+            } finally {
+              setIsExporting(false);
+            }
+          },
+        },
+        {
+          text: t("export.exportToPDF"),
+          onPress: async () => {
+            setIsExporting(true);
+            try {
+              const stats = {
+                avgFuelConsumption: averageFuelConsumption,
+                avgElectricityConsumption: averageElectricityConsumption,
+                avgPricePerLiter: averagePricePerLiter,
+                avgPricePerKWh: averagePricePerKWh,
+                totalFuelCost: totalFuelCost,
+                totalChargingCost: totalChargingCost,
+                // Additional statistics
+                averageDistancePerFilling: averageDistancePerFilling,
+                longestDistanceSingleTank: longestDistanceSingleTank,
+                daysSinceLastFilling: daysSinceLastFilling,
+                averageDaysBetweenFillings: averageDaysBetweenFillings,
+                averageCostPerDayFuel: averageCostPerDayFuel,
+                totalFuelDistance: totalFuelDistance,
+                averageFuelCostPer100km: averageFuelCostPer100km,
+                averageDistancePerCharging: averageDistancePerCharging,
+                longestDistanceSingleCharge: longestDistanceSingleCharge,
+                daysSinceLastCharging: daysSinceLastCharging,
+                averageDaysBetweenCharging: averageDaysBetweenCharging,
+                averageCostPerDayCharging: averageCostPerDayCharging,
+                totalElectricityDistance: totalElectricityDistance,
+                averageElectricityCostPer100km: averageElectricityCostPer100km,
+              };
+              
+              const result = await exportToPDF(vehicle, fillings, chargingSessions, stats, t);
+              
+              if (result.success) {
+                Alert.alert(t("common.ok"), t("export.exportSuccess"));
+              } else {
+                Alert.alert(t("common.error"), result.error || t("export.exportError"));
+              }
+            } catch (error) {
+              Alert.alert(t("common.error"), t("export.exportError"));
+            } finally {
+              setIsExporting(false);
+            }
+          },
+        },
+        {
+          text: t("export.cancel"),
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
   const renderHistoryItem = ({ item }) => {
+    // Get or create a ref for this item
+    const itemKey = `${item.type}-${item.id}`;
+    if (!swipeableRefs.current.has(itemKey)) {
+      swipeableRefs.current.set(itemKey, null);
+    }
+
     const renderRightActions = () => {
       return (
-        <View style={styles.deleteAction}>
-          <Button
-            icon="trash-can"
-            textColor="#fff"
-            onPress={() => handleDeleteHistoryItem(item)}
-            style={styles.deleteActionButton}
-          />
-        </View>
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => {
+            // Close the swipeable before showing delete confirmation
+            const swipeableRef = swipeableRefs.current.get(itemKey);
+            if (swipeableRef) {
+              swipeableRef.close();
+            }
+            handleDeleteHistoryItem(item);
+          }}
+        >
+          <MaterialCommunityIcons name="trash-can" size={24} color="white" />
+        </TouchableOpacity>
       );
     };
 
@@ -461,7 +598,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 setCombinedHistory(history);
               }
             } catch (error) {
-              console.error("Error deleting item:", error);
               alert(t("common.error.delete"));
             }
           },
@@ -475,13 +611,36 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return (
       <GestureHandlerRootView style={styles.gestureContainer}>
         <Swipeable
+          ref={(ref) => {
+            swipeableRefs.current.set(itemKey, ref);
+          }}
           renderRightActions={renderRightActions}
           overshootRight={false}
           friction={2}
           rightThreshold={40}
+          onSwipeableOpen={() => {
+            const swipeableRef = swipeableRefs.current.get(itemKey);
+            // Close any previously open swipeable
+            if (openSwipeableRef.current && openSwipeableRef.current !== swipeableRef) {
+              openSwipeableRef.current.close();
+            }
+            // Store reference to currently open swipeable
+            openSwipeableRef.current = swipeableRef;
+          }}
+          onSwipeableClose={() => {
+            const swipeableRef = swipeableRefs.current.get(itemKey);
+            // Clear reference when swipeable closes
+            if (openSwipeableRef.current === swipeableRef) {
+              openSwipeableRef.current = null;
+            }
+          }}
         >
           <TouchableOpacity
             onPress={() => {
+              // Close any open swipeable before navigating
+              if (openSwipeableRef.current) {
+                openSwipeableRef.current.close();
+              }
               if (isCharging) {
                 navigation.navigate("EditCharging", {
                   chargingSession: item,
@@ -590,7 +749,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        onScrollBeginDrag={() => {
+          if (openSwipeableRef.current) {
+            openSwipeableRef.current.close();
+          }
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Surface style={styles.headerCard}>
           <View style={styles.headerContent}>
             <View style={styles.vehicleInfoContainer}>
@@ -607,6 +773,19 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 </View>
               </View>
             </View>
+            
+            {/* Export Button */}
+            <TouchableOpacity 
+              style={styles.exportButton}
+              onPress={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <ActivityIndicator size="small" color="#3169ad" />
+              ) : (
+                <MaterialCommunityIcons name="download" size={24} color="#3169ad" />
+              )}
+            </TouchableOpacity>
           </View>
         </Surface>
 
@@ -675,7 +854,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               <Surface style={styles.statsCard}>
                 <View style={styles.statCardHeader}>
                   <Text style={styles.statCardIcon}>⚡</Text>
-                  <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
+                  <Text style={styles.statCardTitle}>{t("charging.nav")}</Text>
                 </View>
                 <View style={styles.statCardContent}>
                   {/* Primary consumption metric */}
@@ -844,7 +1023,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 <Surface style={styles.statsCard}>
                   <View style={styles.statCardHeader}>
                     <Text style={styles.statCardIcon}>⚡</Text>
-                    <Text style={styles.statCardTitle}>{t("charging.avgConsumption")}</Text>
+                    <Text style={styles.statCardTitle}>{t("charging.nav")}</Text>
                   </View>
                   <View style={styles.statCardContent}>
                     {/* Primary consumption metric */}
@@ -911,13 +1090,13 @@ export default function VehicleDetailsScreen({ route, navigation }) {
             {!showAdvancedStats ? (
               <Surface style={styles.statsCard}>
                 <Button mode="contained" onPress={() => setShowAdvancedStats(true)}>
-                  {t("vehicles.advancedStatistics")}
+                  {t("vehicles.additionalStatistics")}
                 </Button>
               </Surface>
             ) : (
               <Surface style={styles.statsCard}>
             <View style={styles.advancedStatsHeader}>
-              <Text style={styles.sectionTitle}>{t("vehicles.advancedStatistics")}</Text>
+              <Text style={styles.sectionTitle}>{t("vehicles.additionalStatistics")}</Text>
               <Button mode="text" onPress={() => setShowAdvancedStats(false)}>
                 {t("common.hide")}
               </Button>
@@ -1105,7 +1284,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
                 ) : (
                   <FlatList
-                    data={fillings.map(f => ({ ...f, type: 'filling' }))}
+                    data={sortedFillings.map(f => ({ ...f, type: 'filling' }))}
                     renderItem={renderHistoryItem}
                     keyExtractor={(item) => item.id}
                     scrollEnabled={false}
@@ -1125,7 +1304,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <Text style={styles.emptyText}>{t("charging.empty")}</Text>
                 ) : (
                   <FlatList
-                    data={chargingSessions.map(s => ({ ...s, type: 'charging' }))}
+                    data={sortedChargingSessions.map(s => ({ ...s, type: 'charging' }))}
                     renderItem={renderHistoryItem}
                     keyExtractor={(item) => item.id}
                     scrollEnabled={false}
@@ -1159,6 +1338,14 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  exportButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#f0f7ff",
+    marginLeft: 12,
+    justifyContent: "center",
     alignItems: "center",
   },
   vehicleInfoContainer: {
@@ -1276,16 +1463,14 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     width: "100%",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-    padding: 12,
   },
   secondaryMetricItem: {
     alignItems: "center",
     width: "48%",
     marginBottom: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: "#f8f9fa",
   },
   secondaryMetricValue: {
     fontSize: 18,
@@ -1409,17 +1594,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   deleteAction: {
-    backgroundColor: "#dd2c00",
+    backgroundColor: "#f44336",
     justifyContent: "center",
     alignItems: "center",
-    width: 80,
-    height: "100%",
-  },
-  deleteActionButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
+    width: "17.5%",
+    height: "90%",
+    borderRadius: 8,
+    marginVertical: 4,
+    marginLeft: 8,
   },
   gestureContainer: {
     flex: 1,

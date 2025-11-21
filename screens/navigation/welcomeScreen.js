@@ -27,7 +27,6 @@ export default function WelcomeScreen() {
     try {
       await signInWithGoogle();
     } catch (error) {
-      console.error("Google Sign-In error:", error);
       Alert.alert("Error", t("auth.error.googleSignInFailed"));
     } finally {
       setLoading(false);

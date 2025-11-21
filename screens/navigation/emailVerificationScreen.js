@@ -48,7 +48,6 @@ export default function EmailVerificationScreen() {
         );
       }
     } catch (error) {
-      console.error("Error checking verification:", error);
       Alert.alert(
         t("common.error.load"),
         t("auth.verification.checkError"),
@@ -69,7 +68,6 @@ export default function EmailVerificationScreen() {
         [{ text: t("common.ok") }]
       );
     } catch (error) {
-      console.error("Error resending verification email:", error);
       Alert.alert(
         t("auth.verification.resendError"),
         t("auth.verification.tryAgain"),
@@ -85,7 +83,7 @@ export default function EmailVerificationScreen() {
       await signOut();
       // The auth state change will automatically navigate to the welcome screen
     } catch (error) {
-      console.error("Error signing out:", error);
+      // Error handled silently - navigation will handle auth state
     }
   };
 
