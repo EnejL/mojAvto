@@ -545,14 +545,12 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const renderHistoryItem = ({ item }) => {
     const renderRightActions = () => {
       return (
-        <View style={styles.deleteAction}>
-          <Button
-            icon="trash-can"
-            textColor="#fff"
-            onPress={() => handleDeleteHistoryItem(item)}
-            style={styles.deleteActionButton}
-          />
-        </View>
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => handleDeleteHistoryItem(item)}
+        >
+          <MaterialCommunityIcons name="trash-can" size={24} color="white" />
+        </TouchableOpacity>
       );
     };
 
@@ -1554,17 +1552,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   deleteAction: {
-    backgroundColor: "#dd2c00",
+    backgroundColor: "#f44336",
     justifyContent: "center",
     alignItems: "center",
-    width: 80,
-    height: "100%",
-  },
-  deleteActionButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
+    width: "17.5%",
+    height: "95%",
+    borderRadius: 8,
+    marginLeft: 8,
   },
   gestureContainer: {
     flex: 1,
