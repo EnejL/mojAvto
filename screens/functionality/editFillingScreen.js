@@ -102,7 +102,6 @@ export default function EditFillingScreen({ route, navigation }) {
 
       navigation.goBack();
     } catch (error) {
-      console.error("Error updating filling:", error);
       alert(t("common.error.save"));
     } finally {
       setLoading(false);
@@ -124,7 +123,6 @@ export default function EditFillingScreen({ route, navigation }) {
             await deleteFilling(vehicleId, filling.id);
             navigation.goBack();
           } catch (error) {
-            console.error("Error deleting filling:", error);
             alert(t("common.error.delete"));
           } finally {
             setLoading(false);

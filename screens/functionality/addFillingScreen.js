@@ -90,7 +90,6 @@ export default function AddFillingScreen({ route, navigation }) {
 
       navigation.goBack();
     } catch (error) {
-      console.error("Error saving filling:", error);
       alert(t("common.error.save"));
     } finally {
       setLoading(false);

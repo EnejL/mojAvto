@@ -72,7 +72,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
           
           return { vehicleId: vehicle.id, fillings, chargingSessions };
         } catch (error) {
-          console.error(`Error loading stats for vehicle ${vehicle.id}:`, error);
           return { vehicleId: vehicle.id, fillings: [], chargingSessions: [] };
         }
       });
@@ -141,7 +140,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
       
       setVehicleStats(statsMap);
     } catch (error) {
-      console.error("Error loading vehicles:", error);
       alert(t("common.error.load"));
     } finally {
       setLoading(false);
@@ -165,7 +163,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
               await deleteVehicle(vehicleId);
               loadVehicles();
             } catch (error) {
-              console.error("Error deleting vehicle:", error);
               alert(t("common.error.delete"));
             }
           },
