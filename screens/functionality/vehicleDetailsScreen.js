@@ -1,5 +1,5 @@
 // screens/VehicleConsumptionScreen.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { Text, Button, Surface, Divider, FAB } from "react-native-paper";
+import { Text, Button, Surface, FAB } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getVehicleFillings, deleteFilling, getVehicleChargingSessions, deleteChargingSession, getVehicleHistory } from "../../utils/firestore";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
@@ -69,6 +69,8 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const [combinedHistory, setCombinedHistory] = useState([]);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const openSwipeableRef = useRef(null);
+  const swipeableRefs = useRef(new Map());
 
   // Get vehicle type or default to ICE for backwards compatibility
   const vehicleType = vehicle.vehicleType || 'ICE';
@@ -112,7 +114,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           setCombinedHistory(history);
         }
       } catch (error) {
-        console.error("Error loading data:", error);
+        // Error handled silently - user-facing errors shown via UI
       }
     };
 
@@ -483,7 +485,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 Alert.alert(t("common.error"), result.error || t("export.exportError"));
               }
             } catch (error) {
-              console.error("Export error:", error);
               Alert.alert(t("common.error"), t("export.exportError"));
             } finally {
               setIsExporting(false);
@@ -527,7 +528,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 Alert.alert(t("common.error"), result.error || t("export.exportError"));
               }
             } catch (error) {
-              console.error("Export error:", error);
               Alert.alert(t("common.error"), t("export.exportError"));
             } finally {
               setIsExporting(false);
@@ -543,11 +543,24 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   };
 
   const renderHistoryItem = ({ item }) => {
+    // Get or create a ref for this item
+    const itemKey = `${item.type}-${item.id}`;
+    if (!swipeableRefs.current.has(itemKey)) {
+      swipeableRefs.current.set(itemKey, null);
+    }
+
     const renderRightActions = () => {
       return (
         <TouchableOpacity
           style={styles.deleteAction}
-          onPress={() => handleDeleteHistoryItem(item)}
+          onPress={() => {
+            // Close the swipeable before showing delete confirmation
+            const swipeableRef = swipeableRefs.current.get(itemKey);
+            if (swipeableRef) {
+              swipeableRef.close();
+            }
+            handleDeleteHistoryItem(item);
+          }}
         >
           <MaterialCommunityIcons name="trash-can" size={24} color="white" />
         </TouchableOpacity>
@@ -585,7 +598,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 setCombinedHistory(history);
               }
             } catch (error) {
-              console.error("Error deleting item:", error);
               alert(t("common.error.delete"));
             }
           },
@@ -599,13 +611,36 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return (
       <GestureHandlerRootView style={styles.gestureContainer}>
         <Swipeable
+          ref={(ref) => {
+            swipeableRefs.current.set(itemKey, ref);
+          }}
           renderRightActions={renderRightActions}
           overshootRight={false}
           friction={2}
           rightThreshold={40}
+          onSwipeableOpen={() => {
+            const swipeableRef = swipeableRefs.current.get(itemKey);
+            // Close any previously open swipeable
+            if (openSwipeableRef.current && openSwipeableRef.current !== swipeableRef) {
+              openSwipeableRef.current.close();
+            }
+            // Store reference to currently open swipeable
+            openSwipeableRef.current = swipeableRef;
+          }}
+          onSwipeableClose={() => {
+            const swipeableRef = swipeableRefs.current.get(itemKey);
+            // Clear reference when swipeable closes
+            if (openSwipeableRef.current === swipeableRef) {
+              openSwipeableRef.current = null;
+            }
+          }}
         >
           <TouchableOpacity
             onPress={() => {
+              // Close any open swipeable before navigating
+              if (openSwipeableRef.current) {
+                openSwipeableRef.current.close();
+              }
               if (isCharging) {
                 navigation.navigate("EditCharging", {
                   chargingSession: item,
@@ -714,7 +749,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        onScrollBeginDrag={() => {
+          if (openSwipeableRef.current) {
+            openSwipeableRef.current.close();
+          }
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Surface style={styles.headerCard}>
           <View style={styles.headerContent}>
             <View style={styles.vehicleInfoContainer}>
@@ -1556,8 +1598,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "17.5%",
-    height: "95%",
+    height: "90%",
     borderRadius: 8,
+    marginVertical: 4,
     marginLeft: 8,
   },
   gestureContainer: {

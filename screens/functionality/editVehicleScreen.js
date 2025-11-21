@@ -68,7 +68,7 @@ export default function EditVehicleScreen({ navigation, route }) {
         const brands = await fetchCarBrands();
         setCarBrands(brands);
       } catch (error) {
-        console.error("Failed to load car brands:", error);
+        // Error handled silently - brands may be empty
       } finally {
         setLoadingBrands(false);
       }
@@ -88,7 +88,7 @@ export default function EditVehicleScreen({ navigation, route }) {
         const models = await fetchCarModels(make);
         setCarModels(models);
       } catch (error) {
-        console.error("Failed to load car models:", error);
+        // Error handled silently - models may be empty
       } finally {
         setLoadingModels(false);
       }
@@ -161,7 +161,6 @@ export default function EditVehicleScreen({ navigation, route }) {
       await updateVehicle(vehicle.id, updateData);
       navigation.navigate("MyVehiclesMain");
     } catch (error) {
-      console.error("Error updating vehicle:", error);
       alert(t("common.error.save"));
     } finally {
       setSaving(false);
@@ -183,7 +182,6 @@ export default function EditVehicleScreen({ navigation, route }) {
             await deleteVehicle(vehicle.id);
             navigation.navigate("MyVehiclesMain");
           } catch (error) {
-            console.error("Error deleting vehicle:", error);
             alert(t("common.error.delete"));
           } finally {
             setSaving(false);

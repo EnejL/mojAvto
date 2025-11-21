@@ -64,7 +64,7 @@ const AddVehicleScreen = ({ navigation }) => {
         const brands = await fetchCarBrands();
         setCarBrands(brands);
       } catch (error) {
-        console.error("Failed to load car brands:", error);
+        // Error handled silently - brands may be empty
       } finally {
         setLoadingBrands(false);
       }
@@ -84,7 +84,7 @@ const AddVehicleScreen = ({ navigation }) => {
         const models = await fetchCarModels(make);
         setCarModels(models);
       } catch (error) {
-        console.error("Failed to load car models:", error);
+        // Error handled silently - models may be empty
       } finally {
         setLoadingModels(false);
       }
@@ -155,7 +155,6 @@ const AddVehicleScreen = ({ navigation }) => {
       await addVehicle(newVehicle);
       navigation.navigate("MyVehiclesMain");
     } catch (error) {
-      console.error("Error in handleAddVehicle:", error);
       alert(t("common.error.save"));
     } finally {
       setSaving(false);
