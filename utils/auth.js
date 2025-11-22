@@ -9,6 +9,7 @@ import {
   where,
   deleteDoc,
 } from '@react-native-firebase/firestore';
+import { analyticsEvents } from "./analytics";
 
 const actionCodeSettings = {
   url: 'https://verify.enejlicina.com/verify-email',
@@ -85,6 +86,8 @@ export const signIn = async (email, password) => {
   try {
     // Call the method on your auth instance
     const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    // Track login event
+    await analyticsEvents.login('email');
     return userCredential.user;
   } catch (error) {
     console.error("Error signing in:", error.code);
@@ -99,6 +102,9 @@ export const createAccount = async (email, password) => {
 
     await userCredential.user.sendEmailVerification(actionCodeSettings);
 
+    // Track sign up event
+    await analyticsEvents.signUp('email');
+
     return userCredential.user;
   } catch (error) {
     console.error("Error creating account:", error.code);
@@ -110,6 +116,8 @@ export const createAccount = async (email, password) => {
 export const signOut = async () => {
   try {
     await auth.signOut();
+    // Track logout event
+    await analyticsEvents.logout();
   } catch (error) {
     console.error("Error signing out:", error);
     throw error;

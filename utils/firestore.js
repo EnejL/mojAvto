@@ -13,6 +13,7 @@ import {
   orderBy,
   serverTimestamp,
 } from '@react-native-firebase/firestore';
+import { analyticsEvents } from './analytics';
 
 // =================================================================
 // Vehicles Collection Operations
@@ -32,6 +33,8 @@ export const addVehicle = async (vehicleData) => {
     
     // Use the modular API
     const docRef = await addDoc(collection(db, 'users', user.uid, 'vehicles'), vehicleWithMetadata);
+    // Track analytics event
+    await analyticsEvents.vehicleAdded(vehicleData.type || 'unknown');
     return docRef.id;
   } catch (error) {
     console.error("Error adding vehicle:", error);
@@ -47,6 +50,8 @@ export const updateVehicle = async (vehicleId, vehicleData) => {
     // Use the modular API
     const vehicleRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
     await updateDoc(vehicleRef, vehicleData);
+    // Track analytics event
+    await analyticsEvents.vehicleUpdated();
   } catch (error) {
     console.error("Error updating vehicle:", error);
     throw error;
@@ -60,6 +65,8 @@ export const deleteVehicle = async (vehicleId) => {
 
     // Use the modular API
     await deleteDoc(doc(db, 'users', user.uid, 'vehicles', vehicleId));
+    // Track analytics event
+    await analyticsEvents.vehicleDeleted();
   } catch (error) {
     console.error("Error deleting vehicle:", error);
     throw error;
@@ -103,6 +110,8 @@ export const addFilling = async (vehicleId, fillingData) => {
 
     // Use the modular API for sub-collections
     const docRef = await addDoc(collection(db, 'users', user.uid, 'vehicles', vehicleId, 'fillings'), fillingWithMetadata);
+    // Track analytics event
+    await analyticsEvents.fillingAdded();
     return docRef.id;
   } catch (error) {
     console.error("Error adding filling:", error);
@@ -143,6 +152,8 @@ export const updateFilling = async (vehicleId, fillingId, fillingData) => {
     
     const fillingRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fillings', fillingId);
     await updateDoc(fillingRef, fillingWithMetadata);
+    // Track analytics event
+    await analyticsEvents.fillingUpdated();
   } catch (error) {
     console.error("Error updating filling:", error);
     throw error;
@@ -180,6 +191,8 @@ export const addChargingSession = async (vehicleId, chargingSessionData) => {
 
     // Use the modular API for sub-collections
     const docRef = await addDoc(collection(db, 'users', user.uid, 'vehicles', vehicleId, 'chargingSessions'), chargingSessionWithMetadata);
+    // Track analytics event
+    await analyticsEvents.chargingSessionAdded();
     return docRef.id;
   } catch (error) {
     console.error("Error adding charging session:", error);
@@ -219,6 +232,8 @@ export const updateChargingSession = async (vehicleId, chargingSessionId, chargi
     
     const chargingSessionRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'chargingSessions', chargingSessionId);
     await updateDoc(chargingSessionRef, chargingSessionWithMetadata);
+    // Track analytics event
+    await analyticsEvents.chargingSessionUpdated();
   } catch (error) {
     console.error("Error updating charging session:", error);
     throw error;

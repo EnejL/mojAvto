@@ -1,7 +1,7 @@
 import "react-native-gesture-handler";
 import React, { useEffect, useState } from "react";
 import * as Linking from "expo-linking";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
 // Import the auth object
@@ -11,6 +11,9 @@ import { useTranslation } from "react-i18next";
 import { onAuthStateChanged } from "firebase/auth";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar, ActivityIndicator, View } from "react-native";
+// Import Analytics and Crashlytics utilities
+import { setAnalyticsUserId, setAnalyticsUserProperties, logScreenView } from "./utils/analytics";
+import { initializeCrashlytics, logCrashlytics } from "./utils/crashlytics";
 
 // Import your screens
 import WelcomeScreen from "./screens/navigation/welcomeScreen";
@@ -39,16 +42,24 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [languageReady, setLanguageReady] = useState(false);
   const { t } = useTranslation();
+  const navigationRef = useNavigationContainerRef();
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Initialize language system first
+        // Initialize Crashlytics early
+        logCrashlytics('App initializing');
+        
+        // Initialize language system
         await getSavedLanguage();
         
         setLanguageReady(true);
+        logCrashlytics('App initialized successfully');
       } catch (error) {
-        console.error("Error initializing language:", error);
+        console.error("Error initializing app:", error);
+        // Record error to Crashlytics
+        const { recordError } = await import('./utils/crashlytics');
+        recordError(error, { context: 'app_initialization' });
         setLanguageReady(true); // Continue anyway
       }
     };
@@ -57,8 +68,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      
+      // Initialize Analytics and Crashlytics with user info
+      if (user) {
+        try {
+          // Set user ID for Analytics
+          await setAnalyticsUserId(user.uid);
+          
+          // Set user properties for Analytics
+          await setAnalyticsUserProperties({
+            user_id: user.uid,
+            email_verified: user.emailVerified,
+          });
+          
+          // Initialize Crashlytics with user info
+          initializeCrashlytics({
+            userId: user.uid,
+            email: user.email || undefined,
+            displayName: user.displayName || undefined,
+          });
+          
+          logCrashlytics(`User signed in: ${user.uid}`);
+        } catch (error) {
+          console.error("Error setting up user tracking:", error);
+        }
+      } else {
+        // User signed out - clear user identifiers
+        try {
+          await setAnalyticsUserId(null);
+          logCrashlytics('User signed out');
+        } catch (error) {
+          console.error("Error clearing user tracking:", error);
+        }
+      }
+      
       if (initializing && languageReady) {
         setInitializing(false);
       }
@@ -77,12 +122,27 @@ export default function App() {
     );
   }
 
+  // Handle navigation state changes for screen tracking
+  const handleNavigationStateChange = () => {
+    const currentRoute = navigationRef.getCurrentRoute();
+    if (currentRoute) {
+      const routeName = currentRoute.name;
+      logScreenView(routeName);
+      logCrashlytics(`Screen viewed: ${routeName}`);
+    }
+  };
+
   // Render the correct navigator based on the user state.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PaperProvider>
         <StatusBar style="auto" />
-        <NavigationContainer linking={linking}>
+        <NavigationContainer 
+          ref={navigationRef}
+          linking={linking}
+          onReady={handleNavigationStateChange}
+          onStateChange={handleNavigationStateChange}
+        >
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             {user ? (
                 <Stack.Screen name="MainApp" component={MainAppNavigator} />
