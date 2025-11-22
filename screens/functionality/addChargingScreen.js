@@ -24,6 +24,7 @@ export default function AddChargingScreen({ route, navigation }) {
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const scrollViewRef = useRef(null);
   const animatedHeight = useRef(new Animated.Value(0)).current;
+  const contentHeight = useRef(0);
 
   const [chargingData, setChargingData] = useState({
     date: new Date(),
@@ -83,15 +84,38 @@ export default function AddChargingScreen({ route, navigation }) {
     }
   };
 
+  // Measure the content height when it's laid out
+  const handleContentLayout = (event) => {
+    const { height } = event.nativeEvent.layout;
+    if (height > 0) {
+      contentHeight.current = height;
+      // If section is open and height changed, update animation
+      if (showMoreDetails && Math.abs(animatedHeight._value - height) > 1) {
+        Animated.timing(animatedHeight, {
+          toValue: height,
+          duration: 200,
+          useNativeDriver: false,
+        }).start();
+      }
+    }
+  };
+
   // Toggle more details section
   const toggleMoreDetails = () => {
-    const toValue = showMoreDetails ? 0 : 200; // Approximate height for the section
+    const toValue = showMoreDetails ? 0 : (contentHeight.current || 500); // Use measured height or generous fallback
     
     Animated.timing(animatedHeight, {
       toValue,
       duration: 300,
       useNativeDriver: false,
-    }).start();
+    }).start(() => {
+      // After animation, scroll to show the content if it was opened
+      if (!showMoreDetails && scrollViewRef.current) {
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    });
     
     setShowMoreDetails(!showMoreDetails);
   };
@@ -138,7 +162,10 @@ export default function AddChargingScreen({ route, navigation }) {
   return (
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <View style={styles.container}>
-        <ScrollView ref={scrollViewRef}>
+        <ScrollView 
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollViewContent}
+        >
           <Surface style={styles.vehicleInfoCard}>
             <Text style={styles.vehicleInfoTitle}>
               {t("vehicles.selected")}:
@@ -231,7 +258,11 @@ export default function AddChargingScreen({ route, navigation }) {
 
             {/* Animated collapsible section */}
             <Animated.View style={[styles.collapsibleSection, { height: animatedHeight }]}>
-              <View style={styles.collapsibleContent}>
+              <View 
+                style={styles.collapsibleContent} 
+                onLayout={handleContentLayout}
+                collapsable={false}
+              >
                 {/* Location Type Selector */}
                 <View style={styles.selectorContainer}>
                   <Text style={styles.selectorLabel}>{t("charging.locationType")}</Text>
@@ -312,6 +343,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 16,
+  },
+  scrollViewContent: {
+    paddingBottom: 20,
   },
   vehicleInfoCard: {
     padding: 16,
