@@ -156,7 +156,7 @@ export default function MyAccountScreen() {
           <Divider />
           <List.Item
             title={t("common.version")}
-            description="1.8.0"
+            description="2.0.0"
             left={props => <List.Icon {...props} icon="information" />}
           />
         </Surface>

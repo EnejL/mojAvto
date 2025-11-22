@@ -2,7 +2,7 @@ export default {
   "expo": {
     "name": "DriveTrack Pro",
     "slug": "NaPoti",
-    "version": "1.8.0", 
+    "version": "2.0.0", 
     "orientation": "portrait",
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
