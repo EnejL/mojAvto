@@ -1,6 +1,14 @@
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
 import { getDeviceId } from "./deviceStorage";
 import { updateVehicle } from "./firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  where,
+  deleteDoc,
+} from '@react-native-firebase/firestore';
 
 const actionCodeSettings = {
   url: 'https://verify.enejlicina.com/verify-email',
@@ -16,13 +24,15 @@ const actionCodeSettings = {
 // Function to get vehicles by device ID
 export const getVehiclesByDeviceId = async (deviceId) => {
   try {
-    // Use the db instance directly
-    const vehiclesRef = db.collection("vehicles");
-    const q = vehiclesRef
-      .where("deviceId", "==", deviceId)
-      .where("userId", "==", null);
+    // Use the modular API
+    const vehiclesRef = collection(db, "vehicles");
+    const q = query(
+      vehiclesRef,
+      where("deviceId", "==", deviceId),
+      where("userId", "==", null)
+    );
 
-    const querySnapshot = await q.get();
+    const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -174,12 +184,9 @@ export const deleteAccount = async () => {
 // Helper function to delete all user data from Firestore
 const deleteAllUserData = async (userId) => {
   try {
-    // Import db here to avoid circular dependency
-    const { db } = await import('./firebase');
-    
     // Get all vehicles for the user
-    const vehiclesRef = db.collection('users').doc(userId).collection('vehicles');
-    const vehiclesSnapshot = await vehiclesRef.get();
+    const vehiclesRef = collection(db, 'users', userId, 'vehicles');
+    const vehiclesSnapshot = await getDocs(vehiclesRef);
 
     // Delete all subcollections for each vehicle (fillings, chargingSessions)
     const deletePromises = [];
@@ -189,12 +196,12 @@ const deleteAllUserData = async (userId) => {
       
       // Delete fillings subcollection
       deletePromises.push(
-        deleteSubcollection(vehiclesRef.doc(vehicleId).collection('fillings'))
+        deleteSubcollection(collection(db, 'users', userId, 'vehicles', vehicleId, 'fillings'))
       );
       
       // Delete chargingSessions subcollection
       deletePromises.push(
-        deleteSubcollection(vehiclesRef.doc(vehicleId).collection('chargingSessions'))
+        deleteSubcollection(collection(db, 'users', userId, 'vehicles', vehicleId, 'chargingSessions'))
       );
     });
 
@@ -202,11 +209,13 @@ const deleteAllUserData = async (userId) => {
     await Promise.all(deletePromises);
 
     // Delete all vehicles
-    const vehicleDeletePromises = vehiclesSnapshot.docs.map(doc => doc.ref.delete());
+    const vehicleDeletePromises = vehiclesSnapshot.docs.map(docSnapshot => 
+      deleteDoc(doc(db, 'users', userId, 'vehicles', docSnapshot.id))
+    );
     await Promise.all(vehicleDeletePromises);
 
     // Delete the user document itself
-    await db.collection('users').doc(userId).delete();
+    await deleteDoc(doc(db, 'users', userId));
 
     console.log(`Deleted all data for user ${userId}`);
   } catch (error) {
@@ -217,7 +226,9 @@ const deleteAllUserData = async (userId) => {
 
 // Helper function to delete all documents in a subcollection
 const deleteSubcollection = async (subcollectionRef) => {
-  const snapshot = await subcollectionRef.get();
-  const deletePromises = snapshot.docs.map(doc => doc.ref.delete());
+  const snapshot = await getDocs(subcollectionRef);
+  const deletePromises = snapshot.docs.map(docSnapshot => 
+    deleteDoc(doc(subcollectionRef, docSnapshot.id))
+  );
   await Promise.all(deletePromises);
 };

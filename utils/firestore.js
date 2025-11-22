@@ -1,8 +1,18 @@
-// utils/firestore.js - FINAL CORRECTED NATIVE VERSION
+// utils/firestore.js - MODULAR API VERSION (v22)
 
 import { db, auth } from './firebase';
-// We need to import the firestore instance itself to access FieldValue
-import firestore from '@react-native-firebase/firestore';
+// Import modular functions from React Native Firebase
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  orderBy,
+  serverTimestamp,
+} from '@react-native-firebase/firestore';
 
 // =================================================================
 // Vehicles Collection Operations
@@ -16,12 +26,12 @@ export const addVehicle = async (vehicleData) => {
     const vehicleWithMetadata = {
       ...vehicleData,
       userId: user.uid,
-      // Use the native SDK's server timestamp
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      // Use the modular API's server timestamp
+      createdAt: serverTimestamp(),
     };
     
-    // Use the native chained syntax
-    const docRef = await db.collection('users').doc(user.uid).collection('vehicles').add(vehicleWithMetadata);
+    // Use the modular API
+    const docRef = await addDoc(collection(db, 'users', user.uid, 'vehicles'), vehicleWithMetadata);
     return docRef.id;
   } catch (error) {
     console.error("Error adding vehicle:", error);
@@ -34,9 +44,9 @@ export const updateVehicle = async (vehicleId, vehicleData) => {
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
     
-    // Use the native chained syntax for doc() and update()
-    const vehicleRef = db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId);
-    await vehicleRef.update(vehicleData);
+    // Use the modular API
+    const vehicleRef = doc(db, 'users', user.uid, 'vehicles', vehicleId);
+    await updateDoc(vehicleRef, vehicleData);
   } catch (error) {
     console.error("Error updating vehicle:", error);
     throw error;
@@ -48,8 +58,8 @@ export const deleteVehicle = async (vehicleId) => {
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
 
-    // Use the native chained syntax for doc() and delete()
-    await db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).delete();
+    // Use the modular API
+    await deleteDoc(doc(db, 'users', user.uid, 'vehicles', vehicleId));
   } catch (error) {
     console.error("Error deleting vehicle:", error);
     throw error;
@@ -61,9 +71,10 @@ export const getAllVehicles = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("User not authenticated");
     
-    // Use the native chained syntax for collection(), orderBy(), and get()
-    const vehiclesRef = db.collection('users').doc(currentUser.uid).collection('vehicles');
-    const querySnapshot = await vehiclesRef.orderBy('createdAt', 'desc').get();
+    // Use the modular API
+    const vehiclesRef = collection(db, 'users', currentUser.uid, 'vehicles');
+    const q = query(vehiclesRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -87,11 +98,11 @@ export const addFilling = async (vehicleId, fillingData) => {
     const fillingWithMetadata = {
       ...fillingData,
       date: new Date(fillingData.date),
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
     };
 
-    // Use the native chained syntax for sub-collections
-    const docRef = await db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('fillings').add(fillingWithMetadata);
+    // Use the modular API for sub-collections
+    const docRef = await addDoc(collection(db, 'users', user.uid, 'vehicles', vehicleId, 'fillings'), fillingWithMetadata);
     return docRef.id;
   } catch (error) {
     console.error("Error adding filling:", error);
@@ -104,8 +115,9 @@ export const getVehicleFillings = async (vehicleId) => {
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
     
-    const fillingsRef = db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('fillings');
-    const querySnapshot = await fillingsRef.orderBy('date', 'desc').get();
+    const fillingsRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'fillings');
+    const q = query(fillingsRef, orderBy('date', 'desc'));
+    const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -126,11 +138,11 @@ export const updateFilling = async (vehicleId, fillingId, fillingData) => {
     const fillingWithMetadata = {
       ...fillingData,
       date: new Date(fillingData.date),
-      updatedAt: firestore.FieldValue.serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
     
-    const fillingRef = db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('fillings').doc(fillingId);
-    await fillingRef.update(fillingWithMetadata);
+    const fillingRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fillings', fillingId);
+    await updateDoc(fillingRef, fillingWithMetadata);
   } catch (error) {
     console.error("Error updating filling:", error);
     throw error;
@@ -142,7 +154,7 @@ export const deleteFilling = async (vehicleId, fillingId) => {
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
     
-    await db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('fillings').doc(fillingId).delete();
+    await deleteDoc(doc(db, 'users', user.uid, 'vehicles', vehicleId, 'fillings', fillingId));
   } catch (error) {
     console.error("Error deleting filling:", error);
     throw error;
@@ -163,11 +175,11 @@ export const addChargingSession = async (vehicleId, chargingSessionData) => {
       vehicleId: vehicleId,
       userId: user.uid,
       date: new Date(chargingSessionData.date),
-      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
     };
 
-    // Use the native chained syntax for sub-collections
-    const docRef = await db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions').add(chargingSessionWithMetadata);
+    // Use the modular API for sub-collections
+    const docRef = await addDoc(collection(db, 'users', user.uid, 'vehicles', vehicleId, 'chargingSessions'), chargingSessionWithMetadata);
     return docRef.id;
   } catch (error) {
     console.error("Error adding charging session:", error);
@@ -180,8 +192,9 @@ export const getVehicleChargingSessions = async (vehicleId) => {
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
     
-    const chargingSessionsRef = db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions');
-    const querySnapshot = await chargingSessionsRef.orderBy('date', 'desc').get();
+    const chargingSessionsRef = collection(db, 'users', user.uid, 'vehicles', vehicleId, 'chargingSessions');
+    const q = query(chargingSessionsRef, orderBy('date', 'desc'));
+    const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -201,11 +214,11 @@ export const updateChargingSession = async (vehicleId, chargingSessionId, chargi
     const chargingSessionWithMetadata = {
       ...chargingSessionData,
       date: new Date(chargingSessionData.date),
-      updatedAt: firestore.FieldValue.serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
     
-    const chargingSessionRef = db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions').doc(chargingSessionId);
-    await chargingSessionRef.update(chargingSessionWithMetadata);
+    const chargingSessionRef = doc(db, 'users', user.uid, 'vehicles', vehicleId, 'chargingSessions', chargingSessionId);
+    await updateDoc(chargingSessionRef, chargingSessionWithMetadata);
   } catch (error) {
     console.error("Error updating charging session:", error);
     throw error;
@@ -217,7 +230,7 @@ export const deleteChargingSession = async (vehicleId, chargingSessionId) => {
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
     
-    await db.collection('users').doc(user.uid).collection('vehicles').doc(vehicleId).collection('chargingSessions').doc(chargingSessionId).delete();
+    await deleteDoc(doc(db, 'users', user.uid, 'vehicles', vehicleId, 'chargingSessions', chargingSessionId));
   } catch (error) {
     console.error("Error deleting charging session:", error);
     throw error;
