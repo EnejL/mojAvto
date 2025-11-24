@@ -59,6 +59,17 @@ export default function AddChargingScreen({ route, navigation }) {
     return date.toISOString().split("T")[0];
   };
 
+  const renderClearIcon = (value, onClear) => {
+    if (!value || value.length === 0) return null;
+    return (
+      <TextInput.Icon
+        icon="close"
+        onPress={onClear}
+        iconColor="#666"
+      />
+    );
+  };
+
   const handleDateChange = (event, selectedDate) => {
     // Only update the date if a date was actually selected (user didn't cancel)
     if (selectedDate) {
@@ -201,7 +212,7 @@ export default function AddChargingScreen({ route, navigation }) {
             )}
 
             <TextInput
-              label={<FormLabel required>{t("charging.energyAdded")}</FormLabel>}
+              label={<FormLabel required>{`${t("charging.energyAdded")} (kWh)`}</FormLabel>}
               value={chargingData.energyAdded}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -211,11 +222,13 @@ export default function AddChargingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
-              right={<TextInput.Affix text="kWh" />}
+              right={renderClearIcon(chargingData.energyAdded, () =>
+                setChargingData({ ...chargingData, energyAdded: "" })
+              )}
             />
 
             <TextInput
-              label={<FormLabel required>{t("charging.cost")}</FormLabel>}
+              label={<FormLabel required>{`${t("charging.cost")} (€)`}</FormLabel>}
               value={chargingData.cost}
               onChangeText={(text) => {
                 const formattedText = formatDecimal(text);
@@ -225,11 +238,13 @@ export default function AddChargingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
-              right={<TextInput.Affix text="€" />}
+              right={renderClearIcon(chargingData.cost, () =>
+                setChargingData({ ...chargingData, cost: "" })
+              )}
             />
 
             <TextInput
-              label={<FormLabel required>{t("charging.odometer")}</FormLabel>}
+              label={<FormLabel required>{`${t("charging.odometer")} (km)`}</FormLabel>}
               value={chargingData.odometer}
               onChangeText={(text) =>
                 setChargingData({ ...chargingData, odometer: text })
@@ -238,7 +253,9 @@ export default function AddChargingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
-              right={<TextInput.Affix text="km" />}
+              right={renderClearIcon(chargingData.odometer, () =>
+                setChargingData({ ...chargingData, odometer: "" })
+              )}
             />
 
             {/* Collapsible More Details Section */}
@@ -307,6 +324,12 @@ export default function AddChargingScreen({ route, navigation }) {
                   mode="outlined"
                   onFocus={() => setShowDatePicker(false)}
                   placeholder={t("charging.locationNamePlaceholder")}
+                  right={renderClearIcon(chargingData.chargingLocation.locationName, () =>
+                    setChargingData({
+                      ...chargingData,
+                      chargingLocation: { ...chargingData.chargingLocation, locationName: "" },
+                    })
+                  )}
                 />
               </View>
             </Animated.View>

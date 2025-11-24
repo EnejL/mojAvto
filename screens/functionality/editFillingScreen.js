@@ -42,6 +42,17 @@ export default function EditFillingScreen({ route, navigation }) {
     return date.toISOString().split("T")[0];
   };
 
+  const renderClearIcon = (value, onClear) => {
+    if (!value || value.length === 0) return null;
+    return (
+      <TextInput.Icon
+        icon="close"
+        onPress={onClear}
+        iconColor="#666"
+      />
+    );
+  };
+
   const [fillingData, setFillingData] = useState({
     date: parseDate(filling.date),
     liters: filling.liters.toString().replace(".", ","),
@@ -172,6 +183,9 @@ export default function EditFillingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
+              right={renderClearIcon(fillingData.liters, () =>
+                setFillingData({ ...fillingData, liters: "" })
+              )}
             />
 
             <TextInput
@@ -185,6 +199,9 @@ export default function EditFillingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
+              right={renderClearIcon(fillingData.cost, () =>
+                setFillingData({ ...fillingData, cost: "" })
+              )}
             />
 
             <TextInput
@@ -197,6 +214,9 @@ export default function EditFillingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
+              right={renderClearIcon(fillingData.odometer, () =>
+                setFillingData({ ...fillingData, odometer: "" })
+              )}
             />
           </Surface>
         </ScrollView>

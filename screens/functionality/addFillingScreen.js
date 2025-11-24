@@ -37,6 +37,17 @@ export default function AddFillingScreen({ route, navigation }) {
     return date.toISOString().split("T")[0];
   };
 
+  const renderClearIcon = (value, onClear) => {
+    if (!value || value.length === 0) return null;
+    return (
+      <TextInput.Icon
+        icon="close"
+        onPress={onClear}
+        iconColor="#666"
+      />
+    );
+  };
+
   const handleDateChange = (event, selectedDate) => {
     // Only update the date if a date was actually selected (user didn't cancel)
     if (selectedDate) {
@@ -145,6 +156,9 @@ export default function AddFillingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
+              right={renderClearIcon(fillingData.liters, () =>
+                setFillingData({ ...fillingData, liters: "" })
+              )}
             />
 
             <TextInput
@@ -158,6 +172,9 @@ export default function AddFillingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
+              right={renderClearIcon(fillingData.cost, () =>
+                setFillingData({ ...fillingData, cost: "" })
+              )}
             />
 
             <TextInput
@@ -170,6 +187,9 @@ export default function AddFillingScreen({ route, navigation }) {
               style={styles.input}
               mode="outlined"
               onFocus={() => setShowDatePicker(false)}
+              right={renderClearIcon(fillingData.odometer, () =>
+                setFillingData({ ...fillingData, odometer: "" })
+              )}
             />
 
             <View style={styles.buttonContainer}>
