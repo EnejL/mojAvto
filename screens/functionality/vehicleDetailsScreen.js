@@ -320,10 +320,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return maxDistance;
   }, [chargingSessions, shouldShowChargeButton]);
 
-  // Calculate average distance on single tank/charge (already calculated above as averageDistancePerFilling/Charging)
-  const averageDistanceSingleTank = averageDistancePerFilling;
-  const averageDistanceSingleCharge = averageDistancePerCharging;
-
   // Calculate average number of days between fillings/charging
   const averageDaysBetweenFillings = useMemo(() => {
     if (fillings.length < 2 || !shouldShowFuelButton()) return null;
@@ -938,23 +934,6 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       </Text>
                       <Text style={styles.primaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
                     </View>
-                    
-                    {/* Secondary metrics */}
-                    {/* <View style={styles.secondaryMetricsGrid}>
-                      <View style={styles.secondaryMetricItem}>
-                        <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(monthlyEstimate, 0)} €
-                        </Text>
-                        <Text style={styles.secondaryMetricLabel}>{t("vehicles.monthlyEstimate")}</Text>
-                      </View>
-                      
-                      <View style={styles.secondaryMetricItem}>
-                        <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(totalCombinedCost, 2)} €
-                        </Text>
-                        <Text style={styles.secondaryMetricLabel}>{t("vehicles.totalCost")}</Text>
-                      </View>
-                    </View> */}
                   </View>
                 </Surface>
               );
@@ -1268,6 +1247,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 renderItem={renderHistoryItem}
                 keyExtractor={(item) => `${item.type}-${item.id}`}
                 scrollEnabled={false}
+                contentContainerStyle={styles.flatListContent}
               />
             )}
           </Surface>
@@ -1288,6 +1268,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     renderItem={renderHistoryItem}
                     keyExtractor={(item) => item.id}
                     scrollEnabled={false}
+                    contentContainerStyle={styles.flatListContent}
                   />
                 )}
               </Surface>
@@ -1308,6 +1289,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     renderItem={renderHistoryItem}
                     keyExtractor={(item) => item.id}
                     scrollEnabled={false}
+                    contentContainerStyle={styles.flatListContent}
                   />
                 )}
               </Surface>
@@ -1534,6 +1516,9 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#fff",
   },
+  flatListContent: {
+    paddingHorizontal: 0,
+  },
   sectionTitleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1552,6 +1537,7 @@ const styles = StyleSheet.create({
   },
   fillingItem: {
     marginBottom: 12,
+    marginHorizontal: 4,
     padding: 16,
     borderRadius: 8,
     elevation: 1,
