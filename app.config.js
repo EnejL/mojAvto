@@ -56,6 +56,7 @@ export default {
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
       "expo-apple-authentication",
+      "expo-font",
       [
         "expo-build-properties",
         {
