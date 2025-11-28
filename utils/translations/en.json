@@ -74,7 +74,7 @@
     "add": "Fill-up +",
     "empty": "No fill-ups recorded",
     "delete": "Delete",
-    "consumption": "Average Fuel Consumption",
+    "consumption": "Average fuel consumption",
     "consumptionUnit": "l/100 km",
     "distanceSince": "Distance since last fill-up",
     "noVehiclesWarning": "You must add a vehicle first before recording fuel fill-ups.",

@@ -85,7 +85,7 @@
     "statistics": "Statistika vozila",
     "fuelConsumptionUnit": "l/100 km",
     "avgCost": "Povprečni strošek točenja",
-    "avgPricePerLiter": "Povprečna cena litra goriva",
+    "avgPricePerLiter": "Povprečna cena za liter",
     "avgLiters": "Povprečno točenje",
     "totalCost": "Skupni strošek dosedanjih točenj",
     "showConsumptionGraph": "Prikaži graf porabe",
