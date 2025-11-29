@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#666",
     textAlign: "center",
     lineHeight: 12,
