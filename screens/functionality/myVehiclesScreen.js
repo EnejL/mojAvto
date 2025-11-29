@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   statValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#2e7d32",
     marginBottom: 4,
