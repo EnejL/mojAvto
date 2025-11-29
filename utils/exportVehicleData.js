@@ -1,6 +1,13 @@
 // utils/exportVehicleData.js
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { getCurrentLanguage } from './i18n';
+
+// Month names in English
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 // Helper function to format dates consistently
 const formatDate = (date) => {
@@ -25,18 +32,35 @@ const formatDate = (date) => {
     }
   }
 
-  // Format as dd.mm.yyyy
-  return `${dateObj.getDate().toString().padStart(2, "0")}.${(
-    dateObj.getMonth() + 1
-  )
-    .toString()
-    .padStart(2, "0")}.${dateObj.getFullYear()}`;
+  const currentLanguage = getCurrentLanguage() || 'en';
+  
+  // Format based on language
+  if (currentLanguage === 'en') {
+    // English format: "29 November 2025"
+    const day = dateObj.getDate();
+    const month = monthNames[dateObj.getMonth()];
+    const year = dateObj.getFullYear();
+    return `${day} ${month} ${year}`;
+  } else {
+    // Slovenian format: "dd. mm. yyyy"
+    return `${dateObj.getDate().toString().padStart(2, "0")}. ${(
+      dateObj.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}. ${dateObj.getFullYear()}`;
+  }
 };
 
-// Helper function to format numbers consistently
+// Helper function to format numbers consistently (for HTML/display - uses comma as decimal separator)
 const formatNumber = (value, decimals = 1) => {
   if (value === null || value === undefined) return "0";
   return parseFloat(value).toFixed(decimals).replace(".", ",");
+};
+
+// Helper function to format numbers for CSV (uses period as decimal separator to avoid column splitting)
+const formatNumberForCSV = (value, decimals = 1) => {
+  if (value === null || value === undefined) return "0";
+  return parseFloat(value).toFixed(decimals);
 };
 
 // Helper function to format odometer readings
@@ -47,6 +71,7 @@ const formatOdometer = (value) => {
 
 // Generate CSV content for vehicle data
 const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
+  // Use formatNumberForCSV for all CSV exports to avoid comma decimal separator issues
   let csv = "";
   
   // Add UTF-8 BOM for Excel to properly recognize encoding
@@ -66,27 +91,27 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   csv += `${t("export.statistics")}\n`;
   
   if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
-    csv += `${t("fillings.consumption")},${formatNumber(stats.avgFuelConsumption)} l/100km\n`;
+    csv += `${t("fillings.consumption")},${formatNumberForCSV(stats.avgFuelConsumption)} l / 100km\n`;
   }
   
   if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
-    csv += `${t("charging.avgConsumption")},${formatNumber(stats.avgElectricityConsumption)} kWh/100km\n`;
+    csv += `${t("charging.avgConsumption")},${formatNumberForCSV(stats.avgElectricityConsumption)} kWh / 100km\n`;
   }
   
   if (stats.avgPricePerLiter !== null && stats.avgPricePerLiter !== undefined) {
-    csv += `${t("fillings.avgPricePerLiter")},${formatNumber(stats.avgPricePerLiter, 2)} €\n`;
+    csv += `${t("fillings.avgPricePerLiter")},${formatNumberForCSV(stats.avgPricePerLiter, 2)} €\n`;
   }
   
   if (stats.avgPricePerKWh !== null && stats.avgPricePerKWh !== undefined) {
-    csv += `${t("charging.avgPricePerKWh")},${formatNumber(stats.avgPricePerKWh, 2)} €\n`;
+    csv += `${t("charging.avgPricePerKWh")},${formatNumberForCSV(stats.avgPricePerKWh, 2)} €\n`;
   }
   
   if (stats.totalFuelCost !== null && stats.totalFuelCost !== undefined) {
-    csv += `${t("vehicles.totalFuelCost")},${formatNumber(stats.totalFuelCost, 2)} €\n`;
+    csv += `${t("vehicles.totalFuelCost")},${formatNumberForCSV(stats.totalFuelCost, 2)} €\n`;
   }
   
   if (stats.totalChargingCost !== null && stats.totalChargingCost !== undefined) {
-    csv += `${t("vehicles.totalChargingCost")},${formatNumber(stats.totalChargingCost, 2)} €\n`;
+    csv += `${t("vehicles.totalChargingCost")},${formatNumberForCSV(stats.totalChargingCost, 2)} €\n`;
   }
   
   csv += `\n`;
@@ -96,11 +121,11 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   
   // Fuel additional statistics
   if (stats.averageDistancePerFilling !== null && stats.averageDistancePerFilling !== undefined) {
-    csv += `${t("vehicles.avgDistancePerFilling")},${formatNumber(stats.averageDistancePerFilling)} km\n`;
+    csv += `${t("vehicles.avgDistancePerFilling")},${formatNumberForCSV(stats.averageDistancePerFilling)} km\n`;
   }
   
   if (stats.longestDistanceSingleTank !== null && stats.longestDistanceSingleTank !== undefined) {
-    csv += `${t("vehicles.longestDistanceSingleTank")},${formatNumber(stats.longestDistanceSingleTank)} km\n`;
+    csv += `${t("vehicles.longestDistanceSingleTank")},${formatNumberForCSV(stats.longestDistanceSingleTank)} km\n`;
   }
   
   if (stats.daysSinceLastFilling !== null && stats.daysSinceLastFilling !== undefined) {
@@ -108,11 +133,11 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageDaysBetweenFillings !== null && stats.averageDaysBetweenFillings !== undefined) {
-    csv += `${t("vehicles.avgDaysBetweenFillings")},${formatNumber(stats.averageDaysBetweenFillings, 1)}\n`;
+    csv += `${t("vehicles.avgDaysBetweenFillings")},${formatNumberForCSV(stats.averageDaysBetweenFillings, 1)}\n`;
   }
   
   if (stats.averageCostPerDayFuel !== null && stats.averageCostPerDayFuel !== undefined) {
-    csv += `${t("vehicles.avgCostPerDayFuel")},${formatNumber(stats.averageCostPerDayFuel, 2)} €\n`;
+    csv += `${t("vehicles.avgCostPerDayFuel")},${formatNumberForCSV(stats.averageCostPerDayFuel, 2)} €\n`;
   }
   
   if (stats.totalFuelDistance !== null && stats.totalFuelDistance !== undefined) {
@@ -120,16 +145,16 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageFuelCostPer100km !== null && stats.averageFuelCostPer100km !== undefined) {
-    csv += `${t("vehicles.avgCostPer100km")},${formatNumber(stats.averageFuelCostPer100km, 2)} €\n`;
+    csv += `${t("vehicles.avgCostPer100km")},${formatNumberForCSV(stats.averageFuelCostPer100km, 2)} €\n`;
   }
   
   // Charging additional statistics
   if (stats.averageDistancePerCharging !== null && stats.averageDistancePerCharging !== undefined) {
-    csv += `${t("vehicles.avgDistancePerCharging")},${formatNumber(stats.averageDistancePerCharging)} km\n`;
+    csv += `${t("vehicles.avgDistancePerCharging")},${formatNumberForCSV(stats.averageDistancePerCharging)} km\n`;
   }
   
   if (stats.longestDistanceSingleCharge !== null && stats.longestDistanceSingleCharge !== undefined) {
-    csv += `${t("vehicles.longestDistanceSingleCharge")},${formatNumber(stats.longestDistanceSingleCharge)} km\n`;
+    csv += `${t("vehicles.longestDistanceSingleCharge")},${formatNumberForCSV(stats.longestDistanceSingleCharge)} km\n`;
   }
   
   if (stats.daysSinceLastCharging !== null && stats.daysSinceLastCharging !== undefined) {
@@ -137,11 +162,11 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageDaysBetweenCharging !== null && stats.averageDaysBetweenCharging !== undefined) {
-    csv += `${t("vehicles.avgDaysBetweenCharging")},${formatNumber(stats.averageDaysBetweenCharging, 1)}\n`;
+    csv += `${t("vehicles.avgDaysBetweenCharging")},${formatNumberForCSV(stats.averageDaysBetweenCharging, 1)}\n`;
   }
   
   if (stats.averageCostPerDayCharging !== null && stats.averageCostPerDayCharging !== undefined) {
-    csv += `${t("vehicles.avgCostPerDayCharging")},${formatNumber(stats.averageCostPerDayCharging, 2)} €\n`;
+    csv += `${t("vehicles.avgCostPerDayCharging")},${formatNumberForCSV(stats.averageCostPerDayCharging, 2)} €\n`;
   }
   
   if (stats.totalElectricityDistance !== null && stats.totalElectricityDistance !== undefined) {
@@ -149,7 +174,7 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageElectricityCostPer100km !== null && stats.averageElectricityCostPer100km !== undefined) {
-    csv += `${t("vehicles.avgCostPer100km")},${formatNumber(stats.averageElectricityCostPer100km, 2)} €\n`;
+    csv += `${t("vehicles.avgCostPer100km")},${formatNumberForCSV(stats.averageElectricityCostPer100km, 2)} €\n`;
   }
   
   csv += `\n`;
@@ -157,7 +182,7 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   // Fillings Section (if available)
   if (fillings && fillings.length > 0) {
     csv += `${t("fillings.nav")}\n`;
-    csv += `${t("common.date")},${t("fillings.odometer")},${t("fillings.liters")},${t("fillings.cost")},${t("fillings.pricePerLiter")},${t("fillings.fuelType")}\n`;
+    csv += `${t("common.date")},${t("fillings.odometer")},${t("fillings.liters")},${t("fillings.cost")},${t("fillings.pricePerLiter")}\n`;
     
     const sortedFillings = [...fillings].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
@@ -167,7 +192,7 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
 
     sortedFillings.forEach((filling) => {
       const pricePerLiter = filling.liters > 0 ? filling.cost / filling.liters : 0;
-      csv += `${formatDate(filling.date)},${formatOdometer(filling.odometer)},${formatNumber(filling.liters, 2)},${formatNumber(filling.cost, 2)},${formatNumber(pricePerLiter, 3)},${filling.fuelType || "-"}\n`;
+      csv += `${formatDate(filling.date)},${formatOdometer(filling.odometer)},${formatNumberForCSV(filling.liters, 2)},${formatNumberForCSV(filling.cost, 2)},${formatNumberForCSV(pricePerLiter, 3)}\n`;
     });
     
     csv += `\n`;
@@ -176,7 +201,7 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   // Charging Sessions Section (if available)
   if (chargingSessions && chargingSessions.length > 0) {
     csv += `${t("charging.nav")}\n`;
-    csv += `${t("common.date")},${t("fillings.odometer")},${t("charging.energyAdded")},${t("fillings.cost")},${t("charging.pricePerKWh")},${t("charging.chargingType")}\n`;
+    csv += `${t("common.date")},${t("fillings.odometer")},${t("charging.energyAdded")},${t("fillings.cost")},${t("charging.pricePerKWh")}\n`;
     
     const sortedSessions = [...chargingSessions].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
@@ -186,7 +211,7 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
 
     sortedSessions.forEach((session) => {
       const pricePerKWh = session.energyAdded > 0 ? session.cost / session.energyAdded : 0;
-      csv += `${formatDate(session.date)},${formatOdometer(session.odometer)},${formatNumber(session.energyAdded, 2)},${formatNumber(session.cost, 2)},${formatNumber(pricePerKWh, 3)},${session.chargingType || "-"}\n`;
+      csv += `${formatDate(session.date)},${formatOdometer(session.odometer)},${formatNumberForCSV(session.energyAdded, 2)},${formatNumberForCSV(session.cost, 2)},${formatNumberForCSV(pricePerKWh, 3)}\n`;
     });
     
     csv += `\n`;
@@ -232,7 +257,7 @@ export const exportToCSV = async (vehicle, fillings, chargingSessions, stats, t)
 };
 
 // Helper function to calculate consumption data points for graph
-const calculateConsumptionData = (fillings, chargingSessions, vehicleType) => {
+const calculateConsumptionData = (fillings, chargingSessions) => {
   const dataPoints = [];
   
   // Combine and sort all entries by odometer
@@ -302,7 +327,7 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
   const vehicleType = vehicle.vehicleType || 'ICE';
   
   // Calculate consumption data for graph
-  const consumptionData = calculateConsumptionData(fillings, chargingSessions, vehicleType);
+  const consumptionData = calculateConsumptionData(fillings, chargingSessions);
   
   let html = `
 <!DOCTYPE html>
@@ -571,13 +596,13 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
     <div class="stats-grid">
       ${stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.avgFuelConsumption)} l/100km</div>
+        <div class="stat-value">${formatNumber(stats.avgFuelConsumption)} l / 100km</div>
         <div class="stat-label">${t("fillings.consumption")}</div>
       </div>
       ` : ''}
       ${stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.avgElectricityConsumption)} kWh/100km</div>
+        <div class="stat-value">${formatNumber(stats.avgElectricityConsumption)} kWh / 100km</div>
         <div class="stat-label">${t("charging.avgConsumption")}</div>
       </div>
       ` : ''}
@@ -718,13 +743,13 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
         ${vehicleType === 'PHEV' || vehicleType === 'ICE' || vehicleType === 'HYBRID' ? `
         <div class="chart-legend-item">
           <div class="chart-legend-color chart-legend-color-fuel"></div>
-          <span class="chart-legend-label">${t("vehicles.fuelConsumption")} (l/100km)</span>
+          <span class="chart-legend-label">${t("vehicles.fuelConsumption")} (l / 100km)</span>
         </div>
         ` : ''}
         ${vehicleType === 'PHEV' || vehicleType === 'BEV' ? `
         <div class="chart-legend-item">
           <div class="chart-legend-color chart-legend-color-electricity"></div>
-          <span class="chart-legend-label">${t("vehicles.electricConsumption")} (kWh/100km)</span>
+          <span class="chart-legend-label">${t("vehicles.electricConsumption")} (kWh / 100km)</span>
         </div>
         ` : ''}
       </div>
@@ -842,7 +867,6 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
           <th>${t("fillings.liters")}</th>
           <th>${t("fillings.cost")}</th>
           <th>${t("fillings.pricePerLiter")}</th>
-          <th>${t("fillings.fuelType")}</th>
         </tr>
       </thead>
       <tbody>
@@ -857,7 +881,6 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
           <td>${formatNumber(filling.liters, 2)} L</td>
           <td>${formatNumber(filling.cost, 2)} €</td>
           <td>${formatNumber(pricePerLiter, 3)} €</td>
-          <td>${filling.fuelType || "-"}</td>
         </tr>
 `;
     });
@@ -888,7 +911,6 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
           <th>${t("charging.energyAdded")}</th>
           <th>${t("fillings.cost")}</th>
           <th>${t("charging.pricePerKWh")}</th>
-          <th>${t("charging.chargingType")}</th>
         </tr>
       </thead>
       <tbody>
@@ -903,7 +925,6 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
           <td>${formatNumber(session.energyAdded, 2)} kWh</td>
           <td>${formatNumber(session.cost, 2)} €</td>
           <td>${formatNumber(pricePerKWh, 3)} €</td>
-          <td>${session.chargingType || "-"}</td>
         </tr>
 `;
     });
