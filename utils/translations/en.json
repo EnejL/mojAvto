@@ -46,7 +46,7 @@
       "BEV": "Electric Vehicle"
     },
     "additionalStatistics": "Additional statistics",
-    "totalDistance": "Total distance (from first entry)",
+    "totalDistance": "Total distance travelled (from first entry)",
     "avgDistancePerFilling": "Avg. distance per filling",
     "avgDistancePerCharging": "Avg. distance per charging",
     "daysSinceLastFilling": "Days since last filling",
@@ -87,6 +87,7 @@
     "fuelConsumptionUnit": "l/100 km",
     "avgCost": "Average fill-up cost",
     "avgPricePerLiter": "Average price per liter",
+    "pricePerLiter": "Price per liter",
     "avgLiters": "Average Fill-up",
     "totalCost": "Total cost of fill-ups",
     "showConsumptionGraph": "Show consumption graph",
@@ -114,6 +115,7 @@
     "avgConsumption": "Avg. electricity consumption",
     "electricityConsumptionUnit": "kWh/100 km",
     "avgPricePerKWh": "Average price per kWh",
+    "pricePerKWh": "Price per kWh",
     "avgCost": "Average charging cost",
     "totalCost": "Total cost of charging sessions",
     "deleteConfirmMessage": "Are you sure you want to delete this charging session?",
@@ -275,7 +277,7 @@
   "export": {
     "title": "Export Data",
     "exportToCSV": "Export to Excel (CSV)",
-    "exportToPDF": "Export to PDF (HTML)",
+    "exportToPDF": "Export to PDF",
     "vehicleInfo": "Vehicle Information",
     "statistics": "Statistics",
     "vehicleReport": "Vehicle Report",
