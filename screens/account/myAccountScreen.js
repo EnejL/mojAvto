@@ -169,6 +169,16 @@ export default function MyAccountScreen() {
 
           <Surface style={styles.section}>
             <List.Section title={t("settings.language")}>
+            <List.Item
+                title={t("settings.languageEn")}
+                right={(props) =>
+                  getCurrentLanguage() === "en" ? (
+                    <List.Icon {...props} icon="check" color="#4CAF50" />
+                  ) : null
+                }
+                onPress={() => handleLanguageChange("en")}
+              />
+              <Divider />
               <List.Item
                 title={t("settings.languageSl")}
                 right={(props) =>
@@ -177,16 +187,6 @@ export default function MyAccountScreen() {
                   ) : null
                 }
                 onPress={() => handleLanguageChange("sl")}
-              />
-              <Divider />
-              <List.Item
-                title={t("settings.languageEn")}
-                right={(props) =>
-                  getCurrentLanguage() === "en" ? (
-                    <List.Icon {...props} icon="check" color="#4CAF50" />
-                  ) : null
-                }
-                onPress={() => handleLanguageChange("en")}
               />
             </List.Section>
           </Surface>
