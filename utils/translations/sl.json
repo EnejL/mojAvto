@@ -85,7 +85,8 @@
     "statistics": "Statistika vozila",
     "fuelConsumptionUnit": "l/100 km",
     "avgCost": "Povprečni strošek točenja",
-    "avgPricePerLiter": "Povprečna cena litra goriva",
+    "avgPricePerLiter": "Povprečna cena za liter",
+    "pricePerLiter": "Cena za liter",
     "avgLiters": "Povprečno točenje",
     "totalCost": "Skupni strošek dosedanjih točenj",
     "showConsumptionGraph": "Prikaži graf porabe",
@@ -113,7 +114,8 @@
     "avgConsumption": "Povp. poraba el. energije",
     "electricityConsumptionUnit": "kWh/100 km",
     "avgPricePerKWh": "Povprečna cena kWh",
-    "avgCost": "Povprečni strošek polnjenja",
+    "pricePerKWh": "Cena za kWh",
+    "avgCost": "Povprečen strošek polnjenja",
     "totalCost": "Skupni strošek dosedanjih poljenj",
     "deleteConfirmMessage": "Ste prepričani, da želite izbrisati to polnjenje?",
     "consumptionUnit": "kWh/100 km",
@@ -243,7 +245,7 @@
       },
       {
         "question": "Kako izbrišem svoj račun?",
-        "answer": "Svoj račun lahko izbrišete neposredno iz aplikacije. Pojdite na zavihek Račun in se pomaknite navzdol, da najdete možnost 'Izbriši račun'. To bo trajno izbrisalo vse vaše podatke in tega ni mogoče razveljaviti."
+        "answer": "Svoj račun lahko izbrišete neposredno iz aplikacije. Pojdite na zavihek Račun in se pomaknite vse do dna. Ko dosežete dno, nadaljujte z vlečenjem navzgor, da se prikaže gumb 'Izbriši račun'. Ta gumb je namerno skrit, da preprečimo nenamerno brisanje. Če tapnete kjer koli drugje na zaslonu, se gumb ponovno skrije. To bo trajno izbrisalo vse vaše podatke in tega ni mogoče razveljaviti."
       },
       {
         "question": "Kako deluje izračun porabe goriva?",
@@ -274,9 +276,9 @@
   "export": {
     "title": "Izvoz Podatkov",
     "exportToCSV": "Izvozi v Excel (CSV)",
-    "exportToPDF": "Izvozi v PDF (HTML)",
+    "exportToPDF": "Izvozi v PDF",
     "vehicleInfo": "Podatki o vozilu",
-    "statistics": "Statistika",
+    "statistics": "Osnovna statistika",
     "vehicleReport": "Poročilo o vozilu",
     "generatedOn": "Generirano",
     "shareTitle": "Izvoz podatkov o vozilu",
@@ -288,7 +290,7 @@
   },
   "termsOfUse": {
     "title": "Pogoji uporabe",
-    "lastUpdated": "Nazadnje posodobljeno: 24. Avgust 2025",
+    "lastUpdated": "Nazadnje posodobljeno: 28. November 2025",
     "sections": [
       {
         "title": "1. Opis storitve",
@@ -303,7 +305,7 @@
       },
       {
         "title": "3. Omejitev odgovornosti",
-        "content": "Razvijalec ne jamči za popolno točnost prikazanih podatkov (cene goriva, lokacije, delovni časi).\nRazvijalec ne odgovarja za morebitno škodo, nastalo zaradi uporabe aplikacije."
+        "content": "Razvijalec ne odgovarja za morebitno škodo, nastalo zaradi uporabe aplikacije."
       },
       {
         "title": "4. Pravice razvijalca",
@@ -319,13 +321,13 @@
       },
       {
         "title": "7. Starostne omejitve",
-        "content": "Aplikacija je namenjena uporabnikom starejšim od 18 let."
+        "content": "Aplikacija je namenjena uporabnikom starejšim od 16 let."
       }
     ]
   },
   "privacyPolicy": {
     "title": "Politika zasebnosti",
-    "lastUpdated": "Nazadnje posodobljeno: 24. Avgust 2025",
+    "lastUpdated": "Nazadnje posodobljeno: 28. November 2025",
     "sections": [
       {
         "title": "1. Splošne informacije",
@@ -342,7 +344,6 @@
           "Ime in priimek",
           "E-naslov",
           "Podatke o vozilu (znamka, model, registrska številka)",
-          "Lokacijo (za iskanje bencinskih servisov)",
           "Podatke o polnjenju goriva",
           "Podatke o polnjenju elektrike"
         ],
@@ -362,7 +363,6 @@
           {
             "title": "Vaše pravice:",
             "bulletPoints": [
-              "Pravica do dostopa do podatkov",
               "Pravica do izbrisa podatkov (\"pravica do pozabe\")"
             ],
             "content": "Za uveljavljanje pravic nas kontaktirajte na zgoraj navedeni e-naslov."
@@ -379,11 +379,11 @@
       },
       {
         "title": "6. Starostna omejitev",
-        "content": "Aplikacijo lahko uporabljajo samo osebe, stare 18 let ali več."
+        "content": "Aplikacijo lahko uporabljajo samo osebe, stare 16 let ali več."
       },
       {
         "title": "7. Blagovne znamke",
-        "content": "Vse blagovne znamke in logotipi (znamke vozil, logotipi bencinskih servisov ipd.) so last njihovih zakonitih imetnikov."
+        "content": "Vse blagovne znamke in logotipi (znamke vozil, logotipi ipd.) so last njihovih zakonitih imetnikov."
       }
     ]
   }

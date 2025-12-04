@@ -13,7 +13,7 @@ export default {
       "bundleIdentifier": "com.enejlicina.drivetrackpro",
       "deploymentTarget": "15.1",
       "associatedDomains": ["applinks:verify.enejlicina.com"],
-      "buildNumber": "21",
+      "buildNumber": "22",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -56,6 +56,7 @@ export default {
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
       "expo-apple-authentication",
+      "expo-font",
       [
         "expo-build-properties",
         {

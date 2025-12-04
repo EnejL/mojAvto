@@ -1,6 +1,20 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Alert } from "react-native";
-import { Text, Button, Surface, Avatar, List, Divider, ActivityIndicator } from "react-native-paper";
+import React, { useState, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  Animated,
+  TouchableWithoutFeedback,
+} from "react-native";
+import {
+  Text,
+  Button,
+  Surface,
+  Avatar,
+  List,
+  Divider,
+} from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { signOut, getCurrentUser, deleteAccount } from "../../utils/auth";
 import { useNavigation } from "@react-navigation/native";
@@ -11,6 +25,20 @@ export default function MyAccountScreen() {
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+  const deleteButtonAnim = useRef(new Animated.Value(100)).current; // Start translated down (hidden)
+
+  const hideDeleteButton = () => {
+    if (isDeleteVisible) {
+      setIsDeleteVisible(false);
+      Animated.timing(deleteButtonAnim, {
+        toValue: 100,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -51,141 +79,179 @@ export default function MyAccountScreen() {
   };
 
   const confirmDeleteAccount = () => {
-    Alert.alert(
-      t("auth.deleteAccount"),
-      t("auth.deleteAccountWarning"),
-      [
-        {
-          text: t("common.cancel"),
-          style: "cancel",
-        },
-        {
-          text: t("auth.deleteAccount"),
-          style: "destructive",
-          onPress: performDeleteAccount,
-        },
-      ]
-    );
+    Alert.alert(t("auth.deleteAccount"), t("auth.deleteAccountWarning"), [
+      {
+        text: t("common.cancel"),
+        style: "cancel",
+      },
+      {
+        text: t("auth.deleteAccount"),
+        style: "destructive",
+        onPress: performDeleteAccount,
+      },
+    ]);
   };
 
   const performDeleteAccount = async () => {
     setIsDeleting(true);
     try {
       await deleteAccount();
-      Alert.alert(
-        t("common.ok"),
-        t("auth.deleteAccountSuccess"),
-        [{ text: t("common.ok") }]
-      );
+      Alert.alert(t("common.ok"), t("auth.deleteAccountSuccess"), [
+        { text: t("common.ok") },
+      ]);
       // Navigation will be handled by the auth state listener in App.js
     } catch (error) {
-      Alert.alert(
-        t("common.error.delete"),
-        t("auth.deleteAccountError"),
-        [{ text: t("common.ok") }]
-      );
+      Alert.alert(t("common.error.delete"), t("auth.deleteAccountError"), [
+        { text: t("common.ok") },
+      ]);
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const handleScroll = (event) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const overscroll = contentOffset.y - (contentSize.height - layoutMeasurement.height);
+    const overscrollThreshold = 80;
+
+    if (overscroll > overscrollThreshold && !isDeleteVisible) {
+      setIsDeleteVisible(true);
+      Animated.timing(deleteButtonAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else if (overscroll < 0 && isDeleteVisible) {
+      // Hide if user scrolls back up from the bottom
+      setIsDeleteVisible(false);
+      Animated.timing(deleteButtonAnim, {
+        toValue: 100,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
 
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <Surface style={styles.headerCard}>
-          {currentUser?.photoURL ? (
-            <Avatar.Image
-              size={80}
-              source={{ uri: currentUser.photoURL }}
-              style={styles.avatar}
-            />
-          ) : (
-            <Avatar.Icon
-              size={80}
-              icon="account"
-              style={styles.avatar}
-              color="#fff"
-            />
-          )}
-          <Text style={styles.greeting}>
-            {currentUser?.isAnonymous 
-              ? t("auth.greetingAnonymous")
-              : t("auth.greeting", {
-                  name: currentUser?.displayName || currentUser?.email,
-                })
-            }
-          </Text>
-        </Surface>
+    <TouchableWithoutFeedback onPress={hideDeleteButton}>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          bounces={true}
+        >
+          <Surface style={styles.headerCard}>
+            {currentUser?.photoURL ? (
+              <Avatar.Image
+                size={80}
+                source={{ uri: currentUser.photoURL }}
+                style={styles.avatar}
+              />
+            ) : (
+              <Avatar.Icon
+                size={80}
+                icon="account"
+                style={styles.avatar}
+                color="#fff"
+              />
+            )}
+            <Text style={styles.greeting}>
+              {currentUser?.isAnonymous
+                ? t("auth.greetingAnonymous")
+                : t("auth.greeting", {
+                    name: currentUser?.displayName || currentUser?.email,
+                  })}
+            </Text>
+          </Surface>
 
-        <Surface style={styles.section}>
-          <List.Section title={t("settings.language")}>
+          <Surface style={styles.section}>
+            <List.Section title={t("settings.language")}>
+              <List.Item
+                title={t("settings.languageSl")}
+                right={(props) =>
+                  getCurrentLanguage() === "sl" ? (
+                    <List.Icon {...props} icon="check" color="#4CAF50" />
+                  ) : null
+                }
+                onPress={() => handleLanguageChange("sl")}
+              />
+              <Divider />
+              <List.Item
+                title={t("settings.languageEn")}
+                right={(props) =>
+                  getCurrentLanguage() === "en" ? (
+                    <List.Icon {...props} icon="check" color="#4CAF50" />
+                  ) : null
+                }
+                onPress={() => handleLanguageChange("en")}
+              />
+            </List.Section>
+          </Surface>
+
+          <Surface style={styles.section}>
             <List.Item
-              title={t("settings.languageSl")}
-              right={props => getCurrentLanguage() === 'sl' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
-              onPress={() => handleLanguageChange('sl')}
+              title={t("common.privacyPolicy")}
+              left={(props) => <List.Icon {...props} icon="shield-account" />}
+              onPress={() => navigation.navigate("PrivacyPolicy")}
             />
             <Divider />
             <List.Item
-              title={t("settings.languageEn")}
-              right={props => getCurrentLanguage() === 'en' ? <List.Icon {...props} icon="check" color="#4CAF50" /> : null}
-              onPress={() => handleLanguageChange('en')}
+              title={t("common.terms")}
+              left={(props) => <List.Icon {...props} icon="file-document" />}
+              onPress={() => navigation.navigate("TermsOfUse")}
             />
-          </List.Section>
-        </Surface>
-
-        <Surface style={styles.section}>
-          <List.Item
-            title={t("common.privacyPolicy")}
-            left={props => <List.Icon {...props} icon="shield-account" />}
-            onPress={() => navigation.navigate("PrivacyPolicy")}
-          />
-          <Divider />
-          <List.Item
-            title={t("common.terms")}
-            left={props => <List.Icon {...props} icon="file-document" />}
-            onPress={() => navigation.navigate("TermsOfUse")}
-          />
-          <Divider />
-          <List.Item
-            title={t("common.faq")}
-            left={props => <List.Icon {...props} icon="frequently-asked-questions" />}
-            onPress={() => navigation.navigate("FrequentlyAskedQuestions")}
-          />
-          <Divider />
-          <List.Item
-            title={t("common.version")}
-            description="2.0.0"
-            left={props => <List.Icon {...props} icon="information" />}
-          />
-        </Surface>
-
-        {/* Account Deletion Section - Only show for authenticated users */}
-        {currentUser && !currentUser.isAnonymous && (
-          <Surface style={styles.dangerSection}>
+            <Divider />
             <List.Item
-              title={t("auth.deleteAccount")}
-              left={props => <List.Icon {...props} icon="delete-forever" color="#f44336" />}
-              onPress={handleDeleteAccount}
-              disabled={isDeleting}
-              right={props => isDeleting ? <ActivityIndicator {...props} size="small" color="#f44336" /> : null}
+              title={t("common.faq")}
+              left={(props) => (
+                <List.Icon {...props} icon="frequently-asked-questions" />
+              )}
+              onPress={() => navigation.navigate("FrequentlyAskedQuestions")}
+            />
+            <Divider />
+            <List.Item
+              title={t("common.version")}
+              description="2.1.0"
+              left={(props) => <List.Icon {...props} icon="information" />}
             />
           </Surface>
-        )}
-      </ScrollView>
+        </ScrollView>
 
-      <View style={styles.bottomContainer}>
-        <Button
-          mode="contained"
-          onPress={handleSignOut}
-          style={styles.signOutButton}
-          labelStyle={styles.buttonLabel}
-        >
-          {t("auth.signOut")}
-        </Button>
+        {currentUser && !currentUser.isAnonymous && (
+          <Animated.View
+            style={[
+              styles.deleteButtonContainer,
+              { transform: [{ translateY: deleteButtonAnim }] },
+            ]}
+          >
+            <Button
+              mode="contained"
+              onPress={handleDeleteAccount}
+              style={styles.deleteButton}
+              labelStyle={styles.buttonLabel}
+              disabled={isDeleting}
+              icon="delete-forever"
+            >
+              {isDeleting ? t("common.loading") : t("auth.deleteAccount")}
+            </Button>
+          </Animated.View>
+        )}
+
+        <View style={styles.bottomContainer}>
+          <Button
+            mode="contained"
+            onPress={handleSignOut}
+            style={styles.signOutButton}
+            labelStyle={styles.buttonLabel}
+          >
+            {t("auth.signOut")}
+          </Button>
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -196,6 +262,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   headerCard: {
     margin: 16,
@@ -217,24 +286,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     elevation: 2,
   },
-  dangerSection: {
-    margin: 16,
-    borderRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#ffebee",
-  },
   bottomContainer: {
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#f5f5f5",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
   },
   signOutButton: {
     backgroundColor: "#f44336",
+    paddingVertical: 6,
+  },
+  deleteButton: {
+    backgroundColor: "#B00020",
+    paddingVertical: 3,
   },
   buttonLabel: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#fff",
+  },
+  deleteButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    paddingBottom: 110,
   },
 });

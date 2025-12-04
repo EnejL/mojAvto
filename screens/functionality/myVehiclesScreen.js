@@ -263,13 +263,13 @@ export default function MyVehiclesScreen({ navigation, route }) {
       // PHEV: show fuel consumption and electricity consumption
       if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
         statCards.push({
-          value: `${formatNumber(stats.avgFuelConsumption)} l/100km`,
+          value: `${formatNumber(stats.avgFuelConsumption)} l / 100 km`,
           label: t("fillings.consumption"),
         });
       }
       if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
         statCards.push({
-          value: `${formatNumber(stats.avgElectricityConsumption)} kWh/100km`,
+          value: `${formatNumber(stats.avgElectricityConsumption)} kWh / 100 km`,
           label: t("charging.avgConsumption"),
         });
       }
@@ -277,7 +277,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
       // BEV: show electricity consumption and average price per kWh
       if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
         statCards.push({
-          value: `${formatNumber(stats.avgElectricityConsumption)} kWh/100km`,
+          value: `${formatNumber(stats.avgElectricityConsumption)} kWh / 100 km`,
           label: t("charging.avgConsumption"),
         });
       }
@@ -291,7 +291,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
       // ICE/HYBRID: show fuel consumption and average price per liter
       if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
         statCards.push({
-          value: `${formatNumber(stats.avgFuelConsumption)} l/100km`,
+          value: `${formatNumber(stats.avgFuelConsumption)} l / 100 km`,
           label: t("fillings.consumption"),
         });
       }
@@ -305,12 +305,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
     
     // Limit to max 2 stats
     const displayStats = statCards.slice(0, 2);
-
-    const closeSwipeable = () => {
-      if (swipeableRefs.current[item.id]) {
-        swipeableRefs.current[item.id].close();
-      }
-    };
 
     return (
       <Swipeable 
@@ -499,9 +493,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "17.5%",
-    height: "90%",
+    height: "85%",
     borderRadius: 8,
-    marginVertical: 8,
+    marginVertical: "auto",
     marginLeft: 8,
   },
   addActionsContainer: {
@@ -606,22 +600,24 @@ const styles = StyleSheet.create({
     width: "48%",
     alignItems: "center",
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     backgroundColor: "#f8f9fa",
     borderRadius: 8,
+    display: "flex",
+    justifyContent: "flex-start",
   },
   statValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#2e7d32",
     marginBottom: 4,
     textAlign: "center",
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#666",
     textAlign: "center",
-    lineHeight: 14,
+    lineHeight: 12,
   },
   noDataContainer: {
     marginTop: 12,

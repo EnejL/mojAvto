@@ -166,6 +166,18 @@ const AddVehicleScreen = ({ navigation }) => {
   const shouldShowFuelTankSize = () => ['ICE', 'HYBRID', 'PHEV'].includes(vehicleData.vehicleType);
   const shouldShowBatteryCapacity = () => ['BEV', 'PHEV'].includes(vehicleData.vehicleType);
 
+  // Helper function to render clear icon
+  const renderClearIcon = (value, onClear) => {
+    if (!value || value.trim() === '') return null;
+    return (
+      <TextInput.Icon 
+        icon="close" 
+        onPress={onClear}
+        iconColor="#666"
+      />
+    );
+  };
+
   const renderDropdown = (data, onSelect) => (
     <Surface style={styles.dropdownSurface}>
       <ScrollView keyboardShouldPersistTaps="handled">
@@ -198,6 +210,7 @@ const AddVehicleScreen = ({ navigation }) => {
             style={styles.input}
             disabled={saving}
             mode="outlined"
+            right={renderClearIcon(vehicleData.name, () => setVehicleData({ ...vehicleData, name: "" }))}
           />
         </View>
 
@@ -212,7 +225,16 @@ const AddVehicleScreen = ({ navigation }) => {
             style={styles.input}
             disabled={saving || loadingBrands}
             mode="outlined"
-            right={loadingBrands && <TextInput.Icon icon="loading" />}
+            right={
+              loadingBrands 
+                ? <TextInput.Icon icon="loading" />
+                : renderClearIcon(make, () => {
+                    setMake("");
+                    setModel("");
+                    setFilteredBrands([]);
+                    setMakeDropdownVisible(false);
+                  })
+            }
           />
           {isMakeDropdownVisible && filteredBrands.length > 0 && renderDropdown(filteredBrands, handleSelectMake)}
         </View>
@@ -242,6 +264,7 @@ const AddVehicleScreen = ({ navigation }) => {
             style={styles.input}
             disabled={saving}
             mode="outlined"
+            right={renderClearIcon(vehicleData.numberPlate, () => setVehicleData({ ...vehicleData, numberPlate: "" }))}
           />
         </View>
 
@@ -275,6 +298,7 @@ const AddVehicleScreen = ({ navigation }) => {
               mode="outlined"
               keyboardType="numeric"
               placeholder="e.g. 60"
+              right={renderClearIcon(vehicleData.fuelTankSize, () => setVehicleData({ ...vehicleData, fuelTankSize: "" }))}
             />
           </View>
         )}
@@ -290,6 +314,7 @@ const AddVehicleScreen = ({ navigation }) => {
               mode="outlined"
               keyboardType="numeric"
               placeholder="e.g. 75"
+              right={renderClearIcon(vehicleData.batteryCapacity, () => setVehicleData({ ...vehicleData, batteryCapacity: "" }))}
             />
           </View>
         )}
