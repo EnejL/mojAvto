@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -14,20 +14,57 @@ import {
   Avatar,
   List,
   Divider,
+  ActivityIndicator,
 } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { signOut, getCurrentUser, deleteAccount } from "../../utils/auth";
 import { useNavigation } from "@react-navigation/native";
 import i18n, { saveLanguage, getCurrentLanguage } from "../../utils/i18n";
+import {
+  defaultUserProfile,
+  getUserProfile,
+  updateUserProfile,
+} from "../../utils/userProfile";
 
 export default function MyAccountScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [savingField, setSavingField] = useState(null);
+  const [settings, setSettings] = useState(defaultUserProfile);
 
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
   const deleteButtonAnim = useRef(new Animated.Value(100)).current; // Start translated down (hidden)
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!currentUser || currentUser.isAnonymous) {
+        setSettings(defaultUserProfile);
+        setSettingsLoading(false);
+        return;
+      }
+
+      try {
+        const profile = await getUserProfile();
+        setSettings(profile);
+
+        // Align language with stored preference
+        if (profile.language && profile.language !== getCurrentLanguage()) {
+          i18n.changeLanguage(profile.language);
+          await saveLanguage(profile.language);
+        }
+      } catch (error) {
+        setSettings(defaultUserProfile);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [currentUser]);
 
   const hideDeleteButton = () => {
     if (isDeleteVisible) {
@@ -49,15 +86,45 @@ export default function MyAccountScreen() {
     }
   };
 
+  const persistSetting = async (field, value) => {
+    // Optimistically update local state to keep UI responsive
+    setSettings((prev) => ({ ...prev, [field]: value }));
+
+    // If user is anonymous or missing, skip remote writes
+    if (!currentUser || currentUser.isAnonymous) {
+      return;
+    }
+
+    try {
+      setSavingField(field);
+      const merged = await updateUserProfile({ [field]: value }, settings);
+      setSettings(merged);
+    } catch (error) {
+      // If save fails, revert to previous state by reloading defaults + last known
+      setSettings((prev) => ({ ...defaultUserProfile, ...prev }));
+    } finally {
+      setSavingField(null);
+    }
+  };
+
   const handleLanguageChange = async (languageCode) => {
     try {
       // Change the language immediately
       i18n.changeLanguage(languageCode);
       // Save the language preference to persistent storage
       await saveLanguage(languageCode);
+      await persistSetting("language", languageCode);
     } catch (error) {
       // Error handled silently - language change may still work
     }
+  };
+
+  const handleUnitChange = async (unitSystem) => {
+    await persistSetting("unitSystem", unitSystem);
+  };
+
+  const handleCurrencyChange = async (currency) => {
+    await persistSetting("currency", currency);
   };
 
   const handleDeleteAccount = () => {
@@ -139,6 +206,7 @@ export default function MyAccountScreen() {
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
+          nestedScrollEnabled
           onScroll={handleScroll}
           scrollEventThrottle={16}
           bounces={true}
@@ -167,28 +235,98 @@ export default function MyAccountScreen() {
             </Text>
           </Surface>
 
-          <Surface style={styles.section}>
-            <List.Section title={t("settings.language")}>
-            <List.Item
-                title={t("settings.languageEn")}
-                right={(props) =>
-                  getCurrentLanguage() === "en" ? (
-                    <List.Icon {...props} icon="check" color="#4CAF50" />
-                  ) : null
-                }
-                onPress={() => handleLanguageChange("en")}
-              />
-              <Divider />
-              <List.Item
-                title={t("settings.languageSl")}
-                right={(props) =>
-                  getCurrentLanguage() === "sl" ? (
-                    <List.Icon {...props} icon="check" color="#4CAF50" />
-                  ) : null
-                }
-                onPress={() => handleLanguageChange("sl")}
-              />
-            </List.Section>
+          <Surface style={[styles.section, styles.accordionSurface]}>
+            <List.Accordion
+              title={t("settings.preferences")}
+              description={t("settings.preferencesDescription")}
+              left={(props) => <List.Icon {...props} icon="cog" />}
+              expanded={settingsExpanded}
+              onPress={() => setSettingsExpanded((prev) => !prev)}
+              style={styles.accordionHeader}
+            >
+              {settingsLoading ? (
+                <View style={styles.accordionLoading}>
+                  <ActivityIndicator />
+                </View>
+              ) : (
+                <View style={styles.accordionContent}>
+                  <List.Subheader>{t("settings.language")}</List.Subheader>
+                    <List.Item
+                      title={t("settings.languageEn")}
+                      right={(props) =>
+                        settings.language === "en" ? (
+                          <List.Icon {...props} icon="check" color="#4CAF50" />
+                        ) : null
+                      }
+                      onPress={() => handleLanguageChange("en")}
+                      disabled={savingField === "language"}
+                    />
+                    <Divider />
+                    <List.Item
+                      title={t("settings.languageSl")}
+                      right={(props) =>
+                        settings.language === "sl" ? (
+                          <List.Icon {...props} icon="check" color="#4CAF50" />
+                        ) : null
+                      }
+                      onPress={() => handleLanguageChange("sl")}
+                      disabled={savingField === "language"}
+                    />
+
+                  <Divider />
+
+                  <List.Subheader>{t("settings.unitSystem")}</List.Subheader>
+                    <List.Item
+                      title={t("settings.unitMetric")}
+                      description="km, L, L/100 km"
+                      right={(props) =>
+                        settings.unitSystem === "metric" ? (
+                          <List.Icon {...props} icon="check" color="#4CAF50" />
+                        ) : null
+                      }
+                      onPress={() => handleUnitChange("metric")}
+                      disabled={savingField === "unitSystem"}
+                    />
+                    <Divider />
+                    <List.Item
+                      title={t("settings.unitImperial")}
+                      description="mi, gal, MPG"
+                      right={(props) =>
+                        settings.unitSystem === "imperial" ? (
+                          <List.Icon {...props} icon="check" color="#4CAF50" />
+                        ) : null
+                      }
+                      onPress={() => handleUnitChange("imperial")}
+                      disabled={savingField === "unitSystem"}
+                    />
+
+                  <Divider />
+
+                  <List.Subheader>{t("settings.currency")}</List.Subheader>
+                    <List.Item
+                      title={t("settings.currencyEUR")}
+                      right={(props) =>
+                        settings.currency === "EUR" ? (
+                          <List.Icon {...props} icon="check" color="#4CAF50" />
+                        ) : null
+                      }
+                      onPress={() => handleCurrencyChange("EUR")}
+                      disabled={savingField === "currency"}
+                    />
+                    <Divider />
+                    <List.Item
+                      title={t("settings.currencyUSD")}
+                      right={(props) =>
+                        settings.currency === "USD" ? (
+                          <List.Icon {...props} icon="check" color="#4CAF50" />
+                        ) : null
+                      }
+                      onPress={() => handleCurrencyChange("USD")}
+                      disabled={savingField === "currency"}
+                    />
+                </View>
+              )}
+            </List.Accordion>
           </Surface>
 
           <Surface style={styles.section}>
@@ -313,5 +451,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 16,
     paddingBottom: 110,
+  },
+  accordionLoading: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  accordionHeader: {
+    // backgroundColor: "#f8f9fa",
+  },
+  accordionContent: {
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+  },
+  accordionSurface: {
+    borderRadius: 8,
+    overflow: "hidden",
   },
 });

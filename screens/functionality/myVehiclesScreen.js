@@ -21,6 +21,7 @@ import {
 import { Swipeable } from "react-native-gesture-handler";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import BrandLogo from "../../components/BrandLogo";
+import { defaultUserProfile, getUserProfile } from "../../utils/userProfile";
 
 export default function MyVehiclesScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -29,17 +30,22 @@ export default function MyVehiclesScreen({ navigation, route }) {
   const [vehicleStats, setVehicleStats] = useState({});
   const swipeableRefs = useRef({});
   const [openSwipeableId, setOpenSwipeableId] = useState(null);
+  const [userSettings, setUserSettings] = useState(defaultUserProfile);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       loadVehicles();
+      loadUserSettings();
     });
 
     return unsubscribe;
   }, [navigation]);
 
   useEffect(() => {
-    loadVehicles();
+    const loadInitial = async () => {
+      await Promise.all([loadUserSettings(), loadVehicles()]);
+    };
+    loadInitial();
   }, []);
 
   useEffect(() => {
@@ -56,6 +62,59 @@ export default function MyVehiclesScreen({ navigation, route }) {
       addNewVehicle();
     }
   }, [route.params?.newVehicle]);
+
+  const loadUserSettings = async () => {
+    try {
+      const profile = await getUserProfile();
+      setUserSettings(profile);
+    } catch (error) {
+      setUserSettings(defaultUserProfile);
+    }
+  };
+
+  const getCurrencySymbol = (code) => {
+    switch (code) {
+      case "USD":
+        return "$";
+      case "EUR":
+      default:
+        return "€";
+    }
+  };
+
+  const convertFuelConsumption = (value) => {
+    if (value === null || value === undefined) return { value, unit: "l / 100 km" };
+    if (userSettings.unitSystem === "imperial") {
+      // Convert L/100km to MPG
+      const mpg = 235.214583 / value;
+      return { value: mpg, unit: "MPG" };
+    }
+    return { value, unit: "l / 100 km" };
+  };
+
+  const convertElectricConsumption = (value) => {
+    if (value === null || value === undefined) return { value, unit: "kWh / 100 km" };
+    if (userSettings.unitSystem === "imperial") {
+      // kWh/100km -> kWh/100mi
+      const per100mi = value * 1.60934;
+      return { value: per100mi, unit: "kWh / 100 mi" };
+    }
+    return { value, unit: "kWh / 100 km" };
+  };
+
+  const convertFuelPrice = (value) => {
+    if (value === null || value === undefined) return value;
+    if (userSettings.unitSystem === "imperial") {
+      // price per gallon
+      return value * 3.78541;
+    }
+    return value;
+  };
+
+  const formatNumber = (num, decimals = 1) => {
+    if (num === null || num === undefined || Number.isNaN(num)) return "—";
+    return parseFloat(num).toFixed(decimals).replace(".", ",");
+  };
 
   const loadVehicles = async () => {
     try {
@@ -250,11 +309,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
     };
 
     const stats = vehicleStats[item.id] || {};
-    
-    const formatNumber = (num, decimals = 1) => {
-      if (num === null || num === undefined) return '—';
-      return parseFloat(num).toFixed(decimals).replace('.', ',');
-    };
+    const currencySymbol = getCurrencySymbol(userSettings.currency);
     
     // Determine which stats to show based on vehicle type
     const statCards = [];
@@ -262,42 +317,49 @@ export default function MyVehiclesScreen({ navigation, route }) {
     if (vehicleType === 'PHEV') {
       // PHEV: show fuel consumption and electricity consumption
       if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
+        const converted = convertFuelConsumption(stats.avgFuelConsumption);
         statCards.push({
-          value: `${formatNumber(stats.avgFuelConsumption)} l / 100 km`,
+          value: `${formatNumber(converted.value)} ${converted.unit}`,
           label: t("fillings.consumption"),
         });
       }
       if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
+        const converted = convertElectricConsumption(stats.avgElectricityConsumption);
         statCards.push({
-          value: `${formatNumber(stats.avgElectricityConsumption)} kWh / 100 km`,
+          value: `${formatNumber(converted.value)} ${converted.unit}`,
           label: t("charging.avgConsumption"),
         });
       }
     } else if (vehicleType === 'BEV') {
       // BEV: show electricity consumption and average price per kWh
       if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
+        const converted = convertElectricConsumption(stats.avgElectricityConsumption);
         statCards.push({
-          value: `${formatNumber(stats.avgElectricityConsumption)} kWh / 100 km`,
+          value: `${formatNumber(converted.value)} ${converted.unit}`,
           label: t("charging.avgConsumption"),
         });
       }
       if (stats.avgPricePerKWh !== null && stats.avgPricePerKWh !== undefined) {
         statCards.push({
-          value: `${formatNumber(stats.avgPricePerKWh, 2)} €`,
+          value: `${formatNumber(stats.avgPricePerKWh, 2)} ${currencySymbol}`,
           label: t("charging.avgPricePerKWh"),
         });
       }
     } else {
       // ICE/HYBRID: show fuel consumption and average price per liter
       if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
+        const converted = convertFuelConsumption(stats.avgFuelConsumption);
         statCards.push({
-          value: `${formatNumber(stats.avgFuelConsumption)} l / 100 km`,
+          value: `${formatNumber(converted.value)} ${converted.unit}`,
           label: t("fillings.consumption"),
         });
       }
       if (stats.avgPricePerLiter !== null && stats.avgPricePerLiter !== undefined) {
+        const priceValue = convertFuelPrice(stats.avgPricePerLiter);
+        const priceUnit =
+          userSettings.unitSystem === "imperial" ? "per gal" : "per L";
         statCards.push({
-          value: `${formatNumber(stats.avgPricePerLiter, 2)} €`,
+          value: `${formatNumber(priceValue, 2)} ${currencySymbol} ${priceUnit}`,
           label: t("fillings.avgPricePerLiter"),
         });
       }
