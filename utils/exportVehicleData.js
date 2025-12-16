@@ -2,6 +2,7 @@
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getCurrentLanguage } from './i18n';
+import { defaultUserProfile, getUserProfile } from './userProfile';
 
 // Month names in English
 const monthNames = [
@@ -69,8 +70,46 @@ const formatOdometer = (value) => {
   return Math.round(parseFloat(value)).toLocaleString('de-DE');
 };
 
+// Unit and currency helpers
+const getCurrencySymbol = (currencyCode) => {
+  switch (currencyCode) {
+    case 'USD':
+      return '$';
+    case 'EUR':
+    default:
+      return '€';
+  }
+};
+
+const convertFuelConsumption = (value, unitSystem) => {
+  if (value === null || value === undefined) return value;
+  if (unitSystem === 'imperial') {
+    return 235.214583 / value; // L/100km -> MPG
+  }
+  return value;
+};
+
+const convertElectricConsumption = (value, unitSystem) => {
+  if (value === null || value === undefined) return value;
+  if (unitSystem === 'imperial') {
+    return value * 1.60934; // kWh/100km -> kWh/100mi
+  }
+  return value;
+};
+
+const convertFuelPricePerUnit = (value, unitSystem) => {
+  if (value === null || value === undefined) return value;
+  if (unitSystem === 'imperial') {
+    return value * 3.78541; // per liter -> per gallon
+  }
+  return value;
+};
+
 // Generate CSV content for vehicle data
-const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
+const generateCSV = (vehicle, fillings, chargingSessions, stats, t, settings) => {
+  const unitSystem = settings?.unitSystem || defaultUserProfile.unitSystem;
+  const currencyCode = settings?.currency || defaultUserProfile.currency;
+  const currencySymbol = getCurrencySymbol(currencyCode);
   // Use formatNumberForCSV for all CSV exports to avoid comma decimal separator issues
   let csv = "";
   
@@ -91,27 +130,33 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   csv += `${t("export.statistics")}\n`;
   
   if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
-    csv += `${t("fillings.consumption")},${formatNumberForCSV(stats.avgFuelConsumption)} l / 100km\n`;
+    const converted = convertFuelConsumption(stats.avgFuelConsumption, unitSystem);
+    const unit = unitSystem === 'imperial' ? 'MPG' : 'l / 100km';
+    csv += `${t("fillings.consumption")},${formatNumberForCSV(converted)} ${unit}\n`;
   }
   
   if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
-    csv += `${t("charging.avgConsumption")},${formatNumberForCSV(stats.avgElectricityConsumption)} kWh / 100km\n`;
+    const converted = convertElectricConsumption(stats.avgElectricityConsumption, unitSystem);
+    const unit = unitSystem === 'imperial' ? 'kWh / 100mi' : 'kWh / 100km';
+    csv += `${t("charging.avgConsumption")},${formatNumberForCSV(converted)} ${unit}\n`;
   }
   
   if (stats.avgPricePerLiter !== null && stats.avgPricePerLiter !== undefined) {
-    csv += `${t("fillings.avgPricePerLiter")},${formatNumberForCSV(stats.avgPricePerLiter, 2)} €\n`;
+    const converted = convertFuelPricePerUnit(stats.avgPricePerLiter, unitSystem);
+    const unit = unitSystem === 'imperial' ? 'per gal' : 'per L';
+    csv += `${t("fillings.avgPricePerLiter")},${formatNumberForCSV(converted, 2)} ${currencySymbol} ${unit}\n`;
   }
   
   if (stats.avgPricePerKWh !== null && stats.avgPricePerKWh !== undefined) {
-    csv += `${t("charging.avgPricePerKWh")},${formatNumberForCSV(stats.avgPricePerKWh, 2)} €\n`;
+    csv += `${t("charging.avgPricePerKWh")},${formatNumberForCSV(stats.avgPricePerKWh, 2)} ${currencySymbol} / kWh\n`;
   }
   
   if (stats.totalFuelCost !== null && stats.totalFuelCost !== undefined) {
-    csv += `${t("vehicles.totalFuelCost")},${formatNumberForCSV(stats.totalFuelCost, 2)} €\n`;
+    csv += `${t("vehicles.totalFuelCost")},${formatNumberForCSV(stats.totalFuelCost, 2)} ${currencySymbol}\n`;
   }
   
   if (stats.totalChargingCost !== null && stats.totalChargingCost !== undefined) {
-    csv += `${t("vehicles.totalChargingCost")},${formatNumberForCSV(stats.totalChargingCost, 2)} €\n`;
+    csv += `${t("vehicles.totalChargingCost")},${formatNumberForCSV(stats.totalChargingCost, 2)} ${currencySymbol}\n`;
   }
   
   csv += `\n`;
@@ -137,7 +182,7 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageCostPerDayFuel !== null && stats.averageCostPerDayFuel !== undefined) {
-    csv += `${t("vehicles.avgCostPerDayFuel")},${formatNumberForCSV(stats.averageCostPerDayFuel, 2)} €\n`;
+    csv += `${t("vehicles.avgCostPerDayFuel")},${formatNumberForCSV(stats.averageCostPerDayFuel, 2)} ${currencySymbol}\n`;
   }
   
   if (stats.totalFuelDistance !== null && stats.totalFuelDistance !== undefined) {
@@ -145,7 +190,12 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageFuelCostPer100km !== null && stats.averageFuelCostPer100km !== undefined) {
-    csv += `${t("vehicles.avgCostPer100km")},${formatNumberForCSV(stats.averageFuelCostPer100km, 2)} €\n`;
+    const value =
+      unitSystem === 'imperial'
+        ? stats.averageFuelCostPer100km / 0.621371 // per 100mi
+        : stats.averageFuelCostPer100km; // per 100km
+    const unit = unitSystem === 'imperial' ? '100 mi' : '100 km';
+    csv += `${t("vehicles.avgCostPer100km")},${formatNumberForCSV(value, 2)} ${currencySymbol} / ${unit}\n`;
   }
   
   // Charging additional statistics
@@ -166,7 +216,7 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageCostPerDayCharging !== null && stats.averageCostPerDayCharging !== undefined) {
-    csv += `${t("vehicles.avgCostPerDayCharging")},${formatNumberForCSV(stats.averageCostPerDayCharging, 2)} €\n`;
+    csv += `${t("vehicles.avgCostPerDayCharging")},${formatNumberForCSV(stats.averageCostPerDayCharging, 2)} ${currencySymbol}\n`;
   }
   
   if (stats.totalElectricityDistance !== null && stats.totalElectricityDistance !== undefined) {
@@ -174,7 +224,12 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   }
   
   if (stats.averageElectricityCostPer100km !== null && stats.averageElectricityCostPer100km !== undefined) {
-    csv += `${t("vehicles.avgCostPer100km")},${formatNumberForCSV(stats.averageElectricityCostPer100km, 2)} €\n`;
+    const value =
+      unitSystem === 'imperial'
+        ? stats.averageElectricityCostPer100km / 0.621371 // per 100mi
+        : stats.averageElectricityCostPer100km; // per 100km
+    const unit = unitSystem === 'imperial' ? '100 mi' : '100 km';
+    csv += `${t("vehicles.avgCostPer100km")},${formatNumberForCSV(value, 2)} ${currencySymbol} / ${unit}\n`;
   }
   
   csv += `\n`;
@@ -182,7 +237,10 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   // Fillings Section (if available)
   if (fillings && fillings.length > 0) {
     csv += `${t("fillings.nav")}\n`;
-    csv += `${t("common.date")},${t("fillings.odometer")},${t("fillings.liters")},${t("fillings.cost")},${t("fillings.pricePerLiter")}\n`;
+    const distanceHeaderUnit = unitSystem === 'imperial' ? 'mi' : 'km';
+    const volumeHeaderUnit = unitSystem === 'imperial' ? 'gal' : 'L';
+    const priceUnitLabel = unitSystem === 'imperial' ? `${currencySymbol} / gal` : `${currencySymbol} / L`;
+    csv += `${t("common.date")},${t("fillings.odometer")} (${distanceHeaderUnit}),${t("fillings.liters")} (${volumeHeaderUnit}),${t("fillings.cost")} (${currencySymbol}),${t("fillings.pricePerLiter")} (${priceUnitLabel})\n`;
     
     const sortedFillings = [...fillings].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
@@ -191,8 +249,13 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
     });
 
     sortedFillings.forEach((filling) => {
-      const pricePerLiter = filling.liters > 0 ? filling.cost / filling.liters : 0;
-      csv += `${formatDate(filling.date)},${formatOdometer(filling.odometer)},${formatNumberForCSV(filling.liters, 2)},${formatNumberForCSV(filling.cost, 2)},${formatNumberForCSV(pricePerLiter, 3)}\n`;
+      const distance = filling.odometer;
+      const distanceValue = unitSystem === 'imperial' ? distance * 0.621371 : distance;
+      const volume = filling.liters;
+      const volumeValue = unitSystem === 'imperial' ? volume / 3.78541 : volume;
+      const pricePerUnit = volume > 0 ? filling.cost / volume : 0;
+      const convertedPricePerUnit = convertFuelPricePerUnit(pricePerUnit, unitSystem);
+      csv += `${formatDate(filling.date)},${formatOdometer(distanceValue)},${formatNumberForCSV(volumeValue, 2)},${formatNumberForCSV(filling.cost, 2)},${formatNumberForCSV(convertedPricePerUnit, 3)}\n`;
     });
     
     csv += `\n`;
@@ -201,7 +264,8 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
   // Charging Sessions Section (if available)
   if (chargingSessions && chargingSessions.length > 0) {
     csv += `${t("charging.nav")}\n`;
-    csv += `${t("common.date")},${t("fillings.odometer")},${t("charging.energyAdded")},${t("fillings.cost")},${t("charging.pricePerKWh")}\n`;
+    const distanceHeaderUnit2 = unitSystem === 'imperial' ? 'mi' : 'km';
+    csv += `${t("common.date")},${t("fillings.odometer")} (${distanceHeaderUnit2}),${t("charging.energyAdded")} (kWh),${t("fillings.cost")} (${currencySymbol}),${t("charging.pricePerKWh")} (${currencySymbol} / kWh)\n`;
     
     const sortedSessions = [...chargingSessions].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
@@ -210,8 +274,10 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
     });
 
     sortedSessions.forEach((session) => {
+      const distance = session.odometer;
+      const distanceValue = unitSystem === 'imperial' ? distance * 0.621371 : distance;
       const pricePerKWh = session.energyAdded > 0 ? session.cost / session.energyAdded : 0;
-      csv += `${formatDate(session.date)},${formatOdometer(session.odometer)},${formatNumberForCSV(session.energyAdded, 2)},${formatNumberForCSV(session.cost, 2)},${formatNumberForCSV(pricePerKWh, 3)}\n`;
+      csv += `${formatDate(session.date)},${formatOdometer(distanceValue)},${formatNumberForCSV(session.energyAdded, 2)},${formatNumberForCSV(session.cost, 2)},${formatNumberForCSV(pricePerKWh, 3)}\n`;
     });
     
     csv += `\n`;
@@ -225,7 +291,14 @@ const generateCSV = (vehicle, fillings, chargingSessions, stats, t) => {
 // Export vehicle data to CSV file
 export const exportToCSV = async (vehicle, fillings, chargingSessions, stats, t) => {
   try {
-    const csvContent = generateCSV(vehicle, fillings, chargingSessions, stats, t);
+    let settings = defaultUserProfile;
+    try {
+      settings = await getUserProfile();
+    } catch (e) {
+      settings = defaultUserProfile;
+    }
+
+    const csvContent = generateCSV(vehicle, fillings, chargingSessions, stats, t, settings);
     
     // Create filename with vehicle name and current date
     const timestamp = new Date().toISOString().split('T')[0];
@@ -257,7 +330,7 @@ export const exportToCSV = async (vehicle, fillings, chargingSessions, stats, t)
 };
 
 // Helper function to calculate consumption data points for graph
-const calculateConsumptionData = (fillings, chargingSessions) => {
+const calculateConsumptionData = (fillings, chargingSessions, unitSystem) => {
   const dataPoints = [];
   
   // Combine and sort all entries by odometer
@@ -290,10 +363,12 @@ const calculateConsumptionData = (fillings, chargingSessions) => {
     let isValid = false;
     
     if (current.entryType === 'fuel' && current.liters) {
-      consumption = (current.liters / distance) * 100;
+      const base = (current.liters / distance) * 100;
+      consumption = convertFuelConsumption(base, unitSystem);
       isValid = consumption >= 3 && consumption <= 30;
     } else if (current.entryType === 'electricity' && current.energyAdded) {
-      consumption = (current.energyAdded / distance) * 100;
+      const base = (current.energyAdded / distance) * 100;
+      consumption = convertElectricConsumption(base, unitSystem);
       isValid = consumption >= 1 && consumption <= 50;
     }
     
@@ -323,11 +398,14 @@ const calculateConsumptionData = (fillings, chargingSessions) => {
 };
 
 // Generate HTML content for PDF
-const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
+const generateHTML = (vehicle, fillings, chargingSessions, stats, t, settings) => {
+  const unitSystem = settings?.unitSystem || defaultUserProfile.unitSystem;
+  const currencyCode = settings?.currency || defaultUserProfile.currency;
+  const currencySymbol = getCurrencySymbol(currencyCode);
   const vehicleType = vehicle.vehicleType || 'ICE';
   
-  // Calculate consumption data for graph
-  const consumptionData = calculateConsumptionData(fillings, chargingSessions);
+  // Calculate consumption data for graph (respect unit system)
+  const consumptionData = calculateConsumptionData(fillings, chargingSessions, unitSystem);
   
   let html = `
 <!DOCTYPE html>
@@ -596,37 +674,55 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
     <div class="stats-grid">
       ${stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.avgFuelConsumption)} l / 100km</div>
+        <div class="stat-value">${
+          (() => {
+            const converted = convertFuelConsumption(stats.avgFuelConsumption, unitSystem);
+            const unit = unitSystem === 'imperial' ? 'MPG' : 'l / 100km';
+            return `${formatNumber(converted)} ${unit}`;
+          })()
+        }</div>
         <div class="stat-label">${t("fillings.consumption")}</div>
       </div>
       ` : ''}
       ${stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.avgElectricityConsumption)} kWh / 100km</div>
+        <div class="stat-value">${
+          (() => {
+            const converted = convertElectricConsumption(stats.avgElectricityConsumption, unitSystem);
+            const unit = unitSystem === 'imperial' ? 'kWh / 100mi' : 'kWh / 100km';
+            return `${formatNumber(converted)} ${unit}`;
+          })()
+        }</div>
         <div class="stat-label">${t("charging.avgConsumption")}</div>
       </div>
       ` : ''}
       ${stats.avgPricePerLiter !== null && stats.avgPricePerLiter !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.avgPricePerLiter, 2)} €</div>
+        <div class="stat-value">${
+          (() => {
+            const converted = convertFuelPricePerUnit(stats.avgPricePerLiter, unitSystem);
+            const unit = unitSystem === 'imperial' ? 'per gal' : 'per L';
+            return `${formatNumber(converted, 2)} ${currencySymbol} ${unit}`;
+          })()
+        }</div>
         <div class="stat-label">${t("fillings.avgPricePerLiter")}</div>
       </div>
       ` : ''}
       ${stats.avgPricePerKWh !== null && stats.avgPricePerKWh !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.avgPricePerKWh, 2)} €</div>
+        <div class="stat-value">${formatNumber(stats.avgPricePerKWh, 2)} ${currencySymbol} / kWh</div>
         <div class="stat-label">${t("charging.avgPricePerKWh")}</div>
       </div>
       ` : ''}
       ${stats.totalFuelCost !== null && stats.totalFuelCost !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.totalFuelCost, 2)} €</div>
+        <div class="stat-value">${formatNumber(stats.totalFuelCost, 2)} ${currencySymbol}</div>
         <div class="stat-label">${t("vehicles.totalFuelCost")}</div>
       </div>
       ` : ''}
       ${stats.totalChargingCost !== null && stats.totalChargingCost !== undefined ? `
       <div class="stat-card">
-        <div class="stat-value">${formatNumber(stats.totalChargingCost, 2)} €</div>
+        <div class="stat-value">${formatNumber(stats.totalChargingCost, 2)} ${currencySymbol}</div>
         <div class="stat-label">${t("vehicles.totalChargingCost")}</div>
       </div>
       ` : ''}
@@ -743,13 +839,13 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
         ${vehicleType === 'PHEV' || vehicleType === 'ICE' || vehicleType === 'HYBRID' ? `
         <div class="chart-legend-item">
           <div class="chart-legend-color chart-legend-color-fuel"></div>
-          <span class="chart-legend-label">${t("vehicles.fuelConsumption")} (l / 100km)</span>
+          <span class="chart-legend-label">${t("vehicles.fuelConsumption")} ${unitSystem === 'imperial' ? '(MPG)' : '(l / 100km)'}</span>
         </div>
         ` : ''}
         ${vehicleType === 'PHEV' || vehicleType === 'BEV' ? `
         <div class="chart-legend-item">
           <div class="chart-legend-color chart-legend-color-electricity"></div>
-          <span class="chart-legend-label">${t("vehicles.electricConsumption")} (kWh / 100km)</span>
+          <span class="chart-legend-label">${t("vehicles.electricConsumption")} ${unitSystem === 'imperial' ? '(kWh / 100mi)' : '(kWh / 100km)'}</span>
         </div>
         ` : ''}
       </div>
@@ -762,13 +858,25 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
     <div class="advanced-stats-grid">
       ${stats.averageDistancePerFilling !== null && stats.averageDistancePerFilling !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.averageDistancePerFilling)} km</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value = unitSystem === 'imperial' ? stats.averageDistancePerFilling * 0.621371 : stats.averageDistancePerFilling;
+            const unit = unitSystem === 'imperial' ? 'mi' : 'km';
+            return `${formatNumber(value)} ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.avgDistancePerFilling")}</div>
       </div>
       ` : ''}
       ${stats.longestDistanceSingleTank !== null && stats.longestDistanceSingleTank !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.longestDistanceSingleTank)} km</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value = unitSystem === 'imperial' ? stats.longestDistanceSingleTank * 0.621371 : stats.longestDistanceSingleTank;
+            const unit = unitSystem === 'imperial' ? 'mi' : 'km';
+            return `${formatNumber(value)} ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.longestDistanceSingleTank")}</div>
       </div>
       ` : ''}
@@ -786,31 +894,58 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
       ` : ''}
       ${stats.averageCostPerDayFuel !== null && stats.averageCostPerDayFuel !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.averageCostPerDayFuel, 2)} €</div>
+        <div class="advanced-stat-value">${formatNumber(stats.averageCostPerDayFuel, 2)} ${currencySymbol}</div>
         <div class="advanced-stat-label">${t("vehicles.avgCostPerDayFuel")}</div>
       </div>
       ` : ''}
       ${stats.totalFuelDistance !== null && stats.totalFuelDistance !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatOdometer(stats.totalFuelDistance)} km</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value = unitSystem === 'imperial' ? stats.totalFuelDistance * 0.621371 : stats.totalFuelDistance;
+            const unit = unitSystem === 'imperial' ? 'mi' : 'km';
+            return `${formatOdometer(value)} ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.totalDistance")}</div>
       </div>
       ` : ''}
       ${stats.averageFuelCostPer100km !== null && stats.averageFuelCostPer100km !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.averageFuelCostPer100km, 2)} €</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value =
+              unitSystem === 'imperial'
+                ? stats.averageFuelCostPer100km / 0.621371
+                : stats.averageFuelCostPer100km;
+            const unit = unitSystem === 'imperial' ? '100 mi' : '100 km';
+            return `${formatNumber(value, 2)} ${currencySymbol} / ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.avgCostPer100km")}</div>
       </div>
       ` : ''}
       ${stats.averageDistancePerCharging !== null && stats.averageDistancePerCharging !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.averageDistancePerCharging)} km</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value = unitSystem === 'imperial' ? stats.averageDistancePerCharging * 0.621371 : stats.averageDistancePerCharging;
+            const unit = unitSystem === 'imperial' ? 'mi' : 'km';
+            return `${formatNumber(value)} ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.avgDistancePerCharging")}</div>
       </div>
       ` : ''}
       ${stats.longestDistanceSingleCharge !== null && stats.longestDistanceSingleCharge !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.longestDistanceSingleCharge)} km</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value = unitSystem === 'imperial' ? stats.longestDistanceSingleCharge * 0.621371 : stats.longestDistanceSingleCharge;
+            const unit = unitSystem === 'imperial' ? 'mi' : 'km';
+            return `${formatNumber(value)} ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.longestDistanceSingleCharge")}</div>
       </div>
       ` : ''}
@@ -828,19 +963,34 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
       ` : ''}
       ${stats.averageCostPerDayCharging !== null && stats.averageCostPerDayCharging !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.averageCostPerDayCharging, 2)} €</div>
+        <div class="advanced-stat-value">${formatNumber(stats.averageCostPerDayCharging, 2)} ${currencySymbol}</div>
         <div class="advanced-stat-label">${t("vehicles.avgCostPerDayCharging")}</div>
       </div>
       ` : ''}
       ${stats.totalElectricityDistance !== null && stats.totalElectricityDistance !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatOdometer(stats.totalElectricityDistance)} km</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value = unitSystem === 'imperial' ? stats.totalElectricityDistance * 0.621371 : stats.totalElectricityDistance;
+            const unit = unitSystem === 'imperial' ? 'mi' : 'km';
+            return `${formatOdometer(value)} ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.totalDistance")}</div>
       </div>
       ` : ''}
       ${stats.averageElectricityCostPer100km !== null && stats.averageElectricityCostPer100km !== undefined ? `
       <div class="advanced-stat-item">
-        <div class="advanced-stat-value">${formatNumber(stats.averageElectricityCostPer100km, 2)} €</div>
+        <div class="advanced-stat-value">${
+          (() => {
+            const value =
+              unitSystem === 'imperial'
+                ? stats.averageElectricityCostPer100km / 0.621371
+                : stats.averageElectricityCostPer100km;
+            const unit = unitSystem === 'imperial' ? '100 mi' : '100 km';
+            return `${formatNumber(value, 2)} ${currencySymbol} / ${unit}`;
+          })()
+        }</div>
         <div class="advanced-stat-label">${t("vehicles.avgCostPer100km")}</div>
       </div>
       ` : ''}
@@ -863,24 +1013,29 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
       <thead>
         <tr>
           <th>${t("common.date")}</th>
-          <th>${t("fillings.odometer")}</th>
-          <th>${t("fillings.liters")}</th>
-          <th>${t("fillings.cost")}</th>
-          <th>${t("fillings.pricePerLiter")}</th>
+          <th>${t("fillings.odometer")} (${unitSystem === 'imperial' ? 'mi' : 'km'})</th>
+          <th>${t("fillings.liters")} (${unitSystem === 'imperial' ? 'gal' : 'L'})</th>
+          <th>${t("fillings.cost")} (${currencySymbol})</th>
+          <th>${t("fillings.pricePerLiter")} (${unitSystem === 'imperial' ? `${currencySymbol} / gal` : `${currencySymbol} / L`})</th>
         </tr>
       </thead>
       <tbody>
 `;
 
     sortedFillings.forEach((filling) => {
-      const pricePerLiter = filling.liters > 0 ? filling.cost / filling.liters : 0;
+      const distance = filling.odometer;
+      const distanceValue = unitSystem === 'imperial' ? distance * 0.621371 : distance;
+      const volume = filling.liters;
+      const volumeValue = unitSystem === 'imperial' ? volume / 3.78541 : volume;
+      const pricePerLiter = volume > 0 ? filling.cost / volume : 0;
+      const convertedPricePerUnit = convertFuelPricePerUnit(pricePerLiter, unitSystem);
       html += `
         <tr>
           <td>${formatDate(filling.date)}</td>
-          <td>${formatOdometer(filling.odometer)} km</td>
-          <td>${formatNumber(filling.liters, 2)} L</td>
-          <td>${formatNumber(filling.cost, 2)} €</td>
-          <td>${formatNumber(pricePerLiter, 3)} €</td>
+          <td>${formatOdometer(distanceValue)} ${unitSystem === 'imperial' ? 'mi' : 'km'}</td>
+          <td>${formatNumber(volumeValue, 2)} ${unitSystem === 'imperial' ? 'gal' : 'L'}</td>
+          <td>${formatNumber(filling.cost, 2)} ${currencySymbol}</td>
+          <td>${formatNumber(convertedPricePerUnit, 3)} ${currencySymbol}</td>
         </tr>
 `;
     });
@@ -907,24 +1062,26 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
       <thead>
         <tr>
           <th>${t("common.date")}</th>
-          <th>${t("fillings.odometer")}</th>
+          <th>${t("fillings.odometer")} (${unitSystem === 'imperial' ? 'mi' : 'km'})</th>
           <th>${t("charging.energyAdded")}</th>
-          <th>${t("fillings.cost")}</th>
-          <th>${t("charging.pricePerKWh")}</th>
+          <th>${t("fillings.cost")} (${currencySymbol})</th>
+          <th>${t("charging.pricePerKWh")} (${currencySymbol} / kWh)</th>
         </tr>
       </thead>
       <tbody>
 `;
 
     sortedSessions.forEach((session) => {
+      const distance = session.odometer;
+      const distanceValue = unitSystem === 'imperial' ? distance * 0.621371 : distance;
       const pricePerKWh = session.energyAdded > 0 ? session.cost / session.energyAdded : 0;
       html += `
         <tr>
           <td>${formatDate(session.date)}</td>
-          <td>${formatOdometer(session.odometer)} km</td>
+          <td>${formatOdometer(distanceValue)} ${unitSystem === 'imperial' ? 'mi' : 'km'}</td>
           <td>${formatNumber(session.energyAdded, 2)} kWh</td>
-          <td>${formatNumber(session.cost, 2)} €</td>
-          <td>${formatNumber(pricePerKWh, 3)} €</td>
+          <td>${formatNumber(session.cost, 2)} ${currencySymbol}</td>
+          <td>${formatNumber(pricePerKWh, 3)} ${currencySymbol}</td>
         </tr>
 `;
     });
@@ -950,7 +1107,14 @@ const generateHTML = (vehicle, fillings, chargingSessions, stats, t) => {
 // Export vehicle data to PDF (as HTML file that can be printed to PDF)
 export const exportToPDF = async (vehicle, fillings, chargingSessions, stats, t) => {
   try {
-    const htmlContent = generateHTML(vehicle, fillings, chargingSessions, stats, t);
+    let settings = defaultUserProfile;
+    try {
+      settings = await getUserProfile();
+    } catch (e) {
+      settings = defaultUserProfile;
+    }
+
+    const htmlContent = generateHTML(vehicle, fillings, chargingSessions, stats, t, settings);
     
     // Create filename with vehicle name and current date
     const timestamp = new Date().toISOString().split('T')[0];

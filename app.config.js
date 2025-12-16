@@ -2,7 +2,7 @@ export default {
   "expo": {
     "name": "DriveTrack Pro",
     "slug": "NaPoti",
-    "version": "2.1.0", 
+    "version": "2.2.0", 
     "orientation": "portrait",
     "icon": "./assets/app-icon-ios.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,7 @@ export default {
       "bundleIdentifier": "com.enejlicina.drivetrackpro",
       "deploymentTarget": "15.1",
       "associatedDomains": ["applinks:verify.enejlicina.com"],
-      "buildNumber": "22",
+      "buildNumber": "23",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },

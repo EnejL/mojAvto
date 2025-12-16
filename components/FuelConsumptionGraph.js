@@ -2,11 +2,13 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Text, Surface, Button } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { defaultUserProfile, getUserProfile } from '../utils/userProfile';
 
 const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
   const { t } = useTranslation();
   const [showGraph, setShowGraph] = useState(false);
   const [textLaidOut, setTextLaidOut] = useState(false);
+  const [userSettings, setUserSettings] = useState(defaultUserProfile);
   const screenWidth = Dimensions.get('window').width - 32; // margins
 
   // Reset layout state when graph visibility changes or when data/dataType changes
@@ -22,8 +24,39 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
     }
   }, [showGraph, dataType, data?.length]);
 
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const profile = await getUserProfile();
+        setUserSettings(profile);
+      } catch (e) {
+        setUserSettings(defaultUserProfile);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const convertFuelConsumption = (value) => {
+    if (value === null || value === undefined) return { value, unit: 'L/100km' };
+    if (userSettings.unitSystem === 'imperial') {
+      const mpg = 235.214583 / value;
+      return { value: mpg, unit: 'MPG' };
+    }
+    return { value, unit: 'L/100km' };
+  };
+
+  const convertElectricConsumption = (value) => {
+    if (value === null || value === undefined) return { value, unit: 'kWh/100km' };
+    if (userSettings.unitSystem === 'imperial') {
+      const per100mi = value * 1.60934;
+      return { value: per100mi, unit: 'kWh/100mi' };
+    }
+    return { value, unit: 'kWh/100km' };
+  };
+
   const chartData = useMemo(() => {
-    if (!data || data.length < 2) return { dataPoints: [], fuelPoints: [], electricPoints: [], min: 0, max: 0, unit: '' };
+    if (!data || data.length < 2)
+      return { dataPoints: [], fuelPoints: [], electricPoints: [], min: 0, max: 0, unit: '' };
 
     const sorted = [...data].sort((a, b) => a.odometer - b.odometer);
     const pts = [];
@@ -41,14 +74,18 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
       let entryType;
 
       if (dataType === 'fuel' || current.type === 'filling') {
-        // Fuel consumption: liters per 100km
-        consumption = (current.liters / dist) * 100;
-        isValid = consumption >= 3 && consumption <= 30;
+        // Fuel consumption: liters per 100km (convert later for imperial)
+        const base = (current.liters / dist) * 100;
+        const converted = convertFuelConsumption(base);
+        consumption = converted.value;
+        isValid = base >= 3 && base <= 30;
         entryType = 'fuel';
       } else if (dataType === 'electricity' || current.type === 'charging') {
-        // Electric consumption: kWh per 100km
-        consumption = (current.energyAdded / dist) * 100;
-        isValid = consumption >= 1 && consumption <= 50;
+        // Electric consumption: kWh per 100km (convert later for imperial)
+        const base = (current.energyAdded / dist) * 100;
+        const converted = convertElectricConsumption(base);
+        consumption = converted.value;
+        isValid = base >= 1 && base <= 50;
         entryType = 'electricity';
       } else {
         return null;
@@ -107,18 +144,20 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
     min = Math.max(0, min - 1);
     max = max + 1;
     
-    // Determine unit based on data type
+    // Determine unit based on data type and user settings
     let unit;
     if (dataType === 'electricity') {
-      unit = 'kWh/100km';
+      unit = userSettings.unitSystem === 'imperial' ? 'kWh/100mi' : 'kWh/100km';
     } else if (dataType === 'combined') {
-      unit = 'L/100km | kWh/100km';
+      const fuelUnit = userSettings.unitSystem === 'imperial' ? 'MPG' : 'L/100km';
+      const elecUnit = userSettings.unitSystem === 'imperial' ? 'kWh/100mi' : 'kWh/100km';
+      unit = `${fuelUnit} | ${elecUnit}`;
     } else {
-      unit = 'L/100km';
+      unit = userSettings.unitSystem === 'imperial' ? 'MPG' : 'L/100km';
     }
     
     return { dataPoints: pts, fuelPoints: fuelPts, electricPoints: electricPts, min, max, unit };
-  }, [data, dataType]);
+  }, [data, dataType, userSettings.unitSystem]);
 
   const { dataPoints, fuelPoints, electricPoints, min, max, unit } = chartData;
   const range = max - min;
