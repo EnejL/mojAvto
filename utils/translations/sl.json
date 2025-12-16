@@ -61,7 +61,8 @@
     "totalFuelCost": "Skupni stroški goriva",
     "totalChargingCost": "Skupni stroški polnjenja",
     "vin": "VIN",
-    "licensePlate": "Registrska številka"
+    "licensePlate": "Registrska številka",
+    "distanceSinceLastEvent": "Od zadnjega vnosa"
   },
   "fillings": {
     "title": "Točenja goriva",

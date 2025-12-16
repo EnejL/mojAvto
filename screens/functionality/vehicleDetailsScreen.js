@@ -345,6 +345,30 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   }, [chargingSessions, shouldShowChargeButton]);
 
+  // Helper: distance travelled since previous event of the same type
+  const getDistanceSinceLastEvent = (item) => {
+    const sourceArray = item.type === 'charging' ? chargingSessions : fillings;
+    if (!sourceArray || sourceArray.length < 2) return null;
+
+    const previousEntries = sourceArray.filter(
+      (entry) =>
+        entry.id !== item.id &&
+        typeof entry.odometer === 'number' &&
+        entry.odometer < item.odometer
+    );
+
+    if (!previousEntries.length) return null;
+
+    const prev = previousEntries.reduce((max, entry) =>
+      !max || entry.odometer > max.odometer ? entry : max
+    , null);
+
+    if (!prev || typeof prev.odometer !== 'number') return null;
+
+    const distance = item.odometer - prev.odometer;
+    return distance > 0 ? distance : null;
+  };
+
   // Sort fillings by date (newest first) for display
   const sortedFillings = useMemo(() => {
     if (!shouldShowFuelButton()) return [];
@@ -732,6 +756,9 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     <Text style={styles.fillingLabel}>{t("charging.date")}:</Text>
                     <Text style={styles.fillingLabel}>{t("charging.odometer")}:</Text>
                     <Text style={styles.fillingLabel}>
+                      {t("vehicles.distanceSinceLastEvent")}:
+                    </Text>
+                    <Text style={styles.fillingLabel}>
                       {isCharging ? t("charging.energyAdded") : t("fillings.liters")}:
                     </Text>
                     <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
@@ -743,6 +770,16 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {(() => {
                         const dist = convertDistance(item.odometer, userSettings.unitSystem);
                         return dist.value !== null ? `${formatOdometer(dist.value)} ${dist.unit}` : "—";
+                      })()}
+                    </Text>
+                    <Text style={styles.fillingValue}>
+                      {(() => {
+                        const sinceKm = getDistanceSinceLastEvent(item);
+                        if (sinceKm === null) return "—";
+                        const converted = convertDistance(sinceKm, userSettings.unitSystem);
+                        return converted.value !== null
+                          ? `${formatNumber(converted.value, 1)} ${converted.unit}`
+                          : "—";
                       })()}
                     </Text>
                     <Text style={styles.fillingValue}>

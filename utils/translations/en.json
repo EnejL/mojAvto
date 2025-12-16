@@ -62,7 +62,8 @@
     "totalFuelCost": "Total fuel costs",
     "totalChargingCost": "Total charging costs",
     "vin": "VIN",
-    "licensePlate": "License Plate"
+    "licensePlate": "License Plate",
+    "distanceSinceLastEvent": "Since last entry"
   },
   "fillings": {
     "title": "Fuel Fill-ups",
