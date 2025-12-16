@@ -17,6 +17,7 @@ import BrandLogo from "../../components/BrandLogo";
 import ConsumptionGraph from "../../components/FuelConsumptionGraph";
 import { exportToCSV, exportToPDF } from "../../utils/exportVehicleData";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { defaultUserProfile, getUserProfile } from "../../utils/userProfile";
 
 // Helper function to format dates from Firestore timestamps
 const formatDate = (date) => {
@@ -61,6 +62,59 @@ const formatOdometer = (value) => {
   return Math.round(parseFloat(value)).toLocaleString('de-DE');
 };
 
+// Conversion helper functions (to be used within component)
+const getCurrencySymbol = (code) => {
+  switch (code) {
+    case "USD":
+      return "$";
+    case "EUR":
+    default:
+      return "€";
+  }
+};
+
+const convertDistance = (km, unitSystem) => {
+  if (km === null || km === undefined) return { value: null, unit: "km" };
+  if (unitSystem === "imperial") {
+    return { value: km * 0.621371, unit: "mi" };
+  }
+  return { value: km, unit: "km" };
+};
+
+const convertFuelConsumption = (lPer100km, unitSystem) => {
+  if (lPer100km === null || lPer100km === undefined) return { value: null, unit: "l / 100 km" };
+  if (unitSystem === "imperial") {
+    const mpg = 235.214583 / lPer100km;
+    return { value: mpg, unit: "MPG" };
+  }
+  return { value: lPer100km, unit: "l / 100 km" };
+};
+
+const convertElectricConsumption = (kWhPer100km, unitSystem) => {
+  if (kWhPer100km === null || kWhPer100km === undefined) return { value: null, unit: "kWh / 100 km" };
+  if (unitSystem === "imperial") {
+    const per100mi = kWhPer100km * 1.60934;
+    return { value: per100mi, unit: "kWh / 100 mi" };
+  }
+  return { value: kWhPer100km, unit: "kWh / 100 km" };
+};
+
+const convertFuelVolume = (liters, unitSystem) => {
+  if (liters === null || liters === undefined) return { value: null, unit: "L" };
+  if (unitSystem === "imperial") {
+    return { value: liters / 3.78541, unit: "gal" };
+  }
+  return { value: liters, unit: "L" };
+};
+
+const convertFuelPrice = (pricePerLiter, unitSystem) => {
+  if (pricePerLiter === null || pricePerLiter === undefined) return null;
+  if (unitSystem === "imperial") {
+    return pricePerLiter * 3.78541; // price per gallon
+  }
+  return pricePerLiter;
+};
+
 export default function VehicleDetailsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
@@ -71,6 +125,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const [isExporting, setIsExporting] = useState(false);
   const openSwipeableRef = useRef(null);
   const swipeableRefs = useRef(new Map());
+  const [userSettings, setUserSettings] = useState(defaultUserProfile);
 
   // Get vehicle type or default to ICE for backwards compatibility
   const vehicleType = vehicle.vehicleType || 'ICE';
@@ -82,6 +137,15 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
   const shouldShowChargeButton = () => {
     return vehicleType === 'BEV' || vehicleType === 'PHEV';
+  };
+
+  const loadUserSettings = async () => {
+    try {
+      const profile = await getUserProfile();
+      setUserSettings(profile);
+    } catch (error) {
+      setUserSettings(defaultUserProfile);
+    }
   };
 
   useEffect(() => {
@@ -119,9 +183,13 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     };
 
     loadData();
+    loadUserSettings();
 
     // Reload when screen comes into focus
-    const unsubscribe = navigation.addListener("focus", loadData);
+    const unsubscribe = navigation.addListener("focus", () => {
+      loadData();
+      loadUserSettings();
+    });
     return unsubscribe;
   }, [navigation, vehicle.id, vehicleType]);
 
@@ -672,16 +740,22 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   <View style={styles.fillingValues}>
                     <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
                     <Text style={styles.fillingValue}>
-                      {formatOdometer(item.odometer)} km
+                      {(() => {
+                        const dist = convertDistance(item.odometer, userSettings.unitSystem);
+                        return dist.value !== null ? `${formatOdometer(dist.value)} ${dist.unit}` : "—";
+                      })()}
                     </Text>
                     <Text style={styles.fillingValue}>
                       {isCharging 
                         ? `${formatNumber(item.energyAdded, 2)} kWh`
-                        : `${formatNumber(item.liters, 2)} L`
+                        : (() => {
+                            const fuel = convertFuelVolume(item.liters, userSettings.unitSystem);
+                            return fuel.value !== null ? `${formatNumber(fuel.value, 2)} ${fuel.unit}` : "—";
+                          })()
                       }
                     </Text>
                     <Text style={styles.fillingValue}>
-                      {formatNumber(item.cost, 2)} €
+                      {formatNumber(item.cost, 2)} {getCurrencySymbol(userSettings.currency)}
                     </Text>
                   </View>
                 </View>
@@ -800,7 +874,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   {/* Primary consumption metric */}
                   <View style={styles.primaryMetricContainer}>
                     <Text style={styles.statCardPrimaryValue}>
-                      {formatNumber(averageFuelConsumption)} l / 100km
+                      {(() => {
+                        const fuelCons = convertFuelConsumption(averageFuelConsumption, userSettings.unitSystem);
+                        return fuelCons.value !== null ? `${formatNumber(fuelCons.value)} ${fuelCons.unit}` : "—";
+                      })()}
                     </Text>
                     <Text style={styles.primaryMetricLabel}>{t("fillings.consumption")}</Text>
                   </View>
@@ -810,7 +887,13 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {averageFuelCostPer100km !== null && (
                       <View style={styles.secondaryMetricItem}>
                         <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(averageFuelCostPer100km, 2)} €
+                          {(() => {
+                            if (userSettings.unitSystem === "imperial") {
+                              const costPer100mi = averageFuelCostPer100km / 0.621371;
+                              return `${formatNumber(costPer100mi, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 mi`;
+                            }
+                            return `${formatNumber(averageFuelCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 km`;
+                          })()}
                         </Text>
                         <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
                       </View>
@@ -819,7 +902,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {averagePricePerLiter !== null && (
                        <View style={styles.secondaryMetricItem}>
                          <Text style={styles.secondaryMetricValue}>
-                           {formatNumber(averagePricePerLiter, 2)} €
+                           {(() => {
+                             const price = convertFuelPrice(averagePricePerLiter, userSettings.unitSystem);
+                             const unit = userSettings.unitSystem === "imperial" ? "gal" : "L";
+                             return price !== null ? `${formatNumber(price, 2)} ${getCurrencySymbol(userSettings.currency)} / ${unit}` : "—";
+                           })()}
                          </Text>
                          <Text style={styles.secondaryMetricLabel}>{t("fillings.avgPricePerLiter")}</Text>
                        </View>
@@ -828,7 +915,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                      {averageFuelCost !== null && (
                        <View style={styles.secondaryMetricItem}>
                          <Text style={styles.secondaryMetricValue}>
-                           {formatNumber(averageFuelCost, 2)} €
+                           {formatNumber(averageFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
                          </Text>
                          <Text style={styles.secondaryMetricLabel}>{t("fillings.avgCost")}</Text>
                        </View>
@@ -836,7 +923,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
                      <View style={styles.secondaryMetricItem}>
                        <Text style={styles.secondaryMetricValue}>
-                         {formatNumber(totalFuelCost, 2)} €
+                         {formatNumber(totalFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
                        </Text>
                        <Text style={styles.secondaryMetricLabel}>{t("fillings.totalCost")}</Text>
                      </View>
@@ -856,7 +943,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                   {/* Primary consumption metric */}
                   <View style={styles.primaryMetricContainer}>
                     <Text style={styles.statCardPrimaryValue}>
-                      {formatNumber(averageElectricityConsumption)} kWh / 100km
+                      {(() => {
+                        const elecCons = convertElectricConsumption(averageElectricityConsumption, userSettings.unitSystem);
+                        return elecCons.value !== null ? `${formatNumber(elecCons.value)} ${elecCons.unit}` : "—";
+                      })()}
                     </Text>
                     <Text style={styles.primaryMetricLabel}>{t("charging.avgConsumption")}</Text>
                   </View>
@@ -866,7 +956,13 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                      {averageElectricityCostPer100km !== null && (
                        <View style={styles.secondaryMetricItem}>
                          <Text style={styles.secondaryMetricValue}>
-                           {formatNumber(averageElectricityCostPer100km, 2)} €
+                           {(() => {
+                             if (userSettings.unitSystem === "imperial") {
+                               const costPer100mi = averageElectricityCostPer100km / 0.621371;
+                               return `${formatNumber(costPer100mi, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 mi`;
+                             }
+                             return `${formatNumber(averageElectricityCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 km`;
+                           })()}
                          </Text>
                          <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
                        </View>
@@ -875,7 +971,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                      {averagePricePerKWh !== null && (
                       <View style={styles.secondaryMetricItem}>
                         <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(averagePricePerKWh, 2)} €
+                          {formatNumber(averagePricePerKWh, 2)} {getCurrencySymbol(userSettings.currency)}
                         </Text>
                         <Text style={styles.secondaryMetricLabel}>{t("charging.avgPricePerKWh")}</Text>
                       </View>
@@ -884,7 +980,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                      {averageChargingCost !== null && (
                        <View style={styles.secondaryMetricItem}>
                          <Text style={styles.secondaryMetricValue}>
-                           {formatNumber(averageChargingCost, 2)} €
+                           {formatNumber(averageChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
                          </Text>
                          <Text style={styles.secondaryMetricLabel}>{t("charging.avgCost")}</Text>
                        </View>
@@ -892,7 +988,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
                      <View style={styles.secondaryMetricItem}>
                        <Text style={styles.secondaryMetricValue}>
-                         {formatNumber(totalChargingCost, 2)} €
+                         {formatNumber(totalChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
                        </Text>
                        <Text style={styles.secondaryMetricLabel}>{t("charging.totalCost")}</Text>
                      </View>
@@ -916,9 +1012,17 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               }
               
               const totalCombinedCost = (totalFuelCost || 0) + (totalChargingCost || 0);
-              const costPer100km = totalCombinedDistance > 0 ? (totalCombinedCost / totalCombinedDistance) * 100 : 0;
-              // Assuming 1200km per month
-              // const monthlyEstimate = costPer100km * 12;
+              let costPerUnit;
+              let distUnit;
+              if (userSettings.unitSystem === "imperial") {
+                // Convert to cost per 100 miles
+                const totalDistanceInMiles = totalCombinedDistance * 0.621371;
+                costPerUnit = totalDistanceInMiles > 0 ? (totalCombinedCost / totalDistanceInMiles) * 100 : 0;
+                distUnit = "100 mi";
+              } else {
+                costPerUnit = totalCombinedDistance > 0 ? (totalCombinedCost / totalCombinedDistance) * 100 : 0;
+                distUnit = "100 km";
+              }
               
               return (
                 <Surface style={styles.statsCard}>
@@ -930,7 +1034,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {/* Primary cost metric */}
                     <View style={styles.primaryMetricContainer}>
                       <Text style={styles.statCardPrimaryValue}>
-                        {formatNumber(costPer100km, 2)} € / 100km
+                        {formatNumber(costPerUnit, 2)} {getCurrencySymbol(userSettings.currency)} / {distUnit}
                       </Text>
                       <Text style={styles.primaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
                     </View>
@@ -954,7 +1058,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {/* Primary consumption metric */}
                     <View style={styles.primaryMetricContainer}>
                       <Text style={styles.statCardPrimaryValue}>
-                        {formatNumber(averageFuelConsumption)} l / 100km
+                        {(() => {
+                          const fuelCons = convertFuelConsumption(averageFuelConsumption, userSettings.unitSystem);
+                          return fuelCons.value !== null ? `${formatNumber(fuelCons.value)} ${fuelCons.unit}` : "—";
+                        })()}
                       </Text>
                       <Text style={styles.primaryMetricLabel}>{t("fillings.consumption")}</Text>
                     </View>
@@ -963,7 +1070,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {averageFuelCostPer100km !== null && (
                         <View style={styles.secondaryMetricItem}>
                           <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averageFuelCostPer100km, 2)} €
+                            {(() => {
+                              const distUnit = userSettings.unitSystem === "imperial" ? "100 mi" : "100 km";
+                              return `${formatNumber(averageFuelCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)}`;
+                            })()}
                           </Text>
                           <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
                         </View>
@@ -971,7 +1081,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {averagePricePerLiter !== null && (
                         <View style={styles.secondaryMetricItem}>
                           <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averagePricePerLiter, 2)} €
+                            {(() => {
+                              const price = convertFuelPrice(averagePricePerLiter, userSettings.unitSystem);
+                              const unit = userSettings.unitSystem === "imperial" ? "gal" : "L";
+                              return price !== null ? `${formatNumber(price, 2)} ${getCurrencySymbol(userSettings.currency)} / ${unit}` : "—";
+                            })()}
                           </Text>
                           <Text style={styles.secondaryMetricLabel}>{t("fillings.avgPricePerLiter")}</Text>
                         </View>
@@ -979,14 +1093,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {averageFuelCost !== null && (
                         <View style={styles.secondaryMetricItem}>
                           <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averageFuelCost, 2)} €
+                            {formatNumber(averageFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
                           </Text>
                           <Text style={styles.secondaryMetricLabel}>{t("fillings.avgCost")}</Text>
                         </View>
                       )}
                       <View style={styles.secondaryMetricItem}>
                         <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(totalFuelCost, 2)} €
+                          {formatNumber(totalFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
                         </Text>
                         <Text style={styles.secondaryMetricLabel}>{t("fillings.totalCost")}</Text>
                       </View>
@@ -1008,7 +1122,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {/* Primary consumption metric */}
                     <View style={styles.primaryMetricContainer}>
                       <Text style={styles.statCardPrimaryValue}>
-                        {formatNumber(averageElectricityConsumption)} kWh / 100km
+                        {(() => {
+                          const elecCons = convertElectricConsumption(averageElectricityConsumption, userSettings.unitSystem);
+                          return elecCons.value !== null ? `${formatNumber(elecCons.value)} ${elecCons.unit}` : "—";
+                        })()}
                       </Text>
                       <Text style={styles.primaryMetricLabel}>{t("charging.avgConsumption")}</Text>
                     </View>
@@ -1017,7 +1134,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {averageElectricityCostPer100km !== null && (
                         <View style={styles.secondaryMetricItem}>
                           <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averageElectricityCostPer100km, 2)} €
+                            {(() => {
+                              const distUnit = userSettings.unitSystem === "imperial" ? "100 mi" : "100 km";
+                              return `${formatNumber(averageElectricityCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)}`;
+                            })()}
                           </Text>
                           <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
                         </View>
@@ -1025,7 +1145,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {averagePricePerKWh !== null && (
                         <View style={styles.secondaryMetricItem}>
                           <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averagePricePerKWh, 2)} €
+                            {formatNumber(averagePricePerKWh, 2)} {getCurrencySymbol(userSettings.currency)}
                           </Text>
                           <Text style={styles.secondaryMetricLabel}>{t("charging.avgPricePerKWh")}</Text>
                         </View>
@@ -1033,14 +1153,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                       {averageChargingCost !== null && (
                         <View style={styles.secondaryMetricItem}>
                           <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averageChargingCost, 2)} €
+                            {formatNumber(averageChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
                           </Text>
                           <Text style={styles.secondaryMetricLabel}>{t("charging.avgCost")}</Text>
                         </View>
                       )}
                       <View style={styles.secondaryMetricItem}>
                         <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(totalChargingCost, 2)} €
+                          {formatNumber(totalChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
                         </Text>
                         <Text style={styles.secondaryMetricLabel}>{t("charging.totalCost")}</Text>
                       </View>
@@ -1090,7 +1210,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {averageDistancePerFilling !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageDistancePerFilling)} km
+                          {(() => {
+                            const dist = convertDistance(averageDistancePerFilling, userSettings.unitSystem);
+                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
+                          })()}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.avgDistancePerFilling")}</Text>
                       </View>
@@ -1098,7 +1221,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {longestDistanceSingleTank !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatNumber(longestDistanceSingleTank)} km
+                          {(() => {
+                            const dist = convertDistance(longestDistanceSingleTank, userSettings.unitSystem);
+                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
+                          })()}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.longestDistanceSingleTank")}</Text>
                       </View>
@@ -1122,7 +1248,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {averageCostPerDayFuel !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageCostPerDayFuel, 2)} €
+                          {formatNumber(averageCostPerDayFuel, 2)} {getCurrencySymbol(userSettings.currency)}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.avgCostPerDayFuel")}</Text>
                       </View>
@@ -1130,7 +1256,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {totalFuelDistance !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatOdometer(totalFuelDistance)} km
+                          {(() => {
+                            const dist = convertDistance(totalFuelDistance, userSettings.unitSystem);
+                            return dist.value !== null ? `${formatOdometer(dist.value)} ${dist.unit}` : "—";
+                          })()}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.totalDistance")}</Text>
                       </View>
@@ -1147,7 +1276,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {averageDistancePerCharging !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageDistancePerCharging)} km
+                          {(() => {
+                            const dist = convertDistance(averageDistancePerCharging, userSettings.unitSystem);
+                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
+                          })()}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.avgDistancePerCharging")}</Text>
                       </View>
@@ -1155,7 +1287,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {longestDistanceSingleCharge !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatNumber(longestDistanceSingleCharge)} km
+                          {(() => {
+                            const dist = convertDistance(longestDistanceSingleCharge, userSettings.unitSystem);
+                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
+                          })()}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.longestDistanceSingleCharge")}</Text>
                       </View>
@@ -1179,7 +1314,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {averageCostPerDayCharging !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageCostPerDayCharging, 2)} €
+                          {formatNumber(averageCostPerDayCharging, 2)} {getCurrencySymbol(userSettings.currency)}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.avgCostPerDayCharging")}</Text>
                       </View>
@@ -1187,7 +1322,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                     {totalElectricityDistance !== null && (
                       <View style={styles.advancedStatItem}>
                         <Text style={styles.advancedStatValue}>
-                          {formatOdometer(totalElectricityDistance)} km
+                          {(() => {
+                            const dist = convertDistance(totalElectricityDistance, userSettings.unitSystem);
+                            return dist.value !== null ? `${formatOdometer(dist.value)} ${dist.unit}` : "—";
+                          })()}
                         </Text>
                         <Text style={styles.advancedStatLabel}>{t("vehicles.totalDistance")}</Text>
                       </View>
