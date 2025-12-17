@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { IconButton } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import { StyleSheet, TouchableOpacity, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Import screens
@@ -191,14 +191,16 @@ function AccountStack() {
         headerTitleStyle: {
           color: "#fff",
         },
+        contentStyle: {
+          backgroundColor: "#000000",
+        },
       }}
     >
       <Stack.Screen
         name="MyAccountMain"
         component={MyAccountScreen}
         options={{
-          title: t("auth.title"),
-          headerLeft: () => null, // Remove back button
+          title: t("navigation.account"),
         }}
       />
       <Stack.Screen
@@ -206,6 +208,10 @@ function AccountStack() {
         component={PrivacyPolicyScreen}
         options={{
           title: t("common.privacyPolicy"),
+          contentStyle: {
+            backgroundColor: "#000000",
+          },
+          animation: "fade",
         }}
       />
       <Stack.Screen
@@ -213,6 +219,10 @@ function AccountStack() {
         component={TermsOfUseScreen}
         options={{
           title: t("common.terms"),
+          contentStyle: {
+            backgroundColor: "#000000",
+          },
+          animation: "fade",
         }}
       />
       <Stack.Screen
@@ -220,6 +230,10 @@ function AccountStack() {
         component={FrequentlyAskedQuestionsScreen}
         options={{
           title: t("common.faq"),
+          contentStyle: {
+            backgroundColor: "#000000",
+          },
+          animation: "fade",
         }}
       />
     </Stack.Navigator>

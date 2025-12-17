@@ -5,6 +5,7 @@
     "fuelConsumption": "Fuel Consumption",
     "petrolStations": "Gas Stations",
     "settings": "Settings",
+    "account": "Account",
     "back": "Back"
   },
   "vehicles": {
@@ -32,6 +33,8 @@
     "trueRunningCost": "Total Driving Cost",
     "monthlyEstimate": "Estimated Monthly Cost",
     "avgCostPer100km": "Avg. running cost",
+    "avgConsumption": "Avg. Consumption",
+    "efficiencyCost": "Efficiency Cost",
     "totalCost": "Total cost of fuel-ups / charging sessions",
     "showConsumptionGraph": "Show consumption graph",
     "hideConsumptionGraph": "Hide consumption graph",
@@ -161,7 +164,10 @@
     "hide": "Hide",
     "show": "Show",
     "notEnoughData": "Not enough data. Enter at least two fill-ups or charging sessions.",
-    "date": "Date"
+    "date": "Date",
+    "support": "Support",
+    "legal": "Legal",
+    "preferences": "Preferences"
   },
   "auth": {
     "title": "Account",

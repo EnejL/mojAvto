@@ -5,6 +5,7 @@
     "fuelConsumption": "Poraba Goriva",
     "petrolStations": "Črpalke",
     "settings": "Nastavitve",
+    "account": "Račun",
     "back": "Nazaj"
   },
   "vehicles": {
@@ -32,6 +33,8 @@
     "trueRunningCost": "Skupni strošek vožnje",
     "monthlyEstimate": "Predvideni mesečni strošek",
     "avgCostPer100km": "Povp. strošek vožnje",
+    "avgConsumption": "Povp. poraba",
+    "efficiencyCost": "Povp. strošek",
     "totalCost": "Skupni strošek dosedanjih točenj / polnjenj",
     "showConsumptionGraph": "Prikaži graf porabe",
     "hideConsumptionGraph": "Skrij graf porabe",
@@ -160,7 +163,10 @@
     "hide": "Skrij",
     "show": "Prikaži",
     "notEnoughData": "Ni dovolj podatkov. Vnesite vsaj dve točenji ali polnjenji.",
-    "date": "Datum"
+    "date": "Datum",
+    "support": "Podpora",
+    "legal": "Pravni poduk",
+    "preferences": "Nastavitve"
   },
   "auth": {
     "title": "Račun",

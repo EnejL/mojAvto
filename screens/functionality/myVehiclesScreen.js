@@ -407,7 +407,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
                       style={styles.statIcon}
                     />
                     <View>
-                      <Text style={styles.statLabel}>Avg. Consumption</Text>
+                      <Text style={styles.statLabel}>{t("vehicles.avgConsumption")}</Text>
                       <Text style={styles.statValue}>{getConsumption()}</Text>
                     </View>
                   </View>
@@ -421,7 +421,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
                       style={styles.statIcon}
                     />
                     <View>
-                      <Text style={styles.statLabel}>Efficiency Cost</Text>
+                      <Text style={styles.statLabel}>{t("vehicles.efficiencyCost")}</Text>
                       <Text style={styles.statValue}>{getEfficiencyCost()} /km</Text>
                     </View>
                   </View>
