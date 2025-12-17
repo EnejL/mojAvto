@@ -151,7 +151,7 @@ function SettingsStack() {
         component={SettingsScreen}
         options={{
           title: t("navigation.settings"),
-          headerLeft: () => null, // Remove back button
+          headerLeft: () => null,
         }}
       />
       <Stack.Screen
@@ -232,12 +232,15 @@ export default function MainAppNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: "#000000",
-        tabBarInactiveTintColor: "#777777",
+        tabBarActiveTintColor: "#ffffff",
+        tabBarInactiveTintColor: "#999999",
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: "#1A1A1A",
           borderTopWidth: 1,
-          borderTopColor: "#e0e0e0",
+          borderTopColor: "#2A2A2A",
+          height: 60,
+          paddingBottom: 4,
+          paddingTop: 4,
         },
         headerShown: false,
       }}
