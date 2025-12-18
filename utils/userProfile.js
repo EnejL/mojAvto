@@ -5,6 +5,13 @@ import { doc, getDoc, setDoc } from "@react-native-firebase/firestore";
 export const defaultUserProfile = {
   language: "en",
   unitSystem: "metric", // "metric" | "imperial"
+  // Detailed measurement preferences (used by the settings UI; unitSystem stays in sync)
+  distanceUnit: "km", // "km" | "mi"
+  volumeUnit: "L", // "L" | "gal"
+  // Fuel consumption: "l_per_100km" | "mpg" | "km_per_l"
+  consumptionUnit: "l_per_100km",
+  // Electric consumption: "kwh_per_100km" | "kwh_per_100mi" | "mi_per_kwh" | "km_per_kwh"
+  electricConsumptionUnit: "kwh_per_100km",
   currency: "EUR", // "EUR" | "USD"
 };
 

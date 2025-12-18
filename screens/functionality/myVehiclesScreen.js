@@ -308,13 +308,28 @@ export default function MyVehiclesScreen({ navigation, route }) {
     const getVehicleTypeInfo = () => {
       switch (vehicleType) {
         case 'BEV':
-          return { label: 'Electric', color: '#2196F3', icon: 'lightning-bolt', bgColor: '#1a237e' };
+          return {
+            label: t("vehicles.typeBadge.electric"),
+            color: '#2196F3',
+            icon: 'lightning-bolt',
+            bgColor: '#1a237e',
+          };
         case 'PHEV':
-          return { label: 'Hybrid', color: '#9C27B0', icon: 'car-electric', bgColor: '#4a148c' };
+          return {
+            label: t("vehicles.typeBadge.hybrid"),
+            color: '#9C27B0',
+            icon: 'car-electric',
+            bgColor: '#4a148c',
+          };
         case 'ICE':
         case 'HYBRID':
         default:
-          return { label: 'Gasoline', color: '#FF9800', icon: 'gas-station', bgColor: '#e65100' };
+          return {
+            label: t("vehicles.typeBadge.gasoline"),
+            color: '#FF9800',
+            icon: 'gas-station',
+            bgColor: '#e65100',
+          };
       }
     };
 

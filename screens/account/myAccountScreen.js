@@ -12,7 +12,6 @@ import {
   Text,
   Surface,
   Avatar,
-  SegmentedButtons,
   ActivityIndicator,
 } from "react-native-paper";
 import { useTranslation } from "react-i18next";
@@ -34,6 +33,7 @@ export default function MyAccountScreen() {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [savingField, setSavingField] = useState(null);
   const [settings, setSettings] = useState(defaultUserProfile);
+  const [measurementExpanded, setMeasurementExpanded] = useState(false);
   const [currencyExpanded, setCurrencyExpanded] = useState(false);
   const [languageExpanded, setLanguageExpanded] = useState(false);
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
@@ -109,8 +109,146 @@ export default function MyAccountScreen() {
     }
   };
 
-  const handleUnitChange = async (unitSystem) => {
-    await persistSetting("unitSystem", unitSystem);
+  const getEffectiveDistanceUnit = () =>
+    settings.distanceUnit || (settings.unitSystem === "imperial" ? "mi" : "km");
+
+  const getEffectiveVolumeUnit = () =>
+    settings.volumeUnit || (settings.unitSystem === "imperial" ? "gal" : "L");
+
+  const getEffectiveConsumptionUnit = () =>
+    settings.consumptionUnit ||
+    (settings.unitSystem === "imperial" ? "mpg" : "l_per_100km");
+
+  const getEffectiveElectricConsumptionUnit = () =>
+    settings.electricConsumptionUnit ||
+    (settings.unitSystem === "imperial" ? "kwh_per_100mi" : "kwh_per_100km");
+
+  const getMeasurementSummary = () => {
+    const distance = getEffectiveDistanceUnit();
+    const volume = getEffectiveVolumeUnit();
+    const fuelConsumption = getEffectiveConsumptionUnit();
+    const electricConsumption = getEffectiveElectricConsumptionUnit();
+
+    const distanceLabel =
+      distance === "mi" ? t("settings.unitMilesShort") : t("settings.unitKilometresShort");
+    const volumeLabel =
+      volume === "gal" ? t("settings.unitGallonsShort") : t("settings.unitLitresShort");
+    const fuelLabel =
+      fuelConsumption === "mpg"
+        ? t("settings.unitMpg")
+        : fuelConsumption === "km_per_l"
+          ? t("settings.unitKmPerL")
+          : t("settings.unitLPer100Km");
+
+    const electricLabel =
+      electricConsumption === "kwh_per_100mi"
+        ? t("settings.unitKwhPer100Mi")
+        : electricConsumption === "mi_per_kwh"
+          ? t("settings.unitMiPerKwh")
+          : electricConsumption === "km_per_kwh"
+            ? t("settings.unitKmPerKwh")
+            : t("settings.unitKwhPer100Km");
+
+    return `${distanceLabel} • ${volumeLabel} • ${fuelLabel} • ${electricLabel}`;
+  };
+
+  const persistMeasurementSettings = async (partial) => {
+    const prev = {
+      distanceUnit: getEffectiveDistanceUnit(),
+      volumeUnit: getEffectiveVolumeUnit(),
+      consumptionUnit: getEffectiveConsumptionUnit(),
+      electricConsumptionUnit: getEffectiveElectricConsumptionUnit(),
+    };
+
+    let next = { ...prev, ...(partial || {}) };
+
+    // Normalize to keep combinations consistent (and keep existing app logic working via unitSystem)
+    if (partial?.distanceUnit) {
+      if (next.distanceUnit === "mi") {
+        next.volumeUnit = "gal";
+        next.consumptionUnit = "mpg";
+        next.electricConsumptionUnit = "kwh_per_100mi";
+      } else {
+        next.volumeUnit = "L";
+        if (next.consumptionUnit === "mpg") next.consumptionUnit = "l_per_100km";
+        if (next.electricConsumptionUnit === "kwh_per_100mi" || next.electricConsumptionUnit === "mi_per_kwh") {
+          next.electricConsumptionUnit = "kwh_per_100km";
+        }
+      }
+    }
+
+    if (partial?.volumeUnit) {
+      if (next.volumeUnit === "gal") {
+        next.distanceUnit = "mi";
+        next.consumptionUnit = "mpg";
+        next.electricConsumptionUnit = "kwh_per_100mi";
+      } else {
+        next.distanceUnit = "km";
+        if (next.consumptionUnit === "mpg") next.consumptionUnit = "l_per_100km";
+        if (next.electricConsumptionUnit === "kwh_per_100mi" || next.electricConsumptionUnit === "mi_per_kwh") {
+          next.electricConsumptionUnit = "kwh_per_100km";
+        }
+      }
+    }
+
+    if (partial?.consumptionUnit) {
+      if (next.consumptionUnit === "mpg") {
+        next.distanceUnit = "mi";
+        next.volumeUnit = "gal";
+        next.electricConsumptionUnit = "kwh_per_100mi";
+      } else {
+        next.distanceUnit = "km";
+        next.volumeUnit = "L";
+        if (next.electricConsumptionUnit === "kwh_per_100mi" || next.electricConsumptionUnit === "mi_per_kwh") {
+          next.electricConsumptionUnit = "kwh_per_100km";
+        }
+      }
+    }
+
+    if (partial?.electricConsumptionUnit) {
+      const imperialElectric =
+        next.electricConsumptionUnit === "kwh_per_100mi" ||
+        next.electricConsumptionUnit === "mi_per_kwh";
+      if (imperialElectric) {
+        next.distanceUnit = "mi";
+        next.volumeUnit = "gal";
+        next.consumptionUnit = "mpg";
+      } else {
+        next.distanceUnit = "km";
+        next.volumeUnit = "L";
+        if (next.consumptionUnit === "mpg") next.consumptionUnit = "l_per_100km";
+      }
+    }
+
+    const unitSystem = next.distanceUnit === "mi" ? "imperial" : "metric";
+
+    // Optimistic UI update
+    setSettings((prevSettings) => ({
+      ...prevSettings,
+      ...next,
+      unitSystem,
+    }));
+
+    if (!currentUser || currentUser.isAnonymous) {
+      return;
+    }
+
+    try {
+      setSavingField("unitSystem");
+      const merged = await updateUserProfile(
+        {
+          ...next,
+          unitSystem,
+        },
+        settings
+      );
+      setSettings(merged);
+      setMeasurementExpanded(false);
+    } catch (error) {
+      setSettings((prevState) => ({ ...defaultUserProfile, ...prevState }));
+    } finally {
+      setSavingField(null);
+    }
   };
 
   const handleCurrencyChange = async (currency) => {
@@ -284,41 +422,135 @@ export default function MyAccountScreen() {
 
           {/* Measurement Units */}
           <Surface style={styles.preferenceCard}>
-            <Text style={styles.preferenceTitle}>{t("settings.unitSystem")}</Text>
-            {settingsLoading ? (
-              <ActivityIndicator style={styles.loadingIndicator} />
-            ) : (
-              <SegmentedButtons
-                value={settings.unitSystem || "metric"}
-                onValueChange={handleUnitChange}
-                buttons={[
-                  {
-                    value: "metric",
-                    label: "Metric (km, L)",
-                    disabled: savingField === "unitSystem",
-                    style: styles.segmentedButton,
-                  },
-                  {
-                    value: "imperial",
-                    label: "Imperial (mi, gal)",
-                    disabled: savingField === "unitSystem",
-                    style: styles.segmentedButton,
-                  },
-                ]}
-                style={styles.segmentedButtons}
-                theme={{
-                  colors: {
-                    secondaryContainer: "#4A9EFF",
-                    onSecondaryContainer: "#FFFFFF",
-                    outline: "#666666",
-                    onSurface: "#FFFFFF",
-                    surface: "#2A2A2A",
-                    surfaceVariant: "#3A3A3A",
-                    onSurfaceVariant: "#FFFFFF",
-                  },
-                }}
-                density="regular"
+            <TouchableOpacity
+              style={styles.preferenceRow}
+              onPress={() => setMeasurementExpanded(!measurementExpanded)}
+              disabled={settingsLoading || savingField === "unitSystem"}
+            >
+              <View style={styles.preferenceRowLeft}>
+                <View style={[styles.iconCircle, styles.measurementIcon]}>
+                  <MaterialCommunityIcons name="ruler" size={20} color="#fff" />
+                </View>
+                <View style={styles.preferenceRowText}>
+                  <Text style={styles.preferenceTitle}>{t("settings.unitSystem")}</Text>
+                  <Text style={styles.preferenceSubtitle}>
+                    {settingsLoading ? t("common.loading") : getMeasurementSummary()}
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons
+                name={measurementExpanded ? "chevron-up" : "chevron-down"}
+                size={24}
+                color="#fff"
               />
+            </TouchableOpacity>
+
+            {measurementExpanded && !settingsLoading && (
+              <View style={styles.expandedContent}>
+                <Text style={styles.measurementSubsectionTitle}>
+                  {t("settings.distance")}
+                </Text>
+                {["km", "mi"].map((unit) => (
+                  <TouchableOpacity
+                    key={unit}
+                    style={styles.radioOption}
+                    onPress={() => persistMeasurementSettings({ distanceUnit: unit })}
+                    disabled={savingField === "unitSystem"}
+                  >
+                    <View style={styles.radioButton}>
+                      {getEffectiveDistanceUnit() === unit && (
+                        <View style={styles.radioButtonSelected} />
+                      )}
+                    </View>
+                    <Text style={styles.radioOptionText}>
+                      {unit === "km"
+                        ? t("settings.unitKilometres")
+                        : t("settings.unitMiles")}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                <View style={styles.measurementDivider} />
+
+                <Text style={styles.measurementSubsectionTitle}>
+                  {t("settings.volume")}
+                </Text>
+                {["L", "gal"].map((unit) => (
+                  <TouchableOpacity
+                    key={unit}
+                    style={styles.radioOption}
+                    onPress={() => persistMeasurementSettings({ volumeUnit: unit })}
+                    disabled={savingField === "unitSystem"}
+                  >
+                    <View style={styles.radioButton}>
+                      {getEffectiveVolumeUnit() === unit && (
+                        <View style={styles.radioButtonSelected} />
+                      )}
+                    </View>
+                    <Text style={styles.radioOptionText}>
+                      {unit === "L"
+                        ? t("settings.unitLitres")
+                        : t("settings.unitGallons")}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                <View style={styles.measurementDivider} />
+
+                <Text style={styles.measurementSubsectionTitle}>
+                  {t("settings.consumption")}
+                </Text>
+                <Text style={styles.measurementGroupTitle}>{t("vehicles.fuelConsumption")}</Text>
+                {[
+                  { value: "l_per_100km", label: t("settings.unitLPer100Km") },
+                  { value: "mpg", label: t("settings.unitMpg") },
+                  { value: "km_per_l", label: t("settings.unitKmPerL") },
+                ].map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={styles.radioOption}
+                    onPress={() =>
+                      persistMeasurementSettings({ consumptionUnit: opt.value })
+                    }
+                    disabled={savingField === "unitSystem"}
+                  >
+                    <View style={styles.radioButton}>
+                      {getEffectiveConsumptionUnit() === opt.value && (
+                        <View style={styles.radioButtonSelected} />
+                      )}
+                    </View>
+                    <Text style={styles.radioOptionText}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+
+                <View style={styles.measurementDivider} />
+
+                <Text style={styles.measurementGroupTitle}>
+                  {t("vehicles.electricConsumption")}
+                </Text>
+                {[
+                  { value: "kwh_per_100km", label: t("settings.unitKwhPer100Km") },
+                  { value: "kwh_per_100mi", label: t("settings.unitKwhPer100Mi") },
+                  { value: "km_per_kwh", label: t("settings.unitKmPerKwh") },
+                  { value: "mi_per_kwh", label: t("settings.unitMiPerKwh") },
+                ].map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={styles.radioOption}
+                    onPress={() =>
+                      persistMeasurementSettings({ electricConsumptionUnit: opt.value })
+                    }
+                    disabled={savingField === "unitSystem"}
+                  >
+                    <View style={styles.radioButton}>
+                      {getEffectiveElectricConsumptionUnit() === opt.value && (
+                        <View style={styles.radioButtonSelected} />
+                      )}
+                    </View>
+                    <Text style={styles.radioOptionText}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             )}
           </Surface>
 
@@ -608,6 +840,9 @@ const styles = StyleSheet.create({
   languageIcon: {
     backgroundColor: "#4A9EFF",
   },
+  measurementIcon: {
+    backgroundColor: "#3A3A3A",
+  },
   privacyIcon: {
     backgroundColor: "#5AC8FA",
   },
@@ -668,6 +903,25 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: "#2A2A2A",
+  },
+  measurementSubsectionTitle: {
+    fontSize: 12,
+    color: "#999999",
+    marginBottom: 8,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  measurementGroupTitle: {
+    fontSize: 14,
+    color: "#CCCCCC",
+    marginBottom: 8,
+    marginTop: 4,
+    fontWeight: "600",
+  },
+  measurementDivider: {
+    height: 1,
+    backgroundColor: "#2A2A2A",
+    marginVertical: 12,
   },
   radioOption: {
     flexDirection: "row",
