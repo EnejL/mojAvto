@@ -115,6 +115,17 @@ function MyVehiclesStack() {
         options={{
           title: t("fillings.add"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -123,6 +134,17 @@ function MyVehiclesStack() {
         options={{
           title: t("fillings.edit"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -131,6 +153,17 @@ function MyVehiclesStack() {
         options={{
           title: t("charging.add"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -139,6 +172,17 @@ function MyVehiclesStack() {
         options={{
           title: t("charging.edit"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen

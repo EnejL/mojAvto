@@ -733,11 +733,13 @@ export default function VehicleDetailsScreen({ route, navigation }) {
                 navigation.navigate("EditCharging", {
                   chargingSession: item,
                   vehicleId: vehicle.id,
+                  vehicle,
                 });
               } else {
                 navigation.navigate("EditFilling", {
                   filling: item,
                   vehicleId: vehicle.id,
+                  vehicle,
                 });
               }
             }}

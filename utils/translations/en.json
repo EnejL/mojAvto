@@ -179,6 +179,7 @@
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
+    "totalCost": "Total Cost",
     "error": {
       "save": "Save failed",
       "load": "Load failed",

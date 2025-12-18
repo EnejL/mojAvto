@@ -1,34 +1,51 @@
-import React, { useState, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-  Animated,
-} from "react-native";
-import { TextInput, Button, Text, Surface, SegmentedButtons } from "react-native-paper";
+import React, { useEffect, useRef, useState } from "react";
+import { Keyboard, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Button, SegmentedButtons, Text, TextInput } from "react-native-paper";
 import { useTranslation } from "react-i18next";
-import { addChargingSession } from "../../utils/firestore";
+import { addChargingSession, getVehicleHistory } from "../../utils/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { MaterialIcons } from "@expo/vector-icons";
-import FormLabel from "../../components/FormLabel";
+import { defaultUserProfile, getUserProfile } from "../../utils/userProfile";
+import {
+  ENTRY_COLORS,
+  EntryCard,
+  EntryDivider,
+  EntryLabelRow,
+  EntryPill,
+  EntryScreenLayout,
+} from "../../components/EntryScreenLayout";
+
+const formatDecimalInput = (value) => value.replace(".", ",");
+const parseDecimal = (value) => {
+  if (!value) return null;
+  const n = parseFloat(value.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+};
+const formatComputedDecimal = (value) => {
+  if (!Number.isFinite(value)) return "";
+  return value.toFixed(2).replace(".", ",");
+};
+const formatOdometer = (value) => {
+  if (value === null || value === undefined) return "";
+  return Math.round(parseFloat(value)).toLocaleString("de-DE");
+};
+const getCurrencySymbol = (code) => (code === "USD" ? "$" : "€");
 
 export default function AddChargingScreen({ route, navigation }) {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
   const { vehicle } = route.params;
+  const scrollRef = useRef(null);
+
+  const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
-  const scrollViewRef = useRef(null);
-  const animatedHeight = useRef(new Animated.Value(0)).current;
-  const contentHeight = useRef(0);
+  const [userSettings, setUserSettings] = useState(defaultUserProfile);
+  const [prevOdometer, setPrevOdometer] = useState(null);
 
   const [chargingData, setChargingData] = useState({
     date: new Date(),
     energyAdded: "",
+    pricePerKWh: "",
     cost: "",
     odometer: "",
     chargingLocation: {
@@ -50,24 +67,49 @@ export default function AddChargingScreen({ route, navigation }) {
     { value: 'AC', label: 'AC' },
     { value: 'DC Fast', label: 'DC Fast' },
   ];
+  const currencySymbol = getCurrencySymbol(userSettings.currency);
+  const distanceUnit = userSettings.distanceUnit || (userSettings.unitSystem === "imperial" ? "mi" : "km");
 
-  const formatDecimal = (value) => {
-    return value.replace(".", ",");
-  };
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      try {
+        const profile = await getUserProfile();
+        setUserSettings(profile);
+      } catch (e) {
+        setUserSettings(defaultUserProfile);
+      }
+    };
+    loadUserSettings();
+    const unsubscribe = navigation?.addListener?.("focus", loadUserSettings);
+    return unsubscribe;
+  }, [navigation]);
 
-  const formatDate = (date) => {
-    return date.toISOString().split("T")[0];
-  };
+  useEffect(() => {
+    let mounted = true;
+    const loadPrevOdometer = async () => {
+      try {
+        const history = await getVehicleHistory(vehicle.id);
+        const max = history.reduce((acc, entry) => {
+          const odo = typeof entry.odometer === "number" ? entry.odometer : parseInt(entry.odometer, 10);
+          if (!Number.isFinite(odo)) return acc;
+          return acc === null || odo > acc ? odo : acc;
+        }, null);
+        if (mounted) setPrevOdometer(max);
+      } catch (e) {
+        if (mounted) setPrevOdometer(null);
+      }
+    };
+    loadPrevOdometer();
+    return () => {
+      mounted = false;
+    };
+  }, [vehicle.id]);
+
+  // Intentionally do NOT prefill odometer with previous value.
 
   const renderClearIcon = (value, onClear) => {
     if (!value || value.length === 0) return null;
-    return (
-      <TextInput.Icon
-        icon="close"
-        onPress={onClear}
-        iconColor="#666"
-      />
-    );
+    return <TextInput.Icon icon="close" onPress={onClear} iconColor={ENTRY_COLORS.muted} />;
   };
 
   const handleDateChange = (event, selectedDate) => {
@@ -75,9 +117,6 @@ export default function AddChargingScreen({ route, navigation }) {
     if (selectedDate) {
       setChargingData({ ...chargingData, date: selectedDate });
     }
-
-    // Note: We're not closing the picker here anymore
-    // The picker will stay open until the user taps elsewhere
   };
 
   // Toggle date picker visibility
@@ -87,48 +126,43 @@ export default function AddChargingScreen({ route, navigation }) {
     setShowDatePicker(!showDatePicker);
   };
 
-  // Handle tapping outside of inputs to dismiss keyboard and date picker
-  const handleOutsidePress = () => {
-    Keyboard.dismiss();
-    if (showDatePicker) {
-      setShowDatePicker(false);
-    }
-  };
-
-  // Measure the content height when it's laid out
-  const handleContentLayout = (event) => {
-    const { height } = event.nativeEvent.layout;
-    if (height > 0) {
-      contentHeight.current = height;
-      // If section is open and height changed, update animation
-      if (showMoreDetails && Math.abs(animatedHeight._value - height) > 1) {
-        Animated.timing(animatedHeight, {
-          toValue: height,
-          duration: 200,
-          useNativeDriver: false,
-        }).start();
+  const onChangeEnergyAdded = (text) => {
+    const energyAdded = formatDecimalInput(text);
+    setChargingData((prev) => {
+      const energyNum = parseDecimal(energyAdded);
+      const priceNum = parseDecimal(prev.pricePerKWh);
+      const next = { ...prev, energyAdded };
+      if (energyNum !== null && priceNum !== null) {
+        next.cost = formatComputedDecimal(energyNum * priceNum);
       }
-    }
-  };
-
-  // Toggle more details section
-  const toggleMoreDetails = () => {
-    const toValue = showMoreDetails ? 0 : (contentHeight.current || 500); // Use measured height or generous fallback
-    
-    Animated.timing(animatedHeight, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start(() => {
-      // After animation, scroll to show the content if it was opened
-      if (!showMoreDetails && scrollViewRef.current) {
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }
+      return next;
     });
-    
-    setShowMoreDetails(!showMoreDetails);
+  };
+
+  const onChangePricePerKWh = (text) => {
+    const pricePerKWh = formatDecimalInput(text);
+    setChargingData((prev) => {
+      const energyNum = parseDecimal(prev.energyAdded);
+      const priceNum = parseDecimal(pricePerKWh);
+      const next = { ...prev, pricePerKWh };
+      if (energyNum !== null && priceNum !== null) {
+        next.cost = formatComputedDecimal(energyNum * priceNum);
+      }
+      return next;
+    });
+  };
+
+  const onChangeCost = (text) => {
+    const cost = formatDecimalInput(text);
+    setChargingData((prev) => {
+      const energyNum = parseDecimal(prev.energyAdded);
+      const costNum = parseDecimal(cost);
+      const next = { ...prev, cost };
+      if (energyNum !== null && costNum !== null && energyNum > 0) {
+        next.pricePerKWh = formatComputedDecimal(costNum / energyNum);
+      }
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -151,7 +185,7 @@ export default function AddChargingScreen({ route, navigation }) {
       const cost = parseFloat(parseFloat(costStr).toFixed(2));
 
       await addChargingSession(vehicle.id, {
-        date: formatDate(chargingData.date),
+        date: chargingData.date.toISOString().split("T")[0],
         energyAdded: energyAdded,
         cost: cost,
         odometer: parseInt(chargingData.odometer, 10),
@@ -171,300 +205,343 @@ export default function AddChargingScreen({ route, navigation }) {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <View style={styles.container}>
-        <ScrollView 
-          ref={scrollViewRef}
-          contentContainerStyle={styles.scrollViewContent}
+    <EntryScreenLayout
+      scrollRef={scrollRef}
+      bottom={
+        <Button
+          mode="contained"
+          onPress={handleSave}
+          disabled={loading}
+          loading={loading}
+          buttonColor={ENTRY_COLORS.blue}
+          style={styles.primaryButton}
+          contentStyle={styles.primaryButtonContent}
+          labelStyle={styles.primaryButtonLabel}
         >
-          <Surface style={styles.vehicleInfoCard}>
-            <Text style={styles.vehicleInfoTitle}>
-              {t("vehicles.selected")}:
-            </Text>
-            <Text style={styles.vehicleInfoText}>
-              {vehicle.name} ({vehicle.make} {vehicle.model})
-            </Text>
-          </Surface>
+          {t("common.save")}
+        </Button>
+      }
+    >
+      <EntryCard style={styles.vehicleCard}>
+        <Text style={styles.vehicleName}>{vehicle.name}</Text>
+        <Text style={styles.vehicleMeta}>
+          {vehicle.make} {vehicle.model}
+        </Text>
+      </EntryCard>
 
-          <Surface style={styles.formCard}>
-            {/* Date Picker Button */}
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={toggleDatePicker}
-            >
-              <FormLabel required style={styles.datePickerLabel}>{t("charging.date")}</FormLabel>
-              <View style={styles.datePickerValueContainer}>
-                <Text style={styles.datePickerValue}>
-                  {formatDate(chargingData.date)}
-                </Text>
-                <MaterialIcons name="calendar-today" size={20} color="#666" />
-              </View>
-            </TouchableOpacity>
-
-            {/* Date Picker */}
-            {showDatePicker && (
-              <DateTimePicker
-                value={chargingData.date}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={handleDateChange}
-              />
-            )}
-
-            <TextInput
-              label={<FormLabel required>{`${t("charging.energyAdded")} (kWh)`}</FormLabel>}
-              value={chargingData.energyAdded}
-              onChangeText={(text) => {
-                const formattedText = formatDecimal(text);
-                setChargingData({ ...chargingData, energyAdded: formattedText });
-              }}
-              keyboardType="numeric"
-              style={styles.input}
-              mode="outlined"
-              onFocus={() => setShowDatePicker(false)}
-              right={renderClearIcon(chargingData.energyAdded, () =>
-                setChargingData({ ...chargingData, energyAdded: "" })
-              )}
+      <View style={styles.field}>
+        <EntryLabelRow label={t("charging.date")} />
+        <TouchableOpacity style={styles.dateField} onPress={toggleDatePicker} activeOpacity={0.85}>
+          <Text style={styles.dateValue}>{chargingData.date?.toLocaleDateString?.() || ""}</Text>
+          <MaterialIcons name="calendar-today" size={18} color={ENTRY_COLORS.muted} />
+        </TouchableOpacity>
+        {showDatePicker ? (
+          <View style={styles.inlinePicker}>
+            <DateTimePicker
+              value={chargingData.date}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={handleDateChange}
             />
-
-            <TextInput
-              label={<FormLabel required>{`${t("charging.cost")} (€)`}</FormLabel>}
-              value={chargingData.cost}
-              onChangeText={(text) => {
-                const formattedText = formatDecimal(text);
-                setChargingData({ ...chargingData, cost: formattedText });
-              }}
-              keyboardType="numeric"
-              style={styles.input}
-              mode="outlined"
-              onFocus={() => setShowDatePicker(false)}
-              right={renderClearIcon(chargingData.cost, () =>
-                setChargingData({ ...chargingData, cost: "" })
-              )}
-            />
-
-            <TextInput
-              label={<FormLabel required>{`${t("charging.odometer")} (km)`}</FormLabel>}
-              value={chargingData.odometer}
-              onChangeText={(text) =>
-                setChargingData({ ...chargingData, odometer: text })
-              }
-              keyboardType="numeric"
-              style={styles.input}
-              mode="outlined"
-              onFocus={() => setShowDatePicker(false)}
-              right={renderClearIcon(chargingData.odometer, () =>
-                setChargingData({ ...chargingData, odometer: "" })
-              )}
-            />
-
-            {/* Collapsible More Details Section */}
-            <TouchableOpacity 
-              style={styles.moreDetailsButton} 
-              onPress={toggleMoreDetails}
-            >
-              <Text style={styles.moreDetailsText}>
-                {t("charging.moreDetails") || "Add more details"}
-              </Text>
-              <MaterialIcons 
-                name={showMoreDetails ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-                size={24} 
-                color="#666" 
-              />
-            </TouchableOpacity>
-
-            {/* Animated collapsible section */}
-            <Animated.View style={[styles.collapsibleSection, { height: animatedHeight }]}>
-              <View 
-                style={styles.collapsibleContent} 
-                onLayout={handleContentLayout}
-                collapsable={false}
-              >
-                {/* Location Type Selector */}
-                <View style={styles.selectorContainer}>
-                  <Text style={styles.selectorLabel}>{t("charging.locationType")}</Text>
-                  <SegmentedButtons
-                    value={chargingData.chargingLocation.type}
-                    onValueChange={(value) => setChargingData({ 
-                      ...chargingData, 
-                      chargingLocation: { ...chargingData.chargingLocation, type: value }
-                    })}
-                    buttons={locationTypeOptions}
-                    style={styles.segmentedButtons}
-                    disabled={loading}
-                  />
-                </View>
-
-                {/* Charger Type Selector */}
-                <View style={styles.selectorContainer}>
-                  <Text style={styles.selectorLabel}>{t("charging.chargerType")}</Text>
-                  <SegmentedButtons
-                    value={chargingData.chargingLocation.chargerType}
-                    onValueChange={(value) => setChargingData({ 
-                      ...chargingData, 
-                      chargingLocation: { ...chargingData.chargingLocation, chargerType: value }
-                    })}
-                    buttons={chargerTypeOptions}
-                    style={styles.segmentedButtons}
-                    disabled={loading}
-                  />
-                </View>
-
-                {/* Optional Location Name */}
-                <TextInput
-                  label={<FormLabel>{t("charging.locationName")}</FormLabel>}
-                  value={chargingData.chargingLocation.locationName}
-                  onChangeText={(text) =>
-                    setChargingData({ 
-                      ...chargingData, 
-                      chargingLocation: { ...chargingData.chargingLocation, locationName: text }
-                    })
-                  }
-                  style={styles.input}
-                  mode="outlined"
-                  onFocus={() => setShowDatePicker(false)}
-                  placeholder={t("charging.locationNamePlaceholder")}
-                  right={renderClearIcon(chargingData.chargingLocation.locationName, () =>
-                    setChargingData({
-                      ...chargingData,
-                      chargingLocation: { ...chargingData.chargingLocation, locationName: "" },
-                    })
-                  )}
-                />
-              </View>
-            </Animated.View>
-
-            <View style={styles.buttonContainer}>
-              <Button
-                mode="outlined"
-                onPress={() => navigation.goBack()}
-                style={styles.button}
-                disabled={loading}
-              >
-                {t("common.cancel")}
-              </Button>
-
-              <Button
-                mode="contained"
-                onPress={handleSave}
-                style={styles.button}
-                loading={loading}
-                disabled={loading}
-              >
-                {t("common.save")}
-              </Button>
-            </View>
-          </Surface>
-        </ScrollView>
+          </View>
+        ) : null}
       </View>
-    </TouchableWithoutFeedback>
+
+      <View style={styles.field}>
+        <EntryLabelRow
+          label={`${t("charging.odometer")} (${distanceUnit})`}
+          right={
+            prevOdometer !== null ? (
+              <EntryPill>{`Prev: ${formatOdometer(prevOdometer)}`}</EntryPill>
+            ) : null
+          }
+        />
+        <TextInput
+          value={chargingData.odometer}
+          onChangeText={(text) => setChargingData((d) => ({ ...d, odometer: text }))}
+          keyboardType="numeric"
+          mode="outlined"
+          style={styles.input}
+          outlineStyle={styles.inputOutline}
+          contentStyle={styles.inputContent}
+          textColor={ENTRY_COLORS.text}
+          outlineColor={ENTRY_COLORS.border}
+          activeOutlineColor={ENTRY_COLORS.blue}
+          placeholderTextColor={ENTRY_COLORS.placeholder}
+          onFocus={() => setShowDatePicker(false)}
+          right={renderClearIcon(chargingData.odometer, () =>
+            setChargingData((d) => ({ ...d, odometer: "" }))
+          )}
+        />
+      </View>
+
+      <EntryDivider />
+
+      <View style={styles.row}>
+        <View style={[styles.field, styles.fieldHalf]}>
+          <EntryLabelRow label={`${t("charging.energyAdded")} (kWh)`} />
+          <TextInput
+            value={chargingData.energyAdded}
+            onChangeText={onChangeEnergyAdded}
+            keyboardType="numeric"
+            mode="outlined"
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
+            contentStyle={styles.inputContent}
+            textColor={ENTRY_COLORS.text}
+            outlineColor={ENTRY_COLORS.border}
+            activeOutlineColor={ENTRY_COLORS.blue}
+            placeholderTextColor={ENTRY_COLORS.placeholder}
+            placeholder="0.00"
+            onFocus={() => setShowDatePicker(false)}
+            right={renderClearIcon(chargingData.energyAdded, () =>
+              setChargingData((d) => ({ ...d, energyAdded: "" }))
+            )}
+          />
+        </View>
+
+        <View style={[styles.field, styles.fieldHalf]}>
+          <EntryLabelRow label={`${t("charging.pricePerKWh")} (${currencySymbol}/kWh)`} />
+          <TextInput
+            value={chargingData.pricePerKWh}
+            onChangeText={onChangePricePerKWh}
+            keyboardType="numeric"
+            mode="outlined"
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
+            contentStyle={styles.inputContent}
+            textColor={ENTRY_COLORS.text}
+            outlineColor={ENTRY_COLORS.border}
+            activeOutlineColor={ENTRY_COLORS.blue}
+            placeholderTextColor={ENTRY_COLORS.placeholder}
+            placeholder={`${currencySymbol} 0.00`}
+            onFocus={() => setShowDatePicker(false)}
+            right={renderClearIcon(chargingData.pricePerKWh, () =>
+              setChargingData((d) => ({ ...d, pricePerKWh: "" }))
+            )}
+          />
+        </View>
+      </View>
+
+      <View style={styles.field}>
+        <EntryLabelRow label={t("common.totalCost")} />
+        <TextInput
+          value={chargingData.cost}
+          onChangeText={onChangeCost}
+          keyboardType="numeric"
+          mode="outlined"
+          style={styles.inputBig}
+          outlineStyle={styles.inputOutline}
+          contentStyle={styles.inputBigContent}
+          textColor={ENTRY_COLORS.text}
+          outlineColor={ENTRY_COLORS.border}
+          activeOutlineColor={ENTRY_COLORS.blue}
+          placeholderTextColor={ENTRY_COLORS.placeholder}
+          placeholder={`${currencySymbol} 0.00`}
+          onFocus={() => setShowDatePicker(false)}
+          left={<TextInput.Icon icon={() => <Text style={styles.currencyPrefix}>{currencySymbol}</Text>} />}
+          right={renderClearIcon(chargingData.cost, () =>
+            setChargingData((d) => ({ ...d, cost: "" }))
+          )}
+        />
+      </View>
+
+      <TouchableOpacity
+        style={styles.moreDetailsButton}
+        onPress={() => setShowMoreDetails((v) => !v)}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.moreDetailsText}>{t("charging.moreDetails")}</Text>
+        <MaterialIcons
+          name={showMoreDetails ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+          size={24}
+          color={ENTRY_COLORS.muted}
+        />
+      </TouchableOpacity>
+
+      {showMoreDetails ? (
+        <EntryCard style={styles.detailsCard}>
+          <View style={styles.selectorContainer}>
+            <Text style={styles.selectorLabel}>{t("charging.locationType")}</Text>
+            <SegmentedButtons
+              value={chargingData.chargingLocation.type}
+              onValueChange={(value) =>
+                setChargingData((d) => ({
+                  ...d,
+                  chargingLocation: { ...d.chargingLocation, type: value },
+                }))
+              }
+              buttons={locationTypeOptions}
+              disabled={loading}
+              style={styles.segmentedButtons}
+            />
+          </View>
+
+          <View style={styles.selectorContainer}>
+            <Text style={styles.selectorLabel}>{t("charging.chargerType")}</Text>
+            <SegmentedButtons
+              value={chargingData.chargingLocation.chargerType}
+              onValueChange={(value) =>
+                setChargingData((d) => ({
+                  ...d,
+                  chargingLocation: { ...d.chargingLocation, chargerType: value },
+                }))
+              }
+              buttons={chargerTypeOptions}
+              disabled={loading}
+              style={styles.segmentedButtons}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <EntryLabelRow label={t("charging.locationName")} />
+            <TextInput
+              value={chargingData.chargingLocation.locationName}
+              onChangeText={(text) =>
+                setChargingData((d) => ({
+                  ...d,
+                  chargingLocation: { ...d.chargingLocation, locationName: text },
+                }))
+              }
+              mode="outlined"
+              style={styles.input}
+              outlineStyle={styles.inputOutline}
+              contentStyle={styles.inputContent}
+              textColor={ENTRY_COLORS.text}
+              outlineColor={ENTRY_COLORS.border}
+              activeOutlineColor={ENTRY_COLORS.blue}
+              placeholderTextColor={ENTRY_COLORS.placeholder}
+              placeholder={t("charging.locationNamePlaceholder")}
+              onFocus={() => setShowDatePicker(false)}
+              right={renderClearIcon(chargingData.chargingLocation.locationName, () =>
+                setChargingData((d) => ({
+                  ...d,
+                  chargingLocation: { ...d.chargingLocation, locationName: "" },
+                }))
+              )}
+            />
+          </View>
+        </EntryCard>
+      ) : null}
+    </EntryScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    padding: 16,
+  vehicleCard: {
+    paddingVertical: 22,
   },
-  scrollViewContent: {
-    paddingBottom: 20,
+  vehicleName: {
+    color: ENTRY_COLORS.text,
+    fontSize: 34,
+    fontWeight: "800",
+    letterSpacing: -0.2,
   },
-  vehicleInfoCard: {
-    padding: 16,
-    marginBottom: 16,
-    marginHorizontal: 6,
-    borderRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  vehicleInfoTitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  vehicleInfoText: {
+  vehicleMeta: {
+    color: ENTRY_COLORS.muted,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "700",
+    marginTop: 6,
   },
-  formCard: {
-    padding: 16,
-    borderRadius: 8,
-    elevation: 2,
-    marginHorizontal: 6,
+  field: {
+    marginBottom: 16,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  fieldHalf: {
+    width: "48%",
   },
   input: {
-    marginBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  inputBig: {
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  inputOutline: {
+    borderRadius: 18,
+  },
+  inputContent: {
+    height: 56,
+  },
+  inputBigContent: {
+    height: 68,
+  },
+  currencyPrefix: {
+    color: ENTRY_COLORS.muted,
+    fontWeight: "900",
+    fontSize: 18,
+    paddingTop: 6,
+    paddingLeft: 2,
+  },
+  dateField: {
+    height: 56,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: ENTRY_COLORS.border,
+    backgroundColor: ENTRY_COLORS.surface,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dateValue: {
+    color: ENTRY_COLORS.text,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  inlinePicker: {
+    marginTop: 8,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: ENTRY_COLORS.border,
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  moreDetailsButton: {
+    height: 56,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: ENTRY_COLORS.border,
+    backgroundColor: ENTRY_COLORS.surface,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  moreDetailsText: {
+    color: ENTRY_COLORS.muted,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  detailsCard: {
+    marginTop: 10,
   },
   selectorContainer: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   selectorLabel: {
+    color: ENTRY_COLORS.muted,
     fontSize: 14,
-    color: "#666",
+    fontWeight: "800",
     marginBottom: 8,
   },
   segmentedButtons: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
+  primaryButton: {
+    borderRadius: 18,
   },
-  button: {
-    width: "48%",
+  primaryButtonContent: {
+    height: 58,
   },
-  datePickerButton: {
-    borderWidth: 1,
-    borderColor: "#666",
-    borderRadius: 4,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: "#fff",
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-  },
-  datePickerLabel: {
-    alignSelf: "center",
-  },
-  datePickerValueContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flex: 1,
-    paddingLeft: 15,
-  },
-  datePickerValue: {
-    fontSize: 16,
-  },
-  moreDetailsButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  moreDetailsText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  collapsibleSection: {
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  collapsibleContent: {
-    padding: 8,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  primaryButtonLabel: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "white",
+    letterSpacing: 0.2,
   },
 }); 

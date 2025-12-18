@@ -178,6 +178,7 @@
     "loading": "Nalaganje...",
     "save": "Shrani",
     "cancel": "Prekliči",
+    "totalCost": "Skupni strošek",
     "error": {
       "save": "Shranjevanje ni uspelo",
       "load": "Nalaganje ni uspelo",
