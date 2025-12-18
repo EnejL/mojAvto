@@ -1,30 +1,40 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { Text, Surface, Button } from 'react-native-paper';
-import { useTranslation } from 'react-i18next';
+import React, { useMemo, useState, useEffect } from "react";
+import { View, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { Text } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { defaultUserProfile, getUserProfile } from '../utils/userProfile';
 
-const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
-  const { t } = useTranslation();
-  const [showGraph, setShowGraph] = useState(false);
+const COLORS = {
+  bg: "transparent",
+  text: "#E8F0FA",
+  subtext: "#94A3B8",
+  muted: "#64748B",
+  border: "rgba(148,163,184,0.18)",
+  grid: "rgba(148,163,184,0.12)",
+  axis: "rgba(148,163,184,0.28)",
+  fuel: "#22C55E",
+  electric: "#3B82F6",
+};
+
+const ConsumptionGraph = ({ data, dataType = "fuel", unitSystem, locale }) => {
+  const { t, i18n } = useTranslation();
   const [textLaidOut, setTextLaidOut] = useState(false);
   const [userSettings, setUserSettings] = useState(defaultUserProfile);
   const screenWidth = Dimensions.get('window').width - 32; // margins
 
-  // Reset layout state when graph visibility changes or when data/dataType changes
-  // This ensures rotation works correctly after Fast Refresh during development
+  const resolvedLocale =
+    locale || (i18n.language?.startsWith("sl") ? "sl-SI" : "en-US");
+  const resolvedUnitSystem = unitSystem || userSettings.unitSystem;
+
+  // Reset layout state when data/dataType changes (helps rotation + label layout)
   useEffect(() => {
-    if (showGraph) {
-      setTextLaidOut(false);
-      // Small delay to ensure layout completes after state reset
-      const timer = setTimeout(() => setTextLaidOut(true), 100);
-      return () => clearTimeout(timer);
-    } else {
-      setTextLaidOut(false);
-    }
-  }, [showGraph, dataType, data?.length]);
+    setTextLaidOut(false);
+    const timer = setTimeout(() => setTextLaidOut(true), 80);
+    return () => clearTimeout(timer);
+  }, [dataType, data?.length]);
 
   useEffect(() => {
+    if (unitSystem) return;
     const loadSettings = async () => {
       try {
         const profile = await getUserProfile();
@@ -38,7 +48,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
 
   const convertFuelConsumption = (value) => {
     if (value === null || value === undefined) return { value, unit: 'L/100km' };
-    if (userSettings.unitSystem === 'imperial') {
+    if (resolvedUnitSystem === 'imperial') {
       const mpg = 235.214583 / value;
       return { value: mpg, unit: 'MPG' };
     }
@@ -47,7 +57,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
 
   const convertElectricConsumption = (value) => {
     if (value === null || value === undefined) return { value, unit: 'kWh/100km' };
-    if (userSettings.unitSystem === 'imperial') {
+    if (resolvedUnitSystem === 'imperial') {
       const per100mi = value * 1.60934;
       return { value: per100mi, unit: 'kWh/100mi' };
     }
@@ -113,7 +123,11 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
         dateObj = new Date(cur.date);
       }
 
-      const label = `${String(dateObj.getDate()).padStart(2,'0')}. ${String(dateObj.getMonth()+1).padStart(2,'0')}. ${String(dateObj.getFullYear()).slice(-2)}`;
+      // Keep legacy X-axis label formatting: dd. mm. yy
+      // (matches the app’s existing consumption graph style)
+      const label = `${String(dateObj.getDate()).padStart(2, "0")}. ${String(
+        dateObj.getMonth() + 1
+      ).padStart(2, "0")}. ${String(dateObj.getFullYear()).slice(-2)}`;
       
       const point = { 
         date: label, 
@@ -147,17 +161,17 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
     // Determine unit based on data type and user settings
     let unit;
     if (dataType === 'electricity') {
-      unit = userSettings.unitSystem === 'imperial' ? 'kWh/100mi' : 'kWh/100km';
+      unit = resolvedUnitSystem === 'imperial' ? 'kWh/100mi' : 'kWh/100km';
     } else if (dataType === 'combined') {
-      const fuelUnit = userSettings.unitSystem === 'imperial' ? 'MPG' : 'L/100km';
-      const elecUnit = userSettings.unitSystem === 'imperial' ? 'kWh/100mi' : 'kWh/100km';
+      const fuelUnit = resolvedUnitSystem === 'imperial' ? 'MPG' : 'L/100km';
+      const elecUnit = resolvedUnitSystem === 'imperial' ? 'kWh/100mi' : 'kWh/100km';
       unit = `${fuelUnit} | ${elecUnit}`;
     } else {
-      unit = userSettings.unitSystem === 'imperial' ? 'MPG' : 'L/100km';
+      unit = resolvedUnitSystem === 'imperial' ? 'MPG' : 'L/100km';
     }
     
     return { dataPoints: pts, fuelPoints: fuelPts, electricPoints: electricPts, min, max, unit };
-  }, [data, dataType, userSettings.unitSystem]);
+  }, [data, dataType, resolvedUnitSystem, resolvedLocale]);
 
   const { dataPoints, fuelPoints, electricPoints, min, max, unit } = chartData;
   const range = max - min;
@@ -168,38 +182,24 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
   
   // Determine if we're showing dual lines for PHEV
   const isDualLine = dataType === 'combined' && fuelPoints.length > 0 && electricPoints.length > 0;
-  
-  if (!showGraph) {
-    return (
-      <Surface style={styles.container}>
-        <Button mode="contained" onPress={() => setShowGraph(true)}>
-          {t('vehicles.showConsumptionGraph')}
-        </Button>
-      </Surface>
-    );
-  }
 
   return (
-    <Surface style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>{t('vehicles.consumptionOverTime')}</Text>
-        <Button mode="text" onPress={() => setShowGraph(false)}>
-          {t('common.hide')}
-        </Button>
-      </View>
-
-      {/* Legend for PHEV vehicles */}
-      {isDualLine && (
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#2e7d32' }]} />
-            <Text style={styles.legendText}>{t('vehicles.fuelConsumption')}</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#2196F3' }]} />
-            <Text style={styles.legendText}>{t('vehicles.electricConsumption')}</Text>
+    <View style={styles.container}>
+      {isDualLine ? (
+        <View style={styles.metaColumn}>
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: COLORS.fuel }]} />
+              <Text style={styles.legendText}>{t("vehicles.fuelConsumption")}</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: COLORS.electric }]} />
+              <Text style={styles.legendText}>{t("vehicles.electricConsumption")}</Text>
+            </View>
           </View>
         </View>
+      ) : (
+        <View style={styles.metaRow} />
       )}
 
       <View style={styles.graphContainer}>
@@ -212,7 +212,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
 
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingRight: 20 }}
           style={styles.scrollContainer}
         >
@@ -256,7 +256,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
                           left: x1,
                           top: y1,
                           width: length,
-                          backgroundColor: '#2e7d32',
+                          backgroundColor: COLORS.fuel,
                           transformOrigin: 'left center',
                           transform: [{ rotate: `${angle}rad` }],
                         },
@@ -288,7 +288,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
                           left: x1,
                           top: y1,
                           width: length,
-                          backgroundColor: '#2196F3',
+                          backgroundColor: COLORS.electric,
                           transformOrigin: 'left center',
                           transform: [{ rotate: `${angle}rad` }],
                         },
@@ -313,7 +313,7 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
                 const angle = Math.atan2(deltaY, deltaX);
 
                 // Color: Blue for BEV, Green for ICE/HYBRID
-                const lineColor = dataType === 'electricity' ? '#2196F3' : '#2e7d32';
+                const lineColor = dataType === 'electricity' ? COLORS.electric : COLORS.fuel;
 
                 return (
                   <View 
@@ -342,11 +342,11 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
               // Determine dot color based on type
               let dotColor;
               if (dataType === 'electricity') {
-                dotColor = '#2196F3'; // Blue for BEV
+                dotColor = COLORS.electric; // Blue for BEV
               } else if (dataType === 'combined') {
-                dotColor = pt.type === 'electricity' ? '#2196F3' : '#2e7d32'; // Mixed for PHEV
+                dotColor = pt.type === 'electricity' ? COLORS.electric : COLORS.fuel; // Mixed for PHEV
               } else {
-                dotColor = '#2e7d32'; // Green for ICE/HYBRID
+                dotColor = COLORS.fuel; // Green for ICE/HYBRID
               }
               
               return (
@@ -409,38 +409,35 @@ const ConsumptionGraph = ({ data, dataType = 'fuel' }) => {
           </Text>
         </View>
       </View>
-    </Surface>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.bg,
+    paddingTop: 6,
+    paddingBottom: 2,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
-  title: { fontSize: 18, fontWeight: 'bold' },
-  button: { marginVertical: 8 },
-  closeButton: { marginLeft: 8 },
+  metaColumn: {
+    marginBottom: 10,
+    gap: 6,
+  },
 
   legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   legendColor: {
@@ -450,63 +447,63 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    color: COLORS.subtext,
+    fontWeight: "700",
   },
 
   graphContainer: {
-    flexDirection: 'row',
-    height: 280,
+    flexDirection: "row",
+    height: 270,
   },
 
   yAxisLabels: {
     width: 40,
     height: 200,
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     paddingRight: 5,
   },
   yAxisLabel: {
     fontSize: 10,
-    color: '#666',
+    color: COLORS.muted,
   },
 
   scrollContainer: { flex: 1 },
   chartArea: {
     height: 200,
-    position: 'relative',
+    position: "relative",
     marginBottom: 60,
   },
 
   gridLine: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.grid,
   },
   yAxis: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
     width: 1,
-    backgroundColor: '#ccc',
+    backgroundColor: COLORS.axis,
   },
   xAxis: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     height: 1,
-    backgroundColor: '#ccc',
+    backgroundColor: COLORS.axis,
   },
   dataLine: {
-    position: 'absolute',
+    position: "absolute",
     height: 2,
   },
   dataPoint: {
-    position: 'absolute',
+    position: "absolute",
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -514,32 +511,32 @@ const styles = StyleSheet.create({
   },
 
   xAxisLabels: {
-    position: 'absolute',
+    position: "absolute",
     left: 5,
     bottom: -80,
-    flexDirection: 'row',
+    flexDirection: "row",
     height: 50,
   },
 
   xAxisLabel: {
-    position: 'absolute',
+    position: "absolute",
     fontSize: 11,
-    color: '#666',
-    textAlign: 'center',
+    color: COLORS.subtext,
+    textAlign: "center",
   },
 
   yAxisTitle: {
-    position: 'absolute',
+    position: "absolute",
     left: -35,
     top: 100,
     width: 80,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 10,
   },
   axisTitle: {
     fontSize: 11,
-    color: '#666',
-    textAlign: 'center',
+    color: COLORS.subtext,
+    textAlign: "center",
     width: 150,
   },
 });

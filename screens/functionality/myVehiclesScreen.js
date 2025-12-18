@@ -642,7 +642,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
-    backgroundColor: "transparent",
+    backgroundColor: "gray",
+    boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#333333",
+    padding: 4,
   },
   brandLogo: {
     width: "100%",
@@ -656,7 +661,7 @@ const styles = StyleSheet.create({
   vehicleInfo: {
     flexDirection: "row",
     width: "100%",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   vehicleNameContainer: {
     flex: 1,
@@ -698,7 +703,7 @@ const styles = StyleSheet.create({
     color: "#cccccc",
   },
   arrowIcon: {
-    alignSelf: "flex-start",
+    alignSelf: "center",
     marginLeft: 8,
   },
   statsRow: {

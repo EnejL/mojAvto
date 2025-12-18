@@ -244,21 +244,22 @@ export default function EditChargingScreen({ route, navigation }) {
 
   return (
     <EntryScreenLayout
-      title={t("charging.edit")}
       scrollRef={scrollRef}
       bottom={
-        <View style={styles.bottomActions}>
+        <View style={styles.bottomRow}>
           <Button
             mode="outlined"
             onPress={handleDelete}
             disabled={loading}
             textColor={ENTRY_COLORS.danger}
             style={styles.deleteButton}
-            icon={({ size }) => (
-              <MaterialCommunityIcons name="trash-can" size={size} color={ENTRY_COLORS.danger} />
+            contentStyle={styles.bottomButtonContent}
+            labelStyle={styles.bottomButtonLabel}
+            icon={({ size, color }) => (
+              <MaterialCommunityIcons name="trash-can" size={size} color={color} />
             )}
           >
-            {t("common.delete")}
+            {t("charging.delete")}
           </Button>
 
           <Button
@@ -267,9 +268,9 @@ export default function EditChargingScreen({ route, navigation }) {
             disabled={loading}
             loading={loading}
             buttonColor={ENTRY_COLORS.blue}
-            style={styles.primaryButton}
-            contentStyle={styles.primaryButtonContent}
-            labelStyle={styles.primaryButtonLabel}
+            style={styles.saveButton}
+            contentStyle={styles.bottomButtonContent}
+            labelStyle={styles.bottomButtonLabel}
           >
             {t("common.save")}
           </Button>
@@ -485,23 +486,25 @@ export default function EditChargingScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  bottomActions: {
-    gap: 10,
+  bottomRow: {
+    flexDirection: "row",
+    gap: 12,
   },
   deleteButton: {
+    flex: 1,
     borderRadius: 18,
-    borderColor: "rgba(255, 77, 79, 0.55)",
+    borderColor: "rgba(255, 77, 79, 0.7)",
   },
-  primaryButton: {
+  saveButton: {
+    flex: 1,
     borderRadius: 18,
   },
-  primaryButtonContent: {
+  bottomButtonContent: {
     height: 58,
   },
-  primaryButtonLabel: {
-    fontSize: 18,
+  bottomButtonLabel: {
+    fontSize: 16,
     fontWeight: "800",
-    color: "white",
     letterSpacing: 0.2,
   },
   vehicleCard: {
@@ -543,14 +546,18 @@ const styles = StyleSheet.create({
     height: 56,
   },
   inputBigContent: {
-    height: 68,
+    height: 56,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingVertical: 0,
+    textAlignVertical: "center",
   },
   currencyPrefix: {
     color: ENTRY_COLORS.muted,
     fontWeight: "900",
     fontSize: 18,
-    paddingTop: 6,
     paddingLeft: 2,
+    includeFontPadding: false,
   },
   dateField: {
     height: 56,

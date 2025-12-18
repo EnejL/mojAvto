@@ -1,10 +1,8 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { IconButton } from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, TouchableOpacity, Text } from "react-native";
+import { StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Import screens
@@ -53,23 +51,12 @@ function MyVehiclesStack() {
       <Stack.Screen
         name="VehicleDetails"
         component={VehicleDetailsScreen}
-        options={({ route, navigation }) => ({
-          title: t("vehicles.details"),
-          headerBackTitle: t("navigation.back"),
-          headerRight: () => (
-            <IconButton
-              icon="cog"
-              color="#fff"
-              size={24}
-              style={styles.headerIcon}
-              onPress={() => {
-                navigation.navigate("EditVehicle", {
-                  vehicle: route.params.vehicle,
-                });
-              }}
-            />
-          ),
-        })}
+        options={{
+          headerShown: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
+        }}
       />
       <Stack.Screen
         name="AddVehicle"
@@ -361,16 +348,3 @@ export default function MainAppNavigator() {
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  headerIcon: {
-    margin: 0,
-    marginTop: -4,
-    alignSelf: "center",
-  },
-  accountIcon: {
-    backgroundColor: "#333",
-    marginRight: 10,
-    marginTop: -4,
-  },
-});

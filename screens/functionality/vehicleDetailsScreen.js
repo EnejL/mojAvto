@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { Text, Button, Surface, FAB } from "react-native-paper";
+import { Text, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { getVehicleFillings, deleteFilling, getVehicleChargingSessions, deleteChargingSession, getVehicleHistory } from "../../utils/firestore";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
@@ -18,15 +18,16 @@ import ConsumptionGraph from "../../components/FuelConsumptionGraph";
 import { exportToCSV, exportToPDF } from "../../utils/exportVehicleData";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { defaultUserProfile, getUserProfile } from "../../utils/userProfile";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Helper function to format dates from Firestore timestamps
-const formatDate = (date) => {
+const formatDate = (date, locale = "en-US", options) => {
   if (!date) return "";
 
   let dateObj;
 
   // Handle Firestore timestamp objects
-  if (date.seconds) {
+  if (date?.seconds) {
     dateObj = new Date(date.seconds * 1000);
   }
   // Handle Date objects
@@ -38,28 +39,48 @@ const formatDate = (date) => {
     try {
       dateObj = new Date(date);
     } catch (e) {
-      return date;
+      return String(date);
     }
   }
 
-  // Format as dd. mm. yyyy
-  return `${dateObj.getDate().toString().padStart(2, "0")}. ${(
-    dateObj.getMonth() + 1
-  )
-    .toString()
-    .padStart(2, "0")}. ${dateObj.getFullYear()}`;
+  try {
+    return new Intl.DateTimeFormat(
+      locale,
+      options || { year: "numeric", month: "short", day: "2-digit" }
+    ).format(dateObj);
+  } catch (e) {
+    // Fallback: dd. mm. yyyy
+    return `${dateObj.getDate().toString().padStart(2, "0")}. ${(
+      dateObj.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}. ${dateObj.getFullYear()}`;
+  }
 };
 
 // Helper function to format numbers consistently
-const formatNumber = (value, decimals = 1) => {
-  if (value === null || value === undefined) return "0";
-  return parseFloat(value).toFixed(decimals).replace(".", ",");
+const formatNumber = (value, decimals = 1, locale = "en-US") => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
+  try {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(Number(value));
+  } catch (e) {
+    return Number(value).toFixed(decimals);
+  }
 };
 
 // Helper function to format odometer readings with thousand separators
-const formatOdometer = (value) => {
-  if (value === null || value === undefined) return "0";
-  return Math.round(parseFloat(value)).toLocaleString('de-DE');
+const formatOdometer = (value, locale = "en-US") => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
+  try {
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
+      Math.round(Number(value))
+    );
+  } catch (e) {
+    return String(Math.round(Number(value)));
+  }
 };
 
 // Conversion helper functions (to be used within component)
@@ -115,29 +136,43 @@ const convertFuelPrice = (pricePerLiter, unitSystem) => {
   return pricePerLiter;
 };
 
+const COLORS = {
+  bg: "#0B141E",
+  card: "#0F1A24",
+  card2: "#111F2C",
+  border: "#1B2A3A",
+  text: "#E8F0FA",
+  subtext: "#94A3B8",
+  muted: "#64748B",
+  primary: "#2563EB",
+  fuel: "#22C55E",
+  electric: "#3B82F6",
+  money: "#A855F7",
+  danger: "#EF4444",
+};
+
 export default function VehicleDetailsScreen({ route, navigation }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const locale = i18n.language?.startsWith("sl") ? "sl-SI" : "en-US";
   const { vehicle } = route.params;
   const [fillings, setFillings] = useState([]);
   const [chargingSessions, setChargingSessions] = useState([]);
   const [combinedHistory, setCombinedHistory] = useState([]);
-  const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [graphExpanded, setGraphExpanded] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const openSwipeableRef = useRef(null);
   const swipeableRefs = useRef(new Map());
   const [userSettings, setUserSettings] = useState(defaultUserProfile);
 
   // Get vehicle type or default to ICE for backwards compatibility
-  const vehicleType = vehicle.vehicleType || 'ICE';
+  const vehicleType = vehicle.vehicleType || "ICE";
 
-  // Determine what buttons to show based on vehicle type
-  const shouldShowFuelButton = () => {
-    return vehicleType === 'ICE' || vehicleType === 'HYBRID' || vehicleType === 'PHEV';
-  };
-
-  const shouldShowChargeButton = () => {
-    return vehicleType === 'BEV' || vehicleType === 'PHEV';
-  };
+  // Determine what data/actions to show based on vehicle type
+  const showFuel = vehicleType === "ICE" || vehicleType === "HYBRID" || vehicleType === "PHEV";
+  const showCharge = vehicleType === "BEV" || vehicleType === "PHEV";
 
   const loadUserSettings = async () => {
     try {
@@ -154,14 +189,14 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         let promises = [];
         
         // Load fillings for fuel-compatible vehicles
-        if (shouldShowFuelButton()) {
+        if (showFuel) {
           promises.push(getVehicleFillings(vehicle.id));
         } else {
           promises.push(Promise.resolve([]));
         }
 
         // Load charging sessions for electric-compatible vehicles
-        if (shouldShowChargeButton()) {
+        if (showCharge) {
           promises.push(getVehicleChargingSessions(vehicle.id));
         } else {
           promises.push(Promise.resolve([]));
@@ -191,11 +226,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       loadUserSettings();
     });
     return unsubscribe;
-  }, [navigation, vehicle.id, vehicleType]);
+  }, [navigation, vehicle.id, vehicleType, showFuel, showCharge]);
 
   // Calculate average fuel consumption (l/100km)
   const averageFuelConsumption = useMemo(() => {
-    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    if (fillings.length < 2 || !showFuel) return null;
 
     // Sort fillings by odometer reading (ascending)
     const sortedFillings = [...fillings].sort(
@@ -220,11 +255,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     // Calculate average consumption (liters per 100 km)
     if (totalDistance === 0) return null;
     return (totalLiters / totalDistance) * 100;
-  }, [fillings, shouldShowFuelButton]);
+  }, [fillings, showFuel]);
 
   // Calculate average electricity consumption (kWh/100km)
   const averageElectricityConsumption = useMemo(() => {
-    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    if (chargingSessions.length < 2 || !showCharge) return null;
 
     // Sort charging sessions by odometer reading (ascending)
     const sortedSessions = [...chargingSessions].sort(
@@ -249,7 +284,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     // Calculate average consumption (kWh per 100 km)
     if (totalDistance === 0) return null;
     return (totalEnergy / totalDistance) * 100;
-  }, [chargingSessions, shouldShowChargeButton]);
+  }, [chargingSessions, showCharge]);
 
   // Calculate average cost per filling
   const averageFuelCost = useMemo(() => {
@@ -294,34 +329,34 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
   // Calculate total distance driven for fuel
   const totalFuelDistance = useMemo(() => {
-    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    if (fillings.length < 2 || !showFuel) return null;
     const sortedFillings = [...fillings].sort((a, b) => a.odometer - b.odometer);
     return sortedFillings[sortedFillings.length - 1].odometer - sortedFillings[0].odometer;
-  }, [fillings, shouldShowFuelButton]);
+  }, [fillings, showFuel]);
 
   // Calculate total distance driven for electricity
   const totalElectricityDistance = useMemo(() => {
-    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    if (chargingSessions.length < 2 || !showCharge) return null;
     const sortedSessions = [...chargingSessions].sort((a, b) => a.odometer - b.odometer);
     return sortedSessions[sortedSessions.length - 1].odometer - sortedSessions[0].odometer;
-  }, [chargingSessions, shouldShowChargeButton]);
+  }, [chargingSessions, showCharge]);
 
   // Calculate average distance per filling
   const averageDistancePerFilling = useMemo(() => {
-    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    if (fillings.length < 2 || !showFuel) return null;
     return totalFuelDistance / (fillings.length - 1);
-  }, [totalFuelDistance, fillings.length, shouldShowFuelButton]);
+  }, [totalFuelDistance, fillings.length, showFuel]);
 
   // Calculate average distance per charging session
   const averageDistancePerCharging = useMemo(() => {
-    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    if (chargingSessions.length < 2 || !showCharge) return null;
     return totalElectricityDistance / (chargingSessions.length - 1);
-  }, [totalElectricityDistance, chargingSessions.length, shouldShowChargeButton]);
+  }, [totalElectricityDistance, chargingSessions.length, showCharge]);
 
   // Calculate days since last filling/charging
   const daysSinceLastFilling = useMemo(() => {
-    if (fillings.length === 0 || !shouldShowFuelButton()) return null;
-    const lastFilling = fillings.sort((a, b) => {
+    if (fillings.length === 0 || !showFuel) return null;
+    const lastFilling = [...fillings].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateB - dateA;
@@ -330,11 +365,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     const today = new Date();
     const diffTime = Math.abs(today - lastDate);
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  }, [fillings, shouldShowFuelButton]);
+  }, [fillings, showFuel]);
 
   const daysSinceLastCharging = useMemo(() => {
-    if (chargingSessions.length === 0 || !shouldShowChargeButton()) return null;
-    const lastSession = chargingSessions.sort((a, b) => {
+    if (chargingSessions.length === 0 || !showCharge) return null;
+    const lastSession = [...chargingSessions].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateB - dateA;
@@ -343,7 +378,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     const today = new Date();
     const diffTime = Math.abs(today - lastDate);
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  }, [chargingSessions, shouldShowChargeButton]);
+  }, [chargingSessions, showCharge]);
 
   // Helper: distance travelled since previous event of the same type
   const getDistanceSinceLastEvent = (item) => {
@@ -371,27 +406,27 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 
   // Sort fillings by date (newest first) for display
   const sortedFillings = useMemo(() => {
-    if (!shouldShowFuelButton()) return [];
+    if (!showFuel) return [];
     return [...fillings].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateB - dateA; // Newest first
     });
-  }, [fillings, shouldShowFuelButton]);
+  }, [fillings, showFuel]);
 
   // Sort charging sessions by date (newest first) for display
   const sortedChargingSessions = useMemo(() => {
-    if (!shouldShowChargeButton()) return [];
+    if (!showCharge) return [];
     return [...chargingSessions].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateB - dateA; // Newest first
     });
-  }, [chargingSessions, shouldShowChargeButton]);
+  }, [chargingSessions, showCharge]);
 
   // Calculate longest distance on single tank/charge
   const longestDistanceSingleTank = useMemo(() => {
-    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    if (fillings.length < 2 || !showFuel) return null;
     const sortedFillings = [...fillings].sort((a, b) => a.odometer - b.odometer);
     let maxDistance = 0;
     for (let i = 1; i < sortedFillings.length; i++) {
@@ -399,10 +434,10 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       if (distance > 0 && distance > maxDistance) maxDistance = distance;
     }
     return maxDistance;
-  }, [fillings, shouldShowFuelButton]);
+  }, [fillings, showFuel]);
 
   const longestDistanceSingleCharge = useMemo(() => {
-    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    if (chargingSessions.length < 2 || !showCharge) return null;
     const sortedSessions = [...chargingSessions].sort((a, b) => a.odometer - b.odometer);
     let maxDistance = 0;
     for (let i = 1; i < sortedSessions.length; i++) {
@@ -410,12 +445,12 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       if (distance > 0 && distance > maxDistance) maxDistance = distance;
     }
     return maxDistance;
-  }, [chargingSessions, shouldShowChargeButton]);
+  }, [chargingSessions, showCharge]);
 
   // Calculate average number of days between fillings/charging
   const averageDaysBetweenFillings = useMemo(() => {
-    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
-    const sortedFillings = fillings.sort((a, b) => {
+    if (fillings.length < 2 || !showFuel) return null;
+    const sortedFillings = [...fillings].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateA - dateB;
@@ -427,11 +462,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       totalDays += Math.floor((dateB - dateA) / (1000 * 60 * 60 * 24));
     }
     return totalDays / (sortedFillings.length - 1);
-  }, [fillings, shouldShowFuelButton]);
+  }, [fillings, showFuel]);
 
   const averageDaysBetweenCharging = useMemo(() => {
-    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
-    const sortedSessions = chargingSessions.sort((a, b) => {
+    if (chargingSessions.length < 2 || !showCharge) return null;
+    const sortedSessions = [...chargingSessions].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateA - dateB;
@@ -443,12 +478,12 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       totalDays += Math.floor((dateB - dateA) / (1000 * 60 * 60 * 24));
     }
     return totalDays / (sortedSessions.length - 1);
-  }, [chargingSessions, shouldShowChargeButton]);
+  }, [chargingSessions, showCharge]);
 
   // Calculate average cost per day
   const averageCostPerDayFuel = useMemo(() => {
-    if (fillings.length === 0 || !shouldShowFuelButton()) return null;
-    const sortedFillings = fillings.sort((a, b) => {
+    if (fillings.length === 0 || !showFuel) return null;
+    const sortedFillings = [...fillings].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateA - dateB;
@@ -457,11 +492,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     const today = new Date();
     const totalDays = Math.floor((today - firstDate) / (1000 * 60 * 60 * 24));
     return totalDays > 0 ? totalFuelCost / totalDays : null;
-  }, [totalFuelCost, fillings, shouldShowFuelButton]);
+  }, [totalFuelCost, fillings, showFuel]);
 
   const averageCostPerDayCharging = useMemo(() => {
-    if (chargingSessions.length === 0 || !shouldShowChargeButton()) return null;
-    const sortedSessions = chargingSessions.sort((a, b) => {
+    if (chargingSessions.length === 0 || !showCharge) return null;
+    const sortedSessions = [...chargingSessions].sort((a, b) => {
       const dateA = a.date?.seconds ? new Date(a.date.seconds * 1000) : new Date(a.date);
       const dateB = b.date?.seconds ? new Date(b.date.seconds * 1000) : new Date(b.date);
       return dateA - dateB;
@@ -470,11 +505,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     const today = new Date();
     const totalDays = Math.floor((today - firstDate) / (1000 * 60 * 60 * 24));
     return totalDays > 0 ? totalChargingCost / totalDays : null;
-  }, [totalChargingCost, chargingSessions, shouldShowChargeButton]);
+  }, [totalChargingCost, chargingSessions, showCharge]);
 
   // Calculate average cost per 100km for fuel
   const averageFuelCostPer100km = useMemo(() => {
-    if (fillings.length < 2 || !shouldShowFuelButton()) return null;
+    if (fillings.length < 2 || !showFuel) return null;
 
     // Sort fillings by odometer reading (ascending)
     const sortedFillings = [...fillings].sort(
@@ -499,11 +534,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     // Calculate average cost per 100km
     if (totalDistance === 0) return null;
     return (totalCost / totalDistance) * 100;
-  }, [fillings, shouldShowFuelButton]);
+  }, [fillings, showFuel]);
 
   // Calculate average cost per 100km for electricity
   const averageElectricityCostPer100km = useMemo(() => {
-    if (chargingSessions.length < 2 || !shouldShowChargeButton()) return null;
+    if (chargingSessions.length < 2 || !showCharge) return null;
 
     // Sort charging sessions by odometer reading (ascending)
     const sortedSessions = [...chargingSessions].sort(
@@ -528,7 +563,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     // Calculate average cost per 100km
     if (totalDistance === 0) return null;
     return (totalCost / totalDistance) * 100;
-  }, [chargingSessions, shouldShowChargeButton]);
+  }, [chargingSessions, showCharge]);
 
   // Export handler
   const handleExport = () => {
@@ -630,58 +665,223 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     );
   };
 
+  const currencySymbol = getCurrencySymbol(userSettings.currency);
+
+  const totalSpentValue = useMemo(() => {
+    const fuel = typeof totalFuelCost === "number" ? totalFuelCost : 0;
+    const elec = typeof totalChargingCost === "number" ? totalChargingCost : 0;
+    const hasAny = (showFuel && fillings.length > 0) || (showCharge && chargingSessions.length > 0);
+    return { value: fuel + elec, hasAny };
+  }, [totalFuelCost, totalChargingCost, showFuel, showCharge, fillings.length, chargingSessions.length]);
+
+  const combinedDistanceKm = useMemo(() => {
+    if (vehicleType !== "PHEV") return null;
+    const events = [
+      ...fillings.map((f) => ({ ...f, type: "filling" })),
+      ...chargingSessions.map((c) => ({ ...c, type: "charging" })),
+    ].filter((e) => typeof e?.odometer === "number");
+
+    if (events.length < 2) return null;
+    const sorted = [...events].sort((a, b) => a.odometer - b.odometer);
+    const distance = sorted[sorted.length - 1].odometer - sorted[0].odometer;
+    return distance > 0 ? distance : null;
+  }, [vehicleType, fillings, chargingSessions]);
+
+  const runningCost = useMemo(() => {
+    let distanceKm = null;
+    let cost = null;
+
+    if (vehicleType === "PHEV") {
+      distanceKm = combinedDistanceKm;
+      cost = totalSpentValue.hasAny ? totalSpentValue.value : null;
+    } else if (showFuel) {
+      distanceKm = totalFuelDistance;
+      cost = typeof totalFuelCost === "number" ? totalFuelCost : null;
+    } else if (showCharge) {
+      distanceKm = totalElectricityDistance;
+      cost = typeof totalChargingCost === "number" ? totalChargingCost : null;
+    }
+
+    if (!distanceKm || distanceKm <= 0 || cost === null || cost === undefined) return null;
+
+    if (userSettings.unitSystem === "imperial") {
+      const miles = distanceKm * 0.621371;
+      if (!miles) return null;
+      return { value: cost / miles, unit: "mi" };
+    }
+    return { value: cost / distanceKm, unit: "km" };
+  }, [
+    vehicleType,
+    showFuel,
+    showCharge,
+    combinedDistanceKm,
+    totalSpentValue,
+    totalFuelDistance,
+    totalElectricityDistance,
+    totalFuelCost,
+    totalChargingCost,
+    userSettings.unitSystem,
+  ]);
+
+  const avgEventCost = useMemo(() => {
+    if (vehicleType === "PHEV") {
+      const count = (showFuel ? fillings.length : 0) + (showCharge ? chargingSessions.length : 0);
+      if (!count) return null;
+      return totalSpentValue.value / count;
+    }
+    if (showCharge) return averageChargingCost;
+    if (showFuel) return averageFuelCost;
+    return null;
+  }, [
+    vehicleType,
+    showFuel,
+    showCharge,
+    fillings.length,
+    chargingSessions.length,
+    totalSpentValue.value,
+    averageChargingCost,
+    averageFuelCost,
+  ]);
+
+  const graphConfig = useMemo(() => {
+    if (vehicleType === "PHEV") {
+      return { totalEntries: combinedHistory.length, data: combinedHistory, dataType: "combined" };
+    }
+    if (showFuel) {
+      return { totalEntries: fillings.length, data: fillings, dataType: "fuel" };
+    }
+    if (showCharge) {
+      return { totalEntries: chargingSessions.length, data: chargingSessions, dataType: "electricity" };
+    }
+    return { totalEntries: 0, data: [], dataType: "fuel" };
+  }, [vehicleType, combinedHistory, fillings, chargingSessions, showFuel, showCharge]);
+
+  const historyConfig = useMemo(() => {
+    if (vehicleType === "PHEV") {
+      return {
+        title: t("vehicles.history"),
+        data: combinedHistory,
+        keyExtractor: (it) => `${it.type}-${it.id}`,
+      };
+    }
+    if (showCharge && !showFuel) {
+      return {
+        title: t("charging.title"),
+        data: sortedChargingSessions.map((s) => ({ ...s, type: "charging" })),
+        keyExtractor: (it) => it.id,
+      };
+    }
+    return {
+      title: t("fillings.title"),
+      data: sortedFillings.map((f) => ({ ...f, type: "filling" })),
+      keyExtractor: (it) => it.id,
+    };
+  }, [
+    vehicleType,
+    showFuel,
+    showCharge,
+    combinedHistory,
+    sortedChargingSessions,
+    sortedFillings,
+    t,
+  ]);
+
+  const MetricTile = ({ icon, accent, label, value }) => {
+    return (
+      <Surface style={styles.metricTile}>
+        <View style={styles.metricHeaderRow}>
+          <View style={[styles.metricIconWrap, { backgroundColor: "rgba(255,255,255,0.06)" }]}>
+            <MaterialCommunityIcons name={icon} size={20} color={accent} />
+          </View>
+        </View>
+        <Text style={styles.metricLabel}>{label}</Text>
+        <Text style={styles.metricValue}>{value}</Text>
+      </Surface>
+    );
+  };
+
+  const CollapsibleCard = ({ icon, title, expanded, onToggle, children, disabled }) => {
+    return (
+      <Surface style={[styles.panelCard, disabled && styles.panelCardDisabled]}>
+        <TouchableOpacity
+          onPress={disabled ? undefined : onToggle}
+          activeOpacity={disabled ? 1 : 0.8}
+          style={styles.panelHeader}
+        >
+          <View style={styles.panelHeaderLeft}>
+            <MaterialCommunityIcons
+              name={icon}
+              size={22}
+              color={disabled ? COLORS.muted : COLORS.text}
+              style={styles.panelHeaderIcon}
+            />
+            <Text style={[styles.panelHeaderTitle, disabled && { color: COLORS.muted }]}>
+              {title}
+            </Text>
+          </View>
+          <MaterialCommunityIcons
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color={disabled ? COLORS.muted : COLORS.subtext}
+          />
+        </TouchableOpacity>
+        {expanded && !disabled ? <View style={styles.panelBody}>{children}</View> : null}
+      </Surface>
+    );
+  };
+
+  const InfoPill = ({ icon, text, tone = "neutral" }) => {
+    const accent =
+      tone === "electric" ? COLORS.electric : tone === "fuel" ? COLORS.fuel : tone === "money" ? COLORS.money : COLORS.subtext;
+    return (
+      <View style={styles.infoPill}>
+        <MaterialCommunityIcons name={icon} size={16} color={accent} />
+        <Text style={styles.infoPillText}>{text}</Text>
+      </View>
+    );
+  };
+
+  const PrimaryActionButton = ({ icon, label, backgroundColor, onPress }) => {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.9}
+        style={[styles.primaryAction, { backgroundColor }]}
+      >
+        <MaterialCommunityIcons name={icon} size={22} color="#fff" />
+        <Text style={styles.primaryActionText}>{label}</Text>
+      </TouchableOpacity>
+    );
+  };
+
   const renderHistoryItem = ({ item }) => {
-    // Get or create a ref for this item
     const itemKey = `${item.type}-${item.id}`;
     if (!swipeableRefs.current.has(itemKey)) {
       swipeableRefs.current.set(itemKey, null);
     }
 
-    const renderRightActions = () => {
-      return (
-        <TouchableOpacity
-          style={styles.deleteAction}
-          onPress={() => {
-            // Close the swipeable before showing delete confirmation
-            const swipeableRef = swipeableRefs.current.get(itemKey);
-            if (swipeableRef) {
-              swipeableRef.close();
-            }
-            handleDeleteHistoryItem(item);
-          }}
-        >
-          <MaterialCommunityIcons name="trash-can" size={24} color="white" />
-        </TouchableOpacity>
-      );
-    };
+    const handleDeleteHistoryItem = (entry) => {
+      const confirmMessage =
+        entry.type === "filling"
+          ? t("fillings.deleteConfirmMessage")
+          : t("charging.deleteConfirmMessage");
 
-    const handleDeleteHistoryItem = (item) => {
-      const confirmMessage = item.type === 'filling' 
-        ? t("fillings.deleteConfirmMessage") 
-        : t("charging.deleteConfirmMessage");
-        
       Alert.alert(t("common.delete"), confirmMessage, [
-        {
-          text: t("common.cancel"),
-          style: "cancel",
-        },
+        { text: t("common.cancel"), style: "cancel" },
         {
           text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             try {
-              if (item.type === 'filling') {
-                await deleteFilling(vehicle.id, item.id);
-                const updatedFillings = fillings.filter(f => f.id !== item.id);
-                setFillings(updatedFillings);
+              if (entry.type === "filling") {
+                await deleteFilling(vehicle.id, entry.id);
+                setFillings((prev) => prev.filter((f) => f.id !== entry.id));
               } else {
-                await deleteChargingSession(vehicle.id, item.id);
-                const updatedSessions = chargingSessions.filter(s => s.id !== item.id);
-                setChargingSessions(updatedSessions);
+                await deleteChargingSession(vehicle.id, entry.id);
+                setChargingSessions((prev) => prev.filter((s) => s.id !== entry.id));
               }
-              
-              // Refresh combined history for PHEV
-              if (vehicleType === 'PHEV') {
+
+              if (vehicleType === "PHEV") {
                 const history = await getVehicleHistory(vehicle.id);
                 setCombinedHistory(history);
               }
@@ -693,8 +893,45 @@ export default function VehicleDetailsScreen({ route, navigation }) {
       ]);
     };
 
-    const isCharging = item.type === 'charging';
-    const icon = isCharging ? "⚡️" : "⛽";
+    const renderRightActions = () => {
+      return (
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => {
+            const swipeableRef = swipeableRefs.current.get(itemKey);
+            if (swipeableRef) swipeableRef.close();
+            handleDeleteHistoryItem(item);
+          }}
+        >
+          <MaterialCommunityIcons name="trash-can" size={22} color="#fff" />
+        </TouchableOpacity>
+      );
+    };
+
+    const isCharging = item.type === "charging";
+    const accent = isCharging ? COLORS.electric : COLORS.fuel;
+    const iconName = isCharging ? "lightning-bolt" : "gas-station";
+    const titleDate = formatDate(item.date, locale, { year: "numeric", month: "short", day: "numeric" });
+    const costText =
+      typeof item.cost === "number"
+        ? `${currencySymbol}${formatNumber(item.cost, 2, locale)}`
+        : "—";
+
+    const odometer = convertDistance(item.odometer, userSettings.unitSystem);
+    const sinceKm = getDistanceSinceLastEvent(item);
+    const sinceDist = sinceKm !== null ? convertDistance(sinceKm, userSettings.unitSystem) : { value: null, unit: odometer.unit };
+
+    const amountText = isCharging
+      ? typeof item.energyAdded === "number"
+        ? `${formatNumber(item.energyAdded, 2, locale)} kWh`
+        : "—"
+      : (() => {
+          const fuel = convertFuelVolume(item.liters, userSettings.unitSystem);
+          return fuel.value !== null ? `${formatNumber(fuel.value, 2, locale)} ${fuel.unit}` : "—";
+        })();
+
+    const locationText =
+      isCharging && item.locationName ? String(item.locationName) : null;
 
     return (
       <GestureHandlerRootView style={styles.gestureContainer}>
@@ -708,27 +945,22 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           rightThreshold={40}
           onSwipeableOpen={() => {
             const swipeableRef = swipeableRefs.current.get(itemKey);
-            // Close any previously open swipeable
             if (openSwipeableRef.current && openSwipeableRef.current !== swipeableRef) {
               openSwipeableRef.current.close();
             }
-            // Store reference to currently open swipeable
             openSwipeableRef.current = swipeableRef;
           }}
           onSwipeableClose={() => {
             const swipeableRef = swipeableRefs.current.get(itemKey);
-            // Clear reference when swipeable closes
             if (openSwipeableRef.current === swipeableRef) {
               openSwipeableRef.current = null;
             }
           }}
         >
           <TouchableOpacity
+            activeOpacity={0.9}
             onPress={() => {
-              // Close any open swipeable before navigating
-              if (openSwipeableRef.current) {
-                openSwipeableRef.current.close();
-              }
+              if (openSwipeableRef.current) openSwipeableRef.current.close();
               if (isCharging) {
                 navigation.navigate("EditCharging", {
                   chargingSession: item,
@@ -744,60 +976,47 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               }
             }}
           >
-            <Surface style={styles.fillingItem}>
-              <View style={styles.fillingContent}>
-                <View style={styles.fillingHeader}>
-                  <Text style={styles.fillingIcon}>{icon}</Text>
-                  <Text style={styles.fillingType}>
-                    {isCharging ? t("charging.session") : t("fillings.filling")}
-                  </Text>
-                </View>
-                
-                <View style={styles.fillingDetails}>
-                  <View style={styles.fillingLabels}>
-                    <Text style={styles.fillingLabel}>{t("charging.date")}:</Text>
-                    <Text style={styles.fillingLabel}>{t("charging.odometer")}:</Text>
-                    <Text style={styles.fillingLabel}>
-                      {t("vehicles.distanceSinceLastEvent")}:
-                    </Text>
-                    <Text style={styles.fillingLabel}>
-                      {isCharging ? t("charging.energyAdded") : t("fillings.liters")}:
-                    </Text>
-                    <Text style={styles.fillingLabel}>{t("fillings.cost")}:</Text>
+            <Surface style={styles.historyItemCard}>
+              <View style={styles.historyTopRow}>
+                <View style={styles.historyTopLeft}>
+                  <View style={[styles.historyIconWrap, { backgroundColor: isCharging ? "rgba(59,130,246,0.16)" : "rgba(34,197,94,0.16)" }]}>
+                    <MaterialCommunityIcons name={iconName} size={18} color={accent} />
                   </View>
+                  <View>
+                    <Text style={styles.historyTitle}>{titleDate}</Text>
+                    <Text style={styles.historySubtitle}>
+                      {isCharging ? t("charging.session") : t("fillings.filling")}
+                      {locationText ? ` • ${locationText}` : ""}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.historyCost}>{costText}</Text>
+              </View>
 
-                  <View style={styles.fillingValues}>
-                    <Text style={styles.fillingValue}>{formatDate(item.date)}</Text>
-                    <Text style={styles.fillingValue}>
-                      {(() => {
-                        const dist = convertDistance(item.odometer, userSettings.unitSystem);
-                        return dist.value !== null ? `${formatOdometer(dist.value)} ${dist.unit}` : "—";
-                      })()}
-                    </Text>
-                    <Text style={styles.fillingValue}>
-                      {(() => {
-                        const sinceKm = getDistanceSinceLastEvent(item);
-                        if (sinceKm === null) return "—";
-                        const converted = convertDistance(sinceKm, userSettings.unitSystem);
-                        return converted.value !== null
-                          ? `${formatNumber(converted.value, 1)} ${converted.unit}`
-                          : "—";
-                      })()}
-                    </Text>
-                    <Text style={styles.fillingValue}>
-                      {isCharging 
-                        ? `${formatNumber(item.energyAdded, 2)} kWh`
-                        : (() => {
-                            const fuel = convertFuelVolume(item.liters, userSettings.unitSystem);
-                            return fuel.value !== null ? `${formatNumber(fuel.value, 2)} ${fuel.unit}` : "—";
-                          })()
-                      }
-                    </Text>
-                    <Text style={styles.fillingValue}>
-                      {formatNumber(item.cost, 2)} {getCurrencySymbol(userSettings.currency)}
-                    </Text>
-                  </View>
-                </View>
+              <View style={styles.historyPillsRow}>
+                <InfoPill
+                  icon="counter"
+                  tone="neutral"
+                  text={
+                    odometer.value !== null
+                      ? `${formatOdometer(odometer.value, locale)} ${odometer.unit}`
+                      : "—"
+                  }
+                />
+                <InfoPill
+                  icon="arrow-right"
+                  tone={isCharging ? "electric" : "fuel"}
+                  text={
+                    sinceDist.value !== null
+                      ? `${formatNumber(sinceDist.value, 1, locale)} ${sinceDist.unit}`
+                      : "—"
+                  }
+                />
+                <InfoPill
+                  icon={isCharging ? "flash" : "fuel"}
+                  tone={isCharging ? "electric" : "fuel"}
+                  text={amountText}
+                />
               </View>
             </Surface>
           </TouchableOpacity>
@@ -806,677 +1025,333 @@ export default function VehicleDetailsScreen({ route, navigation }) {
     );
   };
 
-  // Create action buttons based on vehicle type
-  const renderActionButtons = () => {
-    const showFuel = shouldShowFuelButton();
-    const showCharge = shouldShowChargeButton();
+  const metricTiles = useMemo(() => {
+    const tiles = [];
 
-    if (showFuel && showCharge) {
-      // PHEV - show both buttons (keep existing layout)
-      return (
-        <View style={styles.actionButtonsContainer}>
-          <FAB
-            style={[styles.fab, styles.fuelFab]}
-            icon="gas-station"
-            label={t("fillings.add")}
-            onPress={() => navigation.navigate("AddFilling", { vehicle })}
-          />
-          <FAB
-            style={[styles.fab, styles.chargeFab]}
-            icon="lightning-bolt"
-            label={t("charging.add")}
-            onPress={() => navigation.navigate("AddCharging", { vehicle })}
-          />
-        </View>
-      );
+    if (vehicleType === "PHEV") {
+      const fuelCons = convertFuelConsumption(averageFuelConsumption, userSettings.unitSystem);
+      const elecCons = convertElectricConsumption(averageElectricityConsumption, userSettings.unitSystem);
+
+      tiles.push({
+        key: "fuel-cons",
+        icon: "gas-station",
+        accent: COLORS.fuel,
+        label: t("fillings.consumption"),
+        value: averageFuelConsumption !== null ? `${formatNumber(fuelCons.value, 1, locale)} ${fuelCons.unit}` : "—",
+      });
+      tiles.push({
+        key: "elec-cons",
+        icon: "lightning-bolt",
+        accent: COLORS.electric,
+        label: t("charging.avgConsumption"),
+        value: averageElectricityConsumption !== null ? `${formatNumber(elecCons.value, 1, locale)} ${elecCons.unit}` : "—",
+      });
     } else if (showCharge) {
-      // BEV - show only charge button (using container approach for consistency)
-      return (
-        <View style={styles.actionButtonsContainer}>
-        <FAB
-            style={[styles.fab, styles.chargeFab]}
-          icon="lightning-bolt"
-          label={t("charging.add")}
-          onPress={() => navigation.navigate("AddCharging", { vehicle })}
-        />
-        </View>
-      );
+      const elecCons = convertElectricConsumption(averageElectricityConsumption, userSettings.unitSystem);
+      tiles.push({
+        key: "cons",
+        icon: "lightning-bolt",
+        accent: COLORS.electric,
+        label: t("vehicles.avgConsumption"),
+        value: averageElectricityConsumption !== null ? `${formatNumber(elecCons.value, 1, locale)} ${elecCons.unit}` : "—",
+      });
     } else {
-      // ICE/HYBRID - show only fuel button (using container approach for consistency)
-      return (
-        <View style={styles.actionButtonsContainer}>
-        <FAB
-            style={[styles.fab, styles.fuelFab]}
-          icon="gas-station"
-          label={t("fillings.add")}
-          onPress={() => navigation.navigate("AddFilling", { vehicle })}
-        />
-        </View>
-      );
+      const fuelCons = convertFuelConsumption(averageFuelConsumption, userSettings.unitSystem);
+      tiles.push({
+        key: "cons",
+        icon: "gas-station",
+        accent: COLORS.fuel,
+        label: t("vehicles.avgConsumption"),
+        value: averageFuelConsumption !== null ? `${formatNumber(fuelCons.value, 1, locale)} ${fuelCons.unit}` : "—",
+      });
     }
-  };
+
+    tiles.push({
+      key: "running",
+      icon: "cash",
+      accent: COLORS.money,
+      label: t("vehicles.avgCostPer100km"),
+      value: runningCost
+        ? `${currencySymbol}${formatNumber(runningCost.value, 2, locale)} / ${runningCost.unit}`
+        : "—",
+    });
+
+    if (vehicleType !== "PHEV") {
+      tiles.push({
+        key: "avgCost",
+        icon: "receipt",
+        accent: showCharge && !showFuel ? COLORS.electric : COLORS.fuel,
+        label: showCharge && !showFuel ? t("charging.avgCost") : t("fillings.avgCost"),
+        value: avgEventCost !== null ? `${currencySymbol}${formatNumber(avgEventCost, 2, locale)}` : "—",
+      });
+    }
+
+    tiles.push({
+      key: "totalSpent",
+      icon: "wallet",
+      accent: COLORS.money,
+      label: t("common.totalCost"),
+      value: totalSpentValue.hasAny ? `${currencySymbol}${formatNumber(totalSpentValue.value, 2, locale)}` : "—",
+    });
+
+    return tiles.slice(0, 4);
+  }, [
+    vehicleType,
+    showFuel,
+    showCharge,
+    averageFuelConsumption,
+    averageElectricityConsumption,
+    userSettings.unitSystem,
+    t,
+    locale,
+    runningCost,
+    currencySymbol,
+    avgEventCost,
+    totalSpentValue,
+  ]);
+
+  const canShowAdvancedStats = (showFuel && fillings.length >= 3) || (showCharge && chargingSessions.length >= 3);
+  const canShowGraph = graphConfig.totalEntries >= 5 && graphConfig.data?.length >= 5;
+
+  const visibleHistory = showAllHistory ? historyConfig.data : historyConfig.data.slice(0, 3);
+
+  const bottomBarHeight = showFuel && showCharge ? 88 : 76;
 
   return (
     <View style={styles.container}>
+      {/* Top bar */}
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 10) }]}>
+        <TouchableOpacity style={styles.topBarIconButton} onPress={() => navigation.goBack()}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>{t("vehicles.details")}</Text>
+        <TouchableOpacity
+          style={styles.topBarIconButton}
+          onPress={() => navigation.navigate("EditVehicle", { vehicle })}
+        >
+          <MaterialCommunityIcons name="cog" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         onScrollBeginDrag={() => {
-          if (openSwipeableRef.current) {
-            openSwipeableRef.current.close();
-          }
+          if (openSwipeableRef.current) openSwipeableRef.current.close();
         }}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: bottomBarHeight + Math.max(insets.bottom, 10) + 20 },
+        ]}
       >
-        <Surface style={styles.headerCard}>
-          <View style={styles.headerContent}>
-            <View style={styles.vehicleInfoContainer}>
+        {/* Hero card */}
+        <Surface style={styles.heroCard}>
+          <View style={styles.heroMainRow}>
+            <View style={styles.heroVehicleLeft}>
               <BrandLogo brand={vehicle.make} style={styles.brandLogo} />
-              <View style={styles.vehicleTextContainer}>
+              <View style={styles.heroVehicleText}>
                 <Text style={styles.vehicleName}>{vehicle.name}</Text>
-                <View style={styles.vehicleSubtitleContainer}>
-                  <Text style={styles.vehicleSubtitle}>
-                    {vehicle.make} {vehicle.model}
-                  </Text>
-                  <Text style={styles.vehicleTypeText}>
-                    {t(`vehicles.types.${vehicleType}`)}
-                  </Text>
-                </View>
+                <Text style={styles.vehicleSubtitle}>
+                  {vehicle.make} {vehicle.model}
+                </Text>
               </View>
             </View>
-            
-            {/* Export Button */}
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.exportButton}
               onPress={handleExport}
               disabled={isExporting}
+              activeOpacity={0.85}
             >
               {isExporting ? (
-                <ActivityIndicator size="small" color="#3169ad" />
+                <ActivityIndicator size="small" color={COLORS.primary} />
               ) : (
-                <MaterialCommunityIcons name="download" size={24} color="#3169ad" />
+                <MaterialCommunityIcons name="download" size={22} color={COLORS.primary} />
               )}
+              <Text style={styles.exportButtonText}>{t("export.title")}</Text>
             </TouchableOpacity>
           </View>
         </Surface>
 
-        {/* Vehicle Statistics - Different layouts for PHEV vs others */}
-        {vehicleType === 'PHEV' ? (
-          // PHEV: Separate cards for fuel, electricity, and combined costs
-          <>
-            {/* Fuel Consumption Card for PHEV */}
-            {averageFuelConsumption !== null && fillings.length >= 2 && (
-              <Surface style={styles.statsCard}>
-                <View style={styles.statCardHeader}>
-                  <Text style={styles.statCardIcon}>⛽</Text>
-                  <Text style={styles.statCardTitle}>{t("fillings.nav")}</Text>
-                </View>
-                <View style={styles.statCardContent}>
-                  {/* Primary consumption metric */}
-                  <View style={styles.primaryMetricContainer}>
-                    <Text style={styles.statCardPrimaryValue}>
-                      {(() => {
-                        const fuelCons = convertFuelConsumption(averageFuelConsumption, userSettings.unitSystem);
-                        return fuelCons.value !== null ? `${formatNumber(fuelCons.value)} ${fuelCons.unit}` : "—";
-                      })()}
-                    </Text>
-                    <Text style={styles.primaryMetricLabel}>{t("fillings.consumption")}</Text>
-                  </View>
-                  
-                  {/* Secondary metrics in grid */}
-                  <View style={styles.secondaryMetricsGrid}>
-                    {averageFuelCostPer100km !== null && (
-                      <View style={styles.secondaryMetricItem}>
-                        <Text style={styles.secondaryMetricValue}>
-                          {(() => {
-                            if (userSettings.unitSystem === "imperial") {
-                              const costPer100mi = averageFuelCostPer100km / 0.621371;
-                              return `${formatNumber(costPer100mi, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 mi`;
-                            }
-                            return `${formatNumber(averageFuelCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 km`;
-                          })()}
-                        </Text>
-                        <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
-                      </View>
-                    )}
+        {/* Stats */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>{t("vehicles.statistics").toUpperCase()}</Text>
+        </View>
+        <View style={styles.metricGrid}>
+          {metricTiles.map((tile) => (
+            <MetricTile key={tile.key} icon={tile.icon} accent={tile.accent} label={tile.label} value={tile.value} />
+          ))}
+        </View>
 
-                      {averagePricePerLiter !== null && (
-                       <View style={styles.secondaryMetricItem}>
-                         <Text style={styles.secondaryMetricValue}>
-                           {(() => {
-                             const price = convertFuelPrice(averagePricePerLiter, userSettings.unitSystem);
-                             const unit = userSettings.unitSystem === "imperial" ? "gal" : "L";
-                             return price !== null ? `${formatNumber(price, 2)} ${getCurrencySymbol(userSettings.currency)} / ${unit}` : "—";
-                           })()}
-                         </Text>
-                         <Text style={styles.secondaryMetricLabel}>{t("fillings.avgPricePerLiter")}</Text>
-                       </View>
-                     )}
-
-                     {averageFuelCost !== null && (
-                       <View style={styles.secondaryMetricItem}>
-                         <Text style={styles.secondaryMetricValue}>
-                           {formatNumber(averageFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                         </Text>
-                         <Text style={styles.secondaryMetricLabel}>{t("fillings.avgCost")}</Text>
-                       </View>
-                     )}
-
-                     <View style={styles.secondaryMetricItem}>
-                       <Text style={styles.secondaryMetricValue}>
-                         {formatNumber(totalFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                       </Text>
-                       <Text style={styles.secondaryMetricLabel}>{t("fillings.totalCost")}</Text>
-                     </View>
-                  </View>
-                </View>
-              </Surface>
-            )}
-
-            {/* Electric Consumption Card for PHEV */}
-            {averageElectricityConsumption !== null && chargingSessions.length >= 2 && (
-              <Surface style={styles.statsCard}>
-                <View style={styles.statCardHeader}>
-                  <Text style={styles.statCardIcon}>⚡</Text>
-                  <Text style={styles.statCardTitle}>{t("charging.nav")}</Text>
-                </View>
-                <View style={styles.statCardContent}>
-                  {/* Primary consumption metric */}
-                  <View style={styles.primaryMetricContainer}>
-                    <Text style={styles.statCardPrimaryValue}>
-                      {(() => {
-                        const elecCons = convertElectricConsumption(averageElectricityConsumption, userSettings.unitSystem);
-                        return elecCons.value !== null ? `${formatNumber(elecCons.value)} ${elecCons.unit}` : "—";
-                      })()}
-                    </Text>
-                    <Text style={styles.primaryMetricLabel}>{t("charging.avgConsumption")}</Text>
-                  </View>
-                  
-                  {/* Secondary metrics in grid */}
-                  <View style={styles.secondaryMetricsGrid}>
-                     {averageElectricityCostPer100km !== null && (
-                       <View style={styles.secondaryMetricItem}>
-                         <Text style={styles.secondaryMetricValue}>
-                           {(() => {
-                             if (userSettings.unitSystem === "imperial") {
-                               const costPer100mi = averageElectricityCostPer100km / 0.621371;
-                               return `${formatNumber(costPer100mi, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 mi`;
-                             }
-                             return `${formatNumber(averageElectricityCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)} / 100 km`;
-                           })()}
-                         </Text>
-                         <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
-                       </View>
-                     )}
-                     
-                     {averagePricePerKWh !== null && (
-                      <View style={styles.secondaryMetricItem}>
-                        <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(averagePricePerKWh, 2)} {getCurrencySymbol(userSettings.currency)}
-                        </Text>
-                        <Text style={styles.secondaryMetricLabel}>{t("charging.avgPricePerKWh")}</Text>
-                      </View>
-                     )}
-
-                     {averageChargingCost !== null && (
-                       <View style={styles.secondaryMetricItem}>
-                         <Text style={styles.secondaryMetricValue}>
-                           {formatNumber(averageChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                         </Text>
-                         <Text style={styles.secondaryMetricLabel}>{t("charging.avgCost")}</Text>
-                       </View>
-                     )}
-
-                     <View style={styles.secondaryMetricItem}>
-                       <Text style={styles.secondaryMetricValue}>
-                         {formatNumber(totalChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                       </Text>
-                       <Text style={styles.secondaryMetricLabel}>{t("charging.totalCost")}</Text>
-                     </View>
-                  </View>
-                </View>
-              </Surface>
-            )}
-
-            {/* Combined Running Cost Card for PHEV */}
-            {(totalFuelCost !== null || totalChargingCost !== null) && (fillings.length >= 2 || chargingSessions.length >= 2) && (() => {
-              // Calculate combined metrics using all events
-              const allEvents = [
-                ...fillings.map(f => ({...f, type: 'fuel'})), 
-                ...chargingSessions.map(c => ({...c, type: 'charging'}))
-              ];
-              const sortedEvents = allEvents.sort((a, b) => a.odometer - b.odometer);
-              
-              let totalCombinedDistance = 0;
-              if (sortedEvents.length >= 2) {
-                totalCombinedDistance = sortedEvents[sortedEvents.length - 1].odometer - sortedEvents[0].odometer;
-              }
-              
-              const totalCombinedCost = (totalFuelCost || 0) + (totalChargingCost || 0);
-              let costPerUnit;
-              let distUnit;
-              if (userSettings.unitSystem === "imperial") {
-                // Convert to cost per 100 miles
-                const totalDistanceInMiles = totalCombinedDistance * 0.621371;
-                costPerUnit = totalDistanceInMiles > 0 ? (totalCombinedCost / totalDistanceInMiles) * 100 : 0;
-                distUnit = "100 mi";
-              } else {
-                costPerUnit = totalCombinedDistance > 0 ? (totalCombinedCost / totalCombinedDistance) * 100 : 0;
-                distUnit = "100 km";
-              }
-              
-              return (
-                <Surface style={styles.statsCard}>
-                  <View style={styles.statCardHeader}>
-                    <Text style={styles.statCardIcon}>💰</Text>
-                    <Text style={styles.statCardTitle}>{t("vehicles.trueRunningCost")}</Text>
-                  </View>
-                  <View style={styles.statCardContent}>
-                    {/* Primary cost metric */}
-                    <View style={styles.primaryMetricContainer}>
-                      <Text style={styles.statCardPrimaryValue}>
-                        {formatNumber(costPerUnit, 2)} {getCurrencySymbol(userSettings.currency)} / {distUnit}
-                      </Text>
-                      <Text style={styles.primaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
-                    </View>
-                  </View>
-                </Surface>
-              );
-            })()}
-          </>
-        ) : (
-          // ICE/HYBRID/BEV: Use appropriate card layout based on vehicle type
-          (() => {
-            // For ICE/HYBRID: Show fuel statistics
-            if (shouldShowFuelButton() && averageFuelConsumption !== null && fillings.length >= 2) {
-              return (
-                <Surface style={styles.statsCard}>
-                  <View style={styles.statCardHeader}>
-                    <Text style={styles.statCardIcon}>⛽</Text>
-                    <Text style={styles.statCardTitle}>{t("fillings.nav")}</Text>
-                  </View>
-                  <View style={styles.statCardContent}>
-                    {/* Primary consumption metric */}
-                    <View style={styles.primaryMetricContainer}>
-                      <Text style={styles.statCardPrimaryValue}>
-                        {(() => {
-                          const fuelCons = convertFuelConsumption(averageFuelConsumption, userSettings.unitSystem);
-                          return fuelCons.value !== null ? `${formatNumber(fuelCons.value)} ${fuelCons.unit}` : "—";
-                        })()}
-                      </Text>
-                      <Text style={styles.primaryMetricLabel}>{t("fillings.consumption")}</Text>
-                    </View>
-                    {/* Secondary metrics in grid */}
-                    <View style={styles.secondaryMetricsGrid}>
-                      {averageFuelCostPer100km !== null && (
-                        <View style={styles.secondaryMetricItem}>
-                          <Text style={styles.secondaryMetricValue}>
-                            {(() => {
-                              const distUnit = userSettings.unitSystem === "imperial" ? "100 mi" : "100 km";
-                              return `${formatNumber(averageFuelCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)}`;
-                            })()}
-                          </Text>
-                          <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
-                        </View>
-                      )}
-                      {averagePricePerLiter !== null && (
-                        <View style={styles.secondaryMetricItem}>
-                          <Text style={styles.secondaryMetricValue}>
-                            {(() => {
-                              const price = convertFuelPrice(averagePricePerLiter, userSettings.unitSystem);
-                              const unit = userSettings.unitSystem === "imperial" ? "gal" : "L";
-                              return price !== null ? `${formatNumber(price, 2)} ${getCurrencySymbol(userSettings.currency)} / ${unit}` : "—";
-                            })()}
-                          </Text>
-                          <Text style={styles.secondaryMetricLabel}>{t("fillings.avgPricePerLiter")}</Text>
-                        </View>
-                      )}
-                      {averageFuelCost !== null && (
-                        <View style={styles.secondaryMetricItem}>
-                          <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averageFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                          </Text>
-                          <Text style={styles.secondaryMetricLabel}>{t("fillings.avgCost")}</Text>
-                        </View>
-                      )}
-                      <View style={styles.secondaryMetricItem}>
-                        <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(totalFuelCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                        </Text>
-                        <Text style={styles.secondaryMetricLabel}>{t("fillings.totalCost")}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Surface>
-              );
-            }
-            
-            // For BEV: Show electricity statistics
-            if (shouldShowChargeButton() && averageElectricityConsumption !== null && chargingSessions.length >= 2) {
-              return (
-                <Surface style={styles.statsCard}>
-                  <View style={styles.statCardHeader}>
-                    <Text style={styles.statCardIcon}>⚡</Text>
-                    <Text style={styles.statCardTitle}>{t("charging.nav")}</Text>
-                  </View>
-                  <View style={styles.statCardContent}>
-                    {/* Primary consumption metric */}
-                    <View style={styles.primaryMetricContainer}>
-                      <Text style={styles.statCardPrimaryValue}>
-                        {(() => {
-                          const elecCons = convertElectricConsumption(averageElectricityConsumption, userSettings.unitSystem);
-                          return elecCons.value !== null ? `${formatNumber(elecCons.value)} ${elecCons.unit}` : "—";
-                        })()}
-                      </Text>
-                      <Text style={styles.primaryMetricLabel}>{t("charging.avgConsumption")}</Text>
-                    </View>
-                    {/* Secondary metrics in grid */}
-                    <View style={styles.secondaryMetricsGrid}>
-                      {averageElectricityCostPer100km !== null && (
-                        <View style={styles.secondaryMetricItem}>
-                          <Text style={styles.secondaryMetricValue}>
-                            {(() => {
-                              const distUnit = userSettings.unitSystem === "imperial" ? "100 mi" : "100 km";
-                              return `${formatNumber(averageElectricityCostPer100km, 2)} ${getCurrencySymbol(userSettings.currency)}`;
-                            })()}
-                          </Text>
-                          <Text style={styles.secondaryMetricLabel}>{t("vehicles.avgCostPer100km")}</Text>
-                        </View>
-                      )}
-                      {averagePricePerKWh !== null && (
-                        <View style={styles.secondaryMetricItem}>
-                          <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averagePricePerKWh, 2)} {getCurrencySymbol(userSettings.currency)}
-                          </Text>
-                          <Text style={styles.secondaryMetricLabel}>{t("charging.avgPricePerKWh")}</Text>
-                        </View>
-                      )}
-                      {averageChargingCost !== null && (
-                        <View style={styles.secondaryMetricItem}>
-                          <Text style={styles.secondaryMetricValue}>
-                            {formatNumber(averageChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                          </Text>
-                          <Text style={styles.secondaryMetricLabel}>{t("charging.avgCost")}</Text>
-                        </View>
-                      )}
-                      <View style={styles.secondaryMetricItem}>
-                        <Text style={styles.secondaryMetricValue}>
-                          {formatNumber(totalChargingCost, 2)} {getCurrencySymbol(userSettings.currency)}
-                        </Text>
-                        <Text style={styles.secondaryMetricLabel}>{t("charging.totalCost")}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Surface>
-              );
-            }
-            
-            // No data available
-            return (
-              <Surface style={styles.statsCard}>
-                <Text style={styles.sectionTitle}>{t("vehicles.statistics")}</Text>
-                <Text style={styles.emptyText}>
-                  {shouldShowChargeButton() ? t("charging.notEnoughData") : t("fillings.notEnoughData")}
-                </Text>
-              </Surface>
-            );
-          })()
-        )}
-
-        {/* Advanced Statistics Section - Only show if enough data exists */}
-        {((shouldShowFuelButton() && fillings.length >= 3) || 
-          (shouldShowChargeButton() && chargingSessions.length >= 3)) && (
-          <>
-            {!showAdvancedStats ? (
-              <Surface style={styles.statsCard}>
-                <Button mode="contained" onPress={() => setShowAdvancedStats(true)}>
-                  {t("vehicles.additionalStatistics")}
-                </Button>
-              </Surface>
-            ) : (
-              <Surface style={styles.statsCard}>
-            <View style={styles.advancedStatsHeader}>
-              <Text style={styles.sectionTitle}>{t("vehicles.additionalStatistics")}</Text>
-              <Button mode="text" onPress={() => setShowAdvancedStats(false)}>
-                {t("common.hide")}
-              </Button>
-            </View>
-
-            <View style={styles.advancedStatsContent}>
-              {/* Fuel Statistics */}
-              {shouldShowFuelButton() && fillings.length >= 2 && (
-                <View style={styles.advancedStatsSection}>
-                  <Text style={styles.advancedStatsSectionTitle}>⛽ {t("fillings.nav")}</Text>
-                  <View style={styles.advancedStatsGrid}>
-                    {averageDistancePerFilling !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {(() => {
+        {/* Panels */}
+        <CollapsibleCard
+          icon="chart-bar"
+          title={t("vehicles.additionalStatistics")}
+          expanded={advancedExpanded}
+          onToggle={() => setAdvancedExpanded((p) => !p)}
+          disabled={!canShowAdvancedStats}
+        >
+          <View style={styles.panelSection}>
+            {showFuel && fillings.length >= 2 ? (
+              <>
+                <Text style={styles.panelSectionTitle}>⛽ {t("fillings.nav")}</Text>
+                <View style={styles.statGrid}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {averageDistancePerFilling !== null
+                        ? (() => {
                             const dist = convertDistance(averageDistancePerFilling, userSettings.unitSystem);
-                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
-                          })()}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDistancePerFilling")}</Text>
-                      </View>
-                    )}
-                    {longestDistanceSingleTank !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {(() => {
+                            return dist.value !== null ? `${formatNumber(dist.value, 1, locale)} ${dist.unit}` : "—";
+                          })()
+                        : "—"}
+                    </Text>
+                    <Text style={styles.statLabel}>{t("vehicles.avgDistancePerFilling")}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {longestDistanceSingleTank !== null
+                        ? (() => {
                             const dist = convertDistance(longestDistanceSingleTank, userSettings.unitSystem);
-                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
-                          })()}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.longestDistanceSingleTank")}</Text>
-                      </View>
-                    )}
-                    {daysSinceLastFilling !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {daysSinceLastFilling}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.daysSinceLastFilling")}</Text>
-                      </View>
-                    )}
-                    {averageDaysBetweenFillings !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageDaysBetweenFillings, 1)}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDaysBetweenFillings")}</Text>
-                      </View>
-                    )}
-                    {averageCostPerDayFuel !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageCostPerDayFuel, 2)} {getCurrencySymbol(userSettings.currency)}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgCostPerDayFuel")}</Text>
-                      </View>
-                    )}
-                    {totalFuelDistance !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {(() => {
-                            const dist = convertDistance(totalFuelDistance, userSettings.unitSystem);
-                            return dist.value !== null ? `${formatOdometer(dist.value)} ${dist.unit}` : "—";
-                          })()}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.totalDistance")}</Text>
-                      </View>
-                    )}
+                            return dist.value !== null ? `${formatNumber(dist.value, 1, locale)} ${dist.unit}` : "—";
+                          })()
+                        : "—"}
+                    </Text>
+                    <Text style={styles.statLabel}>{t("vehicles.longestDistanceSingleTank")}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>{daysSinceLastFilling !== null ? String(daysSinceLastFilling) : "—"}</Text>
+                    <Text style={styles.statLabel}>{t("vehicles.daysSinceLastFilling")}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {averageDaysBetweenFillings !== null ? formatNumber(averageDaysBetweenFillings, 1, locale) : "—"}
+                    </Text>
+                    <Text style={styles.statLabel}>{t("vehicles.avgDaysBetweenFillings")}</Text>
                   </View>
                 </View>
-              )}
+              </>
+            ) : null}
 
-              {/* Charging Statistics */}
-              {shouldShowChargeButton() && chargingSessions.length >= 2 && (
-                <View style={styles.advancedStatsSection}>
-                  <Text style={styles.advancedStatsSectionTitle}>⚡ {t("charging.title")}</Text>
-                  <View style={styles.advancedStatsGrid}>
-                    {averageDistancePerCharging !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {(() => {
+            {showCharge && chargingSessions.length >= 2 ? (
+              <>
+                <Text style={[styles.panelSectionTitle, { marginTop: showFuel ? 16 : 0 }]}>⚡ {t("charging.title")}</Text>
+                <View style={styles.statGrid}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {averageDistancePerCharging !== null
+                        ? (() => {
                             const dist = convertDistance(averageDistancePerCharging, userSettings.unitSystem);
-                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
-                          })()}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDistancePerCharging")}</Text>
-                      </View>
-                    )}
-                    {longestDistanceSingleCharge !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {(() => {
+                            return dist.value !== null ? `${formatNumber(dist.value, 1, locale)} ${dist.unit}` : "—";
+                          })()
+                        : "—"}
+                    </Text>
+                    <Text style={styles.statLabel}>{t("vehicles.avgDistancePerCharging")}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {longestDistanceSingleCharge !== null
+                        ? (() => {
                             const dist = convertDistance(longestDistanceSingleCharge, userSettings.unitSystem);
-                            return dist.value !== null ? `${formatNumber(dist.value)} ${dist.unit}` : "—";
-                          })()}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.longestDistanceSingleCharge")}</Text>
-                      </View>
-                    )}
-                    {daysSinceLastCharging !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {daysSinceLastCharging}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.daysSinceLastCharging")}</Text>
-                      </View>
-                    )}
-                    {averageDaysBetweenCharging !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageDaysBetweenCharging, 1)}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgDaysBetweenCharging")}</Text>
-                      </View>
-                    )}
-                    {averageCostPerDayCharging !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {formatNumber(averageCostPerDayCharging, 2)} {getCurrencySymbol(userSettings.currency)}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.avgCostPerDayCharging")}</Text>
-                      </View>
-                    )}
-                    {totalElectricityDistance !== null && (
-                      <View style={styles.advancedStatItem}>
-                        <Text style={styles.advancedStatValue}>
-                          {(() => {
-                            const dist = convertDistance(totalElectricityDistance, userSettings.unitSystem);
-                            return dist.value !== null ? `${formatOdometer(dist.value)} ${dist.unit}` : "—";
-                          })()}
-                        </Text>
-                        <Text style={styles.advancedStatLabel}>{t("vehicles.totalDistance")}</Text>
-                      </View>
-                    )}
+                            return dist.value !== null ? `${formatNumber(dist.value, 1, locale)} ${dist.unit}` : "—";
+                          })()
+                        : "—"}
+                    </Text>
+                    <Text style={styles.statLabel}>{t("vehicles.longestDistanceSingleCharge")}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>{daysSinceLastCharging !== null ? String(daysSinceLastCharging) : "—"}</Text>
+                    <Text style={styles.statLabel}>{t("vehicles.daysSinceLastCharging")}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {averageDaysBetweenCharging !== null ? formatNumber(averageDaysBetweenCharging, 1, locale) : "—"}
+                    </Text>
+                    <Text style={styles.statLabel}>{t("vehicles.avgDaysBetweenCharging")}</Text>
                   </View>
                 </View>
-              )}
-              </View>
-            </Surface>
-            )}
-          </>
-        )}
+              </>
+            ) : null}
+          </View>
+        </CollapsibleCard>
 
-        {/* Consumption Graph - Show for all vehicle types when 5+ entries exist */}
-        {(() => {
-          // Calculate total entries based on vehicle type
-          let totalEntries = 0;
-          let graphData = [];
-          let graphDataType = 'fuel';
+        <CollapsibleCard
+          icon="chart-line"
+          title={t("vehicles.consumptionOverTime")}
+          expanded={graphExpanded}
+          onToggle={() => setGraphExpanded((p) => !p)}
+          disabled={!canShowGraph}
+        >
+          <ConsumptionGraph
+            data={graphConfig.data}
+            dataType={graphConfig.dataType}
+            unitSystem={userSettings.unitSystem}
+            locale={locale}
+          />
+        </CollapsibleCard>
 
-          if (vehicleType === 'PHEV') {
-            // For PHEV, use combined history
-            totalEntries = combinedHistory.length;
-            graphData = combinedHistory;
-            graphDataType = 'combined'; // Will handle mixed types
-          } else if (shouldShowFuelButton()) {
-            // For ICE/HYBRID, use fillings
-            totalEntries = fillings.length;
-            graphData = fillings;
-            graphDataType = 'fuel';
-          } else if (shouldShowChargeButton()) {
-            // For BEV, use charging sessions
-            totalEntries = chargingSessions.length;
-            graphData = chargingSessions;
-            graphDataType = 'electricity';
-          }
+        {/* History */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>{historyConfig.title.toUpperCase()}</Text>
+          {historyConfig.data.length > 3 ? (
+            <TouchableOpacity onPress={() => setShowAllHistory((p) => !p)} activeOpacity={0.8}>
+              <Text style={styles.historyToggle}>
+                {showAllHistory ? t("common.hide") : t("common.show")}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
-          // Only show graph if we have 5 or more entries
-          if (totalEntries >= 5 && graphData.length >= 5) {
-            return <ConsumptionGraph data={graphData} dataType={graphDataType} />;
-          }
-          return null;
-        })()}
-
-        {/* History Section for PHEV, individual sections for others */}
-        {vehicleType === 'PHEV' ? (
-          <Surface style={styles.fillingsCard}>
-            <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle}>{t("vehicles.history")}</Text>
-              <Text style={styles.fillingCount}>({combinedHistory.length})</Text>
-            </View>
-            {combinedHistory.length === 0 ? (
-              <Text style={styles.emptyText}>{t("vehicles.noHistory")}</Text>
-            ) : (
-              <FlatList
-                data={combinedHistory}
-                renderItem={renderHistoryItem}
-                keyExtractor={(item) => `${item.type}-${item.id}`}
-                scrollEnabled={false}
-                contentContainerStyle={styles.flatListContent}
-              />
-            )}
-          </Surface>
-        ) : (
-          <>
-            {/* Fuel Fillings Section */}
-            {shouldShowFuelButton() && (
-              <Surface style={styles.fillingsCard}>
-                <View style={styles.sectionTitleContainer}>
-                  <Text style={styles.sectionTitle}>{t("fillings.title")}</Text>
-                  <Text style={styles.fillingCount}>({fillings.length})</Text>
-                </View>
-                {fillings.length === 0 ? (
-                  <Text style={styles.emptyText}>{t("fillings.empty")}</Text>
-                ) : (
-                  <FlatList
-                    data={sortedFillings.map(f => ({ ...f, type: 'filling' }))}
-                    renderItem={renderHistoryItem}
-                    keyExtractor={(item) => item.id}
-                    scrollEnabled={false}
-                    contentContainerStyle={styles.flatListContent}
-                  />
-                )}
-              </Surface>
-            )}
-
-            {/* Charging Sessions Section */}
-            {shouldShowChargeButton() && (
-              <Surface style={styles.fillingsCard}>
-                <View style={styles.sectionTitleContainer}>
-                  <Text style={styles.sectionTitle}>{t("charging.title")}</Text>
-                  <Text style={styles.fillingCount}>({chargingSessions.length})</Text>
-                </View>
-                {chargingSessions.length === 0 ? (
-                  <Text style={styles.emptyText}>{t("charging.empty")}</Text>
-                ) : (
-                  <FlatList
-                    data={sortedChargingSessions.map(s => ({ ...s, type: 'charging' }))}
-                    renderItem={renderHistoryItem}
-                    keyExtractor={(item) => item.id}
-                    scrollEnabled={false}
-                    contentContainerStyle={styles.flatListContent}
-                  />
-                )}
-              </Surface>
-            )}
-          </>
-        )}
+        <Surface style={styles.historyCard}>
+          {historyConfig.data.length === 0 ? (
+            <Text style={styles.emptyText}>{t("vehicles.noHistory")}</Text>
+          ) : (
+            <FlatList
+              data={visibleHistory}
+              renderItem={renderHistoryItem}
+              keyExtractor={historyConfig.keyExtractor}
+              scrollEnabled={false}
+              contentContainerStyle={styles.flatListContent}
+            />
+          )}
+        </Surface>
       </ScrollView>
 
-      {/* Action Buttons */}
-      {renderActionButtons()}
+      {/* Bottom actions */}
+      <View style={styles.bottomBarWrapper}>
+        <View style={styles.bottomBarInner}>
+          {showFuel && showCharge ? (
+            <View style={styles.bottomBarRow}>
+              <PrimaryActionButton
+                icon="gas-station"
+                label={t("fillings.add")}
+                backgroundColor={COLORS.fuel}
+                onPress={() => navigation.navigate("AddFilling", { vehicle })}
+              />
+              <PrimaryActionButton
+                icon="lightning-bolt"
+                label={t("charging.add")}
+                backgroundColor={COLORS.electric}
+                onPress={() => navigation.navigate("AddCharging", { vehicle })}
+              />
+            </View>
+          ) : showCharge ? (
+            <PrimaryActionButton
+              icon="lightning-bolt"
+              label={t("charging.add")}
+              backgroundColor={COLORS.electric}
+              onPress={() => navigation.navigate("AddCharging", { vehicle })}
+            />
+          ) : (
+            <PrimaryActionButton
+              icon="gas-station"
+              label={t("fillings.add")}
+              backgroundColor={COLORS.fuel}
+              onPress={() => navigation.navigate("AddFilling", { vehicle })}
+            />
+          )}
+        </View>
+        {/* Safe-area spacer: keeps buttons above the home indicator without inflating the bar's visual bottom padding */}
+        <View style={{ height: insets.bottom, backgroundColor: COLORS.bg }} />
+      </View>
     </View>
   );
 }
@@ -1484,359 +1359,345 @@ export default function VehicleDetailsScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.bg,
   },
-  headerCard: {
-    padding: 24,
-    margin: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    elevation: 2,
-    backgroundColor: "#fff",
-  },
-  headerContent: {
+
+  topBar: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    backgroundColor: COLORS.bg,
   },
-  exportButton: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#f0f7ff",
-    marginLeft: 12,
+  topBarIconButton: {
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
-  vehicleInfoContainer: {
+  topBarTitle: {
+    flex: 1,
+    textAlign: "center",
+    color: COLORS.text,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  scrollContent: {
+    paddingBottom: 20,
+  },
+
+  heroCard: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+  },
+  heroMainRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  heroVehicleLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    minWidth: 0,
+    gap: 12,
   },
-  vehicleTextContainer: {
+  heroVehicleText: {
     flex: 1,
-    marginLeft: 16,
+    minWidth: 0,
   },
   brandLogo: {
-    width: 80,
-    height: 60,
+    width: 54,
+    height: 44,
     borderRadius: 0,
     backgroundColor: "transparent",
     borderWidth: 0,
   },
   vehicleName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 4,
+    color: COLORS.text,
+    fontSize: 22,
+    fontWeight: "800",
   },
   vehicleSubtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 4,
+    color: COLORS.subtext,
+    fontSize: 13,
+    marginTop: 2,
   },
-  vehicleSubtitleContainer: {
-    flexDirection: "column",
+  exportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "rgba(37,99,235,0.10)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(37,99,235,0.35)",
   },
-  vehicleTypeText: {
-    fontSize: 10,
-    color: "#888",
-    fontStyle: "italic",
+  exportButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: "700",
   },
-  statsCard: {
-    margin: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
-    backgroundColor: "#fff",
+
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginTop: 18,
+    marginBottom: 10,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+  sectionLabel: {
+    color: COLORS.subtext,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 2,
   },
-  statsGrid: {
+
+  metricGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  metricTile: {
+    width: "48%",
+    backgroundColor: COLORS.card2,
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+  },
+  metricHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    marginBottom: 10,
+  },
+  metricIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  metricLabel: {
+    color: COLORS.subtext,
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  metricValue: {
+    color: COLORS.text,
+    fontSize: 22,
+    fontWeight: "800",
+  },
+
+  panelCard: {
+    marginHorizontal: 16,
     marginTop: 12,
+    borderRadius: 18,
+    backgroundColor: COLORS.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+  },
+  panelCardDisabled: {
+    opacity: 0.6,
+  },
+  panelHeader: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  panelHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  panelHeaderIcon: {
+    opacity: 0.95,
+  },
+  panelHeaderTitle: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "700",
+    flex: 1,
+  },
+  panelBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  panelSection: {
+    paddingTop: 4,
+  },
+  panelSectionTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 10,
+  },
+  statGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
   },
   statItem: {
-    width: "50%",
-    marginBottom: 16,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
+    width: "48%",
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
   },
   statValue: {
+    color: COLORS.text,
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#2e7d32",
+    fontWeight: "800",
+    marginBottom: 6,
   },
-  // PHEV Statistics Card Styles
-  statCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  statCardIcon: {
-    fontSize: 24,
-    marginRight: 8,
-  },
-  statCardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  statCardContent: {
-    alignItems: "flex-start",
-  },
-  statCardPrimaryValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2e7d32",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  statCardSecondaryValue: {
-    fontSize: 14,
-    color: "#666",
-  },
-  // New improved PHEV card styles
-  primaryMetricContainer: {
-    justifyContent: "center",
-    marginBottom: 12,
-    paddingBottom: 12,
-    // borderBottomWidth: 1,
-    // borderBottomColor: "#f0f0f0",
-    width: "100%",
-  },
-  primaryMetricLabel: {
+  statLabel: {
+    color: COLORS.subtext,
     fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-    textAlign: "center",
+    lineHeight: 16,
   },
-  secondaryMetricsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  secondaryMetricItem: {
-    alignItems: "center",
-    width: "48%",
-    marginBottom: 8,
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: "#f8f9fa",
-  },
-  secondaryMetricValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2e7d32",
-    marginBottom: 4,
-  },
-  secondaryMetricLabel: {
-    fontSize: 11,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 14,
-  },
-  // Improved non-PHEV statistics styles
-  improvedStatsContainer: {
-    marginTop: 12,
-  },
-  statsSection: {
-    marginBottom: 20,
-  },
-  statsSectionTitle: {
+
+  historyToggle: {
+    color: COLORS.primary,
     fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontWeight: "700",
   },
-  improvedStatsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  improvedStatItem: {
-    width: "48%",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-  },
-  improvedStatValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#2e7d32",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  improvedStatLabel: {
-    fontSize: 11,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 14,
-  },
-  fillingsCard: {
-    margin: 16,
-    marginTop: 8,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
-    backgroundColor: "#fff",
+  historyCard: {
+    marginHorizontal: 16,
+    marginTop: 0,
+    borderRadius: 18,
+    backgroundColor: COLORS.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+    padding: 12,
   },
   flatListContent: {
     paddingHorizontal: 0,
   },
-  sectionTitleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  fillingCount: {
-    fontSize: 14,
-    color: "#888",
-    fontWeight: "500",
-  },
   emptyText: {
+    color: COLORS.subtext,
     textAlign: "center",
-    color: "#666",
-    marginVertical: 16,
+    paddingVertical: 14,
   },
-  fillingItem: {
-    marginBottom: 12,
-    marginHorizontal: 4,
-    padding: 16,
-    borderRadius: 8,
-    elevation: 1,
-  },
-  fillingContent: {
-    flexDirection: "column",
-  },
-  fillingHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  fillingIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  fillingType: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#666",
-  },
-  fillingDetails: {
-    flexDirection: "row",
-  },
-  fillingLabels: {
-    flex: 1,
-  },
-  fillingValues: {
-    flex: 1,
-    alignItems: "flex-end",
-  },
-  fillingLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
-  },
-  fillingValue: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
-  },
-  deleteAction: {
-    backgroundColor: "#f44336",
-    justifyContent: "center",
-    alignItems: "center",
-    width: "17.5%",
-    height: "90%",
-    borderRadius: 8,
-    marginVertical: 4,
-    marginLeft: 8,
-  },
+
   gestureContainer: {
     flex: 1,
   },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  fab: {
+  deleteAction: {
+    backgroundColor: COLORS.danger,
+    justifyContent: "center",
+    alignItems: "center",
+    width: 72,
+    marginLeft: 10,
     borderRadius: 16,
   },
-  singleFab: {
-    position: "absolute",
-    bottom: 16,
-    right: 16,
+
+  historyItemCard: {
+    backgroundColor: COLORS.card2,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+    marginBottom: 12,
   },
-  fuelFab: {
-    backgroundColor: "#4CAF50",
-    flex: 1,
-    marginRight: 8,
-  },
-  chargeFab: {
-    backgroundColor: "#2196F3",
-    flex: 1,
-    marginLeft: 8,
-  },
-  // Advanced Statistics Styles
-  advancedStatsHeader: {
+  historyTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  historyTopLeft: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
   },
-  advancedStatsContent: {
-    paddingTop: 8,
+  historyIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  advancedStatsSection: {
-    marginBottom: 24,
-  },
-  advancedStatsSectionTitle: {
+  historyTitle: {
+    color: COLORS.text,
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#333",
+    fontWeight: "800",
   },
-  advancedStatsGrid: {
+  historySubtitle: {
+    color: COLORS.subtext,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  historyCost: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  historyPillsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 12,
   },
-  advancedStatItem: {
-    width: "48%",
+  infoPill: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+  },
+  infoPillText: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  bottomBarWrapper: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
+    backgroundColor: "rgba(11,20,30,0.96)",
+  },
+  bottomBarInner: {
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
   },
-  advancedStatValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2e7d32",
-    marginBottom: 4,
-    textAlign: "center",
+  bottomBarRow: {
+    flexDirection: "row",
+    gap: 12,
   },
-  advancedStatLabel: {
-    fontSize: 11,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 14,
+  primaryAction: {
+    flex: 1,
+    height: 52,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  primaryActionText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "800",
   },
 });
