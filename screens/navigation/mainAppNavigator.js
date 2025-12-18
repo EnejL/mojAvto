@@ -77,6 +77,17 @@ function MyVehiclesStack() {
         options={{
           title: t("vehicles.add"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -85,6 +96,17 @@ function MyVehiclesStack() {
         options={{
           title: t("vehicles.edit"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen

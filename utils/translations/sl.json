@@ -26,6 +26,13 @@
     "deleteVehicle": "Izbriši vozilo",
     "deleteConfirmMessage": "Ste prepričani, da želite izbrisati to vozilo?",
     "makePlaceholder": "Izberite znamko",
+    "nameExample": "npr. Moj vsakodnevni avto",
+    "makeExample": "npr. Toyota",
+    "modelExample": "npr. Camry",
+    "numberPlateExample": "NPR. ABC 1234",
+    "fuelTankSizeExample": "npr. 60",
+    "fuelTankSizeExampleGal": "npr. 15",
+    "batteryCapacityExample": "npr. 75",
     "modelPlaceholder": "Najprej izberite znamko",
     "statistics": "Statistika vozila",
     "history": "Zgodovina",
@@ -36,7 +43,9 @@
     "typeBadge": {
       "electric": "Elektrika",
       "hybrid": "Hibrid",
-      "gasoline": "Gorivo"
+      "phev": "Priključni hibrid",
+      "mhevFhev": "Blagi / polni hibrid",
+      "gasoline": "Bencin / dizel"
     },
     "avgConsumption": "Povp. poraba",
     "efficiencyCost": "Povp. strošek",
@@ -49,7 +58,7 @@
     "type": "Tip vozila",
     "types": {
       "ICE": "Bencin / dizel",
-      "HYBRID": "Hibrid (blagi / polni)",
+      "HYBRID": "Hibrid (MHEV/FHEV)",
       "PHEV": "PHEV (priključni hibrid)",
       "BEV": "Električno vozilo"
     },

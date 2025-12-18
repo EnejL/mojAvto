@@ -162,64 +162,8 @@ export default function MyAccountScreen() {
 
     let next = { ...prev, ...(partial || {}) };
 
-    // Normalize to keep combinations consistent (and keep existing app logic working via unitSystem)
-    if (partial?.distanceUnit) {
-      if (next.distanceUnit === "mi") {
-        next.volumeUnit = "gal";
-        next.consumptionUnit = "mpg";
-        next.electricConsumptionUnit = "kwh_per_100mi";
-      } else {
-        next.volumeUnit = "L";
-        if (next.consumptionUnit === "mpg") next.consumptionUnit = "l_per_100km";
-        if (next.electricConsumptionUnit === "kwh_per_100mi" || next.electricConsumptionUnit === "mi_per_kwh") {
-          next.electricConsumptionUnit = "kwh_per_100km";
-        }
-      }
-    }
-
-    if (partial?.volumeUnit) {
-      if (next.volumeUnit === "gal") {
-        next.distanceUnit = "mi";
-        next.consumptionUnit = "mpg";
-        next.electricConsumptionUnit = "kwh_per_100mi";
-      } else {
-        next.distanceUnit = "km";
-        if (next.consumptionUnit === "mpg") next.consumptionUnit = "l_per_100km";
-        if (next.electricConsumptionUnit === "kwh_per_100mi" || next.electricConsumptionUnit === "mi_per_kwh") {
-          next.electricConsumptionUnit = "kwh_per_100km";
-        }
-      }
-    }
-
-    if (partial?.consumptionUnit) {
-      if (next.consumptionUnit === "mpg") {
-        next.distanceUnit = "mi";
-        next.volumeUnit = "gal";
-        next.electricConsumptionUnit = "kwh_per_100mi";
-      } else {
-        next.distanceUnit = "km";
-        next.volumeUnit = "L";
-        if (next.electricConsumptionUnit === "kwh_per_100mi" || next.electricConsumptionUnit === "mi_per_kwh") {
-          next.electricConsumptionUnit = "kwh_per_100km";
-        }
-      }
-    }
-
-    if (partial?.electricConsumptionUnit) {
-      const imperialElectric =
-        next.electricConsumptionUnit === "kwh_per_100mi" ||
-        next.electricConsumptionUnit === "mi_per_kwh";
-      if (imperialElectric) {
-        next.distanceUnit = "mi";
-        next.volumeUnit = "gal";
-        next.consumptionUnit = "mpg";
-      } else {
-        next.distanceUnit = "km";
-        next.volumeUnit = "L";
-        if (next.consumptionUnit === "mpg") next.consumptionUnit = "l_per_100km";
-      }
-    }
-
+    // Keep the legacy `unitSystem` field in sync with distance only.
+    // Unlike before, changing one measurement does NOT auto-change the others.
     const unitSystem = next.distanceUnit === "mi" ? "imperial" : "metric";
 
     // Optimistic UI update

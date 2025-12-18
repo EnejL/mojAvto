@@ -26,6 +26,13 @@
     "deleteVehicle": "Delete Vehicle",
     "deleteConfirmMessage": "Are you sure you want to delete this vehicle?",
     "makePlaceholder": "Select Make",
+    "nameExample": "e.g. My Daily Commuter",
+    "makeExample": "e.g. Toyota",
+    "modelExample": "e.g. Camry",
+    "numberPlateExample": "E.G. ABC 1234",
+    "fuelTankSizeExample": "e.g. 60",
+    "fuelTankSizeExampleGal": "e.g. 15",
+    "batteryCapacityExample": "e.g. 75",
     "modelPlaceholder": "Select make first",
     "statistics": "Vehicle Statistics",
     "history": "History",
@@ -36,7 +43,9 @@
     "typeBadge": {
       "electric": "Electric",
       "hybrid": "Hybrid",
-      "gasoline": "Gasoline"
+      "phev": "Plug-in Hybrid",
+      "mhevFhev": "Mild / Full Hybrid",
+      "gasoline": "Gas / Diesel"
     },
     "avgConsumption": "Avg. Consumption",
     "efficiencyCost": "Efficiency Cost",
@@ -49,7 +58,7 @@
     "type": "Vehicle Type",
     "types": {
       "ICE": "Gasoline / Diesel",
-      "HYBRID": "Hybrid (mild / full)",
+      "HYBRID": "Hybrid (MHEV/FHEV)",
       "PHEV": "PHEV (plug-in hybrid)",
       "BEV": "Electric Vehicle"
     },

@@ -316,13 +316,19 @@ export default function MyVehiclesScreen({ navigation, route }) {
           };
         case 'PHEV':
           return {
-            label: t("vehicles.typeBadge.hybrid"),
+            label: t("vehicles.typeBadge.phev"),
             color: '#9C27B0',
             icon: 'car-electric',
             bgColor: '#4a148c',
           };
-        case 'ICE':
         case 'HYBRID':
+          return {
+            label: t("vehicles.typeBadge.mhevFhev"),
+            color: '#4CAF50',
+            icon: 'car-electric-outline',
+            bgColor: '#1b5e20',
+          };
+        case 'ICE':
         default:
           return {
             label: t("vehicles.typeBadge.gasoline"),
@@ -416,7 +422,15 @@ export default function MyVehiclesScreen({ navigation, route }) {
                 {getConsumption() && (
                   <View style={styles.statItem}>
                     <MaterialCommunityIcons 
-                      name={vehicleType === 'BEV' || vehicleType === 'PHEV' ? 'battery' : 'gas-station'} 
+                      name={
+                        vehicleType === 'BEV'
+                          ? 'battery'
+                          : vehicleType === 'PHEV'
+                            ? 'car-electric'
+                            : vehicleType === 'HYBRID'
+                              ? 'car-electric-outline'
+                              : 'gas-station'
+                      } 
                       size={16} 
                       color={vehicleTypeInfo.color}
                       style={styles.statIcon}
