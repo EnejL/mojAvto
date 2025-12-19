@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -8,23 +8,27 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
-  FlatList,
   TouchableOpacity,
   Text,
 } from "react-native";
 import { TextInput, Button, Surface } from "react-native-paper";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { updateVehicle, deleteVehicle } from "../../utils/firestore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Dropdown } from 'react-native-element-dropdown';
 import { fetchCarBrands, fetchCarModels } from "../../utils/carData";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import FormLabel from "../../components/FormLabel";
+import VehicleTypeSelector from "../../components/VehicleTypeSelector";
+import { defaultUserProfile, getUserProfile } from "../../utils/userProfile";
 
 export default function EditVehicleScreen({ navigation, route }) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { vehicle } = route.params;
   const [saving, setSaving] = useState(false);
+  const [userSettings, setUserSettings] = useState(defaultUserProfile);
+  const [hasHydratedUnits, setHasHydratedUnits] = useState(false);
 
   // State for vehicle data
   const [vehicleData, setVehicleData] = useState({
@@ -52,13 +56,15 @@ export default function EditVehicleScreen({ navigation, route }) {
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
 
-  // Vehicle type options
-  const vehicleTypeOptions = [
-    { label: t("vehicles.types.ICE"), value: 'ICE' },
-    { label: t("vehicles.types.HYBRID"), value: 'HYBRID' },
-    { label: t("vehicles.types.PHEV"), value: 'PHEV' },
-    { label: t("vehicles.types.BEV"), value: 'BEV' },
-  ];
+  const vehicleTypeOptions = useMemo(
+    () => [
+      { label: t("vehicles.types.ICE"), value: "ICE" },
+      { label: t("vehicles.types.HYBRID"), value: "HYBRID" },
+      { label: t("vehicles.types.PHEV"), value: "PHEV" },
+      { label: t("vehicles.types.BEV"), value: "BEV" },
+    ],
+    [t]
+  );
 
   // Load car brands on mount
   useEffect(() => {
@@ -75,6 +81,22 @@ export default function EditVehicleScreen({ navigation, route }) {
     };
     loadCarBrands();
   }, []);
+
+  // Load measurement preferences (volume unit)
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      try {
+        const profile = await getUserProfile();
+        setUserSettings(profile);
+      } catch (e) {
+        setUserSettings(defaultUserProfile);
+      }
+    };
+
+    loadUserSettings();
+    const unsubscribe = navigation?.addListener?.("focus", loadUserSettings);
+    return unsubscribe;
+  }, [navigation]);
 
   // Fetch models when make changes
   useEffect(() => {
@@ -149,13 +171,32 @@ export default function EditVehicleScreen({ navigation, route }) {
     }
     setSaving(true);
     try {
+      const volumeUnit =
+        userSettings.volumeUnit ||
+        (userSettings.unitSystem === "imperial" ? "gal" : "L");
+
+      const parseNumber = (val) => {
+        if (!val || !val.trim()) return null;
+        const parsed = parseFloat(val.replace(",", "."));
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+
+      const toLiters = (value) =>
+        volumeUnit === "gal" ? value * 3.78541 : value;
+
       const updateData = {
         name: vehicleData.name.trim() || make.trim(),
         make: make.trim(),
         model: model.trim(),
         numberPlate: vehicleData.numberPlate.trim(),
         vehicleType: vehicleData.vehicleType,
-        fuelTankSize: shouldShowFuelTankSize() && vehicleData.fuelTankSize.trim() ? parseFloat(vehicleData.fuelTankSize.replace(',', '.')) : null,
+        fuelTankSize:
+          shouldShowFuelTankSize() && vehicleData.fuelTankSize.trim()
+            ? (() => {
+                const v = parseNumber(vehicleData.fuelTankSize);
+                return v === null ? null : toLiters(v);
+              })()
+            : null,
         batteryCapacity: shouldShowBatteryCapacity() && vehicleData.batteryCapacity.trim() ? parseFloat(vehicleData.batteryCapacity.replace(',', '.')) : null,
       };
       await updateVehicle(vehicle.id, updateData);
@@ -196,12 +237,57 @@ export default function EditVehicleScreen({ navigation, route }) {
   const shouldShowFuelTankSize = () => ['ICE', 'HYBRID', 'PHEV'].includes(vehicleData.vehicleType);
   const shouldShowBatteryCapacity = () => ['BEV', 'PHEV'].includes(vehicleData.vehicleType);
 
+  const volumeUnit =
+    userSettings.volumeUnit || (userSettings.unitSystem === "imperial" ? "gal" : "L");
+
+  const fromLiters = (liters) =>
+    volumeUnit === "gal" ? liters / 3.78541 : liters;
+
+  const formatCapacity = (num) => {
+    if (!Number.isFinite(num)) return "";
+    const rounded = Math.round(num * 10) / 10;
+    return rounded.toFixed(1).replace(/\.0$/, "");
+  };
+
+  // Hydrate existing stored liters into the user-selected unit for display (once)
+  useEffect(() => {
+    if (hasHydratedUnits) return;
+    if (!vehicle?.fuelTankSize) {
+      setHasHydratedUnits(true);
+      return;
+    }
+    if (volumeUnit === "gal") {
+      const gal = fromLiters(Number(vehicle.fuelTankSize));
+      setVehicleData((prev) => ({
+        ...prev,
+        fuelTankSize: formatCapacity(gal),
+      }));
+    } else {
+      setVehicleData((prev) => ({
+        ...prev,
+        fuelTankSize: vehicle.fuelTankSize ? String(vehicle.fuelTankSize) : "",
+      }));
+    }
+    setHasHydratedUnits(true);
+  }, [hasHydratedUnits, volumeUnit, vehicle?.fuelTankSize]);
+
+  const renderClearIcon = (value, onClear) => {
+    if (!value || value.trim() === "") return null;
+    return (
+      <TextInput.Icon icon="close" onPress={onClear} iconColor={COLORS.muted} />
+    );
+  };
+
   const renderDropdown = (data, onSelect) => (
     <Surface style={styles.dropdownSurface}>
       <ScrollView keyboardShouldPersistTaps="handled">
         {data.map((item) => (
-          <TouchableOpacity key={item} style={styles.dropdownItem} onPress={() => onSelect(item)}>
-            <Text>{item}</Text>
+          <TouchableOpacity
+            key={item}
+            style={styles.dropdownItem}
+            onPress={() => onSelect(item)}
+          >
+            <Text style={styles.dropdownItemText}>{item}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -209,263 +295,330 @@ export default function EditVehicleScreen({ navigation, route }) {
   );
 
   return (
-    <KeyboardAwareScrollView
-      style={styles.container}
-      nestedScrollEnabled={true}
-      keyboardShouldPersistTaps="handled"
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View>
-        <Surface style={styles.headerCard}>
-          <Text style={styles.headerSubtext}>
-            {vehicle.make} {vehicle.model}
-          </Text>
-        </Surface>
+    <View style={styles.container}>
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View>
+            <View style={styles.field}>
+              <FormLabel style={styles.label}>{t("vehicles.name")}</FormLabel>
+              <TextInput
+                value={vehicleData.name}
+                onChangeText={(text) =>
+                  setVehicleData({ ...vehicleData, name: text })
+                }
+                style={styles.input}
+                outlineStyle={styles.inputOutline}
+                contentStyle={styles.inputContent}
+                mode="outlined"
+                disabled={saving}
+                textColor={COLORS.text}
+                placeholder={t("vehicles.nameExample")}
+                placeholderTextColor={COLORS.placeholder}
+                outlineColor={COLORS.border}
+                activeOutlineColor={COLORS.blue}
+                right={renderClearIcon(vehicleData.name, () =>
+                  setVehicleData({ ...vehicleData, name: "" })
+                )}
+              />
+            </View>
 
-        <Surface style={styles.formCard}>
-            <View style={[styles.inputContainer, { zIndex: 5 }]}>
-            <FormLabel style={styles.inputLabel}>{t("vehicles.name")}</FormLabel>
-            <TextInput
-              value={vehicleData.name}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, name: text })
-              }
-              style={styles.input}
-              mode="outlined"
-              disabled={saving}
-            />
-          </View>
-
-            <View style={[styles.inputContainer, { zIndex: 4 }]}>
-            <FormLabel required style={styles.inputLabel}>{t("vehicles.make")}</FormLabel>
-            <TextInput
+            {/* Make Input */}
+            <View style={[styles.field, { zIndex: 5 }]}>
+              <FormLabel required style={styles.label}>
+                {t("vehicles.make")}
+              </FormLabel>
+              <TextInput
                 value={make}
                 onChangeText={handleMakeChange}
                 onFocus={() => setMakeDropdownVisible(true)}
-                onBlur={() => setTimeout(() => setMakeDropdownVisible(false), 200)}
+                onBlur={() =>
+                  setTimeout(() => setMakeDropdownVisible(false), 200)
+                }
                 style={styles.input}
+                outlineStyle={styles.inputOutline}
+                contentStyle={styles.inputContent}
                 disabled={saving || loadingBrands}
                 mode="outlined"
-                right={loadingBrands && <TextInput.Icon icon="loading" />}
-            />
-            {isMakeDropdownVisible && filteredBrands.length > 0 && renderDropdown(filteredBrands, handleSelectMake)}
-          </View>
+                textColor={COLORS.text}
+                placeholder={t("vehicles.makeExample")}
+                placeholderTextColor={COLORS.placeholder}
+                outlineColor={COLORS.border}
+                activeOutlineColor={COLORS.blue}
+                right={renderClearIcon(make, () => {
+                  setMake("");
+                  setModel("");
+                  setFilteredBrands([]);
+                  setMakeDropdownVisible(false);
+                })}
+              />
+              {isMakeDropdownVisible &&
+                filteredBrands.length > 0 &&
+                renderDropdown(filteredBrands, handleSelectMake)}
+            </View>
 
-            <View style={[styles.inputContainer, { zIndex: 3 }]}>
-            <FormLabel required style={styles.inputLabel}>{t("vehicles.model")}</FormLabel>
-            <TextInput
+            {/* Model Input */}
+            <View style={[styles.field, { zIndex: 4 }]}>
+              <FormLabel required style={styles.label}>
+                {t("vehicles.model")}
+              </FormLabel>
+              <TextInput
                 value={model}
                 onChangeText={handleModelChange}
                 onFocus={() => setModelDropdownVisible(true)}
-                onBlur={() => setTimeout(() => setModelDropdownVisible(false), 200)}
+                onBlur={() =>
+                  setTimeout(() => setModelDropdownVisible(false), 200)
+                }
                 style={styles.input}
+                outlineStyle={styles.inputOutline}
+                contentStyle={styles.inputContent}
                 disabled={saving || loadingModels || !make}
                 mode="outlined"
-                right={loadingModels && <TextInput.Icon icon="loading" />}
-                placeholder={!make ? t("vehicles.modelPlaceholder") : ""}
-            />
-            {isModelDropdownVisible && filteredModels.length > 0 && renderDropdown(filteredModels, handleSelectModel)}
-          </View>
+                textColor={COLORS.text}
+                placeholder={
+                  make ? t("vehicles.modelExample") : t("vehicles.modelPlaceholder")
+                }
+                placeholderTextColor={COLORS.placeholder}
+                outlineColor={COLORS.border}
+                activeOutlineColor={COLORS.blue}
+                right={renderClearIcon(model, () => {
+                  setModel("");
+                  setFilteredModels([]);
+                  setModelDropdownVisible(false);
+                })}
+              />
+              {isModelDropdownVisible &&
+                filteredModels.length > 0 &&
+                renderDropdown(filteredModels, handleSelectModel)}
+            </View>
 
-            <View style={[styles.inputContainer, { zIndex: 2 }]}>
-            <FormLabel style={styles.inputLabel}>{t("vehicles.numberPlate")}</FormLabel>
-            <TextInput
-              value={vehicleData.numberPlate}
-              onChangeText={(text) =>
-                setVehicleData({ ...vehicleData, numberPlate: text })
-              }
-              style={styles.input}
+            <View style={[styles.field, { zIndex: 3 }]}>
+              <FormLabel style={styles.label}>
+                {t("vehicles.numberPlate")}
+              </FormLabel>
+              <TextInput
+                value={vehicleData.numberPlate}
+                onChangeText={(text) =>
+                  setVehicleData({ ...vehicleData, numberPlate: text })
+                }
+                style={styles.input}
+                outlineStyle={styles.inputOutline}
+                contentStyle={styles.inputContent}
+                mode="outlined"
+                disabled={saving}
+                textColor={COLORS.text}
+                placeholder={t("vehicles.numberPlateExample")}
+                placeholderTextColor={COLORS.placeholder}
+                outlineColor={COLORS.border}
+                activeOutlineColor={COLORS.blue}
+                right={renderClearIcon(vehicleData.numberPlate, () =>
+                  setVehicleData({ ...vehicleData, numberPlate: "" })
+                )}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <FormLabel required style={styles.label}>
+                {t("vehicles.vehicleType")}
+              </FormLabel>
+              <VehicleTypeSelector
+                value={vehicleData.vehicleType}
+                onChange={(type) =>
+                  setVehicleData({ ...vehicleData, vehicleType: type })
+                }
+                disabled={saving}
+                options={vehicleTypeOptions}
+              />
+            </View>
+
+            {shouldShowFuelTankSize() && (
+              <View style={styles.field}>
+                <View style={styles.fieldHeaderRow}>
+                  <FormLabel style={styles.label}>
+                    {t("vehicles.fuelTankSize")}
+                  </FormLabel>
+                  <Text style={styles.unitText}>{volumeUnit}</Text>
+                </View>
+                <TextInput
+                  value={vehicleData.fuelTankSize}
+                  onChangeText={(text) =>
+                    setVehicleData({ ...vehicleData, fuelTankSize: text })
+                  }
+                  style={styles.input}
+                  outlineStyle={styles.inputOutline}
+                  contentStyle={styles.inputContent}
+                  disabled={saving}
+                  mode="outlined"
+                  keyboardType="numeric"
+                  textColor={COLORS.text}
+                  placeholder={
+                    volumeUnit === "gal"
+                      ? t("vehicles.fuelTankSizeExampleGal")
+                      : t("vehicles.fuelTankSizeExample")
+                  }
+                  placeholderTextColor={COLORS.placeholder}
+                  outlineColor={COLORS.border}
+                  activeOutlineColor={COLORS.blue}
+                  right={renderClearIcon(vehicleData.fuelTankSize, () =>
+                    setVehicleData({ ...vehicleData, fuelTankSize: "" })
+                  )}
+                />
+              </View>
+            )}
+
+            {shouldShowBatteryCapacity() && (
+              <View style={styles.field}>
+                <View style={styles.fieldHeaderRow}>
+                  <FormLabel style={styles.label}>
+                    {t("vehicles.batteryCapacity")}
+                  </FormLabel>
+                  <Text style={styles.unitText}>kWh</Text>
+                </View>
+                <TextInput
+                  value={vehicleData.batteryCapacity}
+                  onChangeText={(text) =>
+                    setVehicleData({ ...vehicleData, batteryCapacity: text })
+                  }
+                  style={styles.input}
+                  outlineStyle={styles.inputOutline}
+                  contentStyle={styles.inputContent}
+                  disabled={saving}
+                  mode="outlined"
+                  keyboardType="numeric"
+                  textColor={COLORS.text}
+                  placeholder={t("vehicles.batteryCapacityExample")}
+                  placeholderTextColor={COLORS.placeholder}
+                  outlineColor={COLORS.border}
+                  activeOutlineColor={COLORS.blue}
+                  right={renderClearIcon(vehicleData.batteryCapacity, () =>
+                    setVehicleData({ ...vehicleData, batteryCapacity: "" })
+                  )}
+                />
+              </View>
+            )}
+
+            <Button
               mode="outlined"
+              onPress={handleDelete}
+              style={styles.deleteButton}
+              labelStyle={styles.deleteButtonLabel}
+              icon={({ size, color }) => (
+                <MaterialCommunityIcons
+                  name="trash-can"
+                  size={size}
+                  color={color}
+                />
+              )}
               disabled={saving}
-              placeholder={t("vehicles.numberPlate")}
-            />
+            >
+              {t("vehicles.deleteVehicle")}
+            </Button>
           </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAwareScrollView>
 
-          {/* Vehicle Type Selector */}
-          <View style={[styles.inputContainer, { zIndex: 1 }]}>
-            <FormLabel required style={styles.inputLabel}>{t("vehicles.vehicleType")}</FormLabel>
-            <Dropdown
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              data={vehicleTypeOptions}
-              maxHeight={300}
-              labelField="label"
-              valueField="value"
-              placeholder="Select vehicle type"
-              value={vehicleData.vehicleType}
-              onChange={(item) => setVehicleData({ ...vehicleData, vehicleType: item.value })}
-              disable={saving}
-            />
-          </View>
-
-          {/* Conditional Fields */}
-          {shouldShowFuelTankSize() && (
-            <View style={styles.inputContainer}>
-              <FormLabel style={styles.inputLabel}>{t("vehicles.fuelTankSize")} (L)</FormLabel>
-              <TextInput
-                value={vehicleData.fuelTankSize}
-                onChangeText={(text) =>
-                  setVehicleData({ ...vehicleData, fuelTankSize: text })
-                }
-                style={styles.input}
-                disabled={saving}
-                mode="outlined"
-                keyboardType="numeric"
-                placeholder="e.g. 60"
-              />
-            </View>
-          )}
-
-          {shouldShowBatteryCapacity() && (
-            <View style={styles.inputContainer}>
-              <FormLabel style={styles.inputLabel}>{t("vehicles.batteryCapacity")} (kWh)</FormLabel>
-              <TextInput
-                value={vehicleData.batteryCapacity}
-                onChangeText={(text) =>
-                  setVehicleData({ ...vehicleData, batteryCapacity: text })
-                }
-                style={styles.input}
-                disabled={saving}
-                mode="outlined"
-                keyboardType="numeric"
-                placeholder="e.g. 75"
-              />
-            </View>
-          )}
-        </Surface>
-
-        <Button
-          mode="outlined"
-          onPress={handleDelete}
-          style={styles.deleteButton}
-          labelStyle={styles.deleteButtonLabel}
-          icon={({ size, color }) => (
-            <MaterialCommunityIcons
-              name="trash-can"
-              size={size}
-              color={color}
-            />
-          )}
-        >
-          {t("vehicles.deleteVehicle")}
-        </Button>
-
-      <View style={styles.buttonContainer}>
-        <Button
-          mode="outlined"
-          onPress={() => navigation.goBack()}
-          style={[styles.button, styles.cancelButton]}
-          disabled={saving}
-        >
-          {t("common.cancel")}
-        </Button>
+      <View style={[styles.bottomBar, { paddingBottom: 12 }]}>
         <Button
           mode="contained"
           onPress={handleSave}
-          style={[styles.button, styles.saveButton]}
+          style={styles.primaryButton}
+          contentStyle={styles.primaryButtonContent}
+          labelStyle={styles.primaryButtonLabel}
+          buttonColor={COLORS.blue}
           disabled={saving}
         >
           {saving ? <ActivityIndicator color="white" /> : t("common.save")}
         </Button>
       </View>
     </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAwareScrollView>
   );
 }
+
+const COLORS = {
+  bg: "#0B141E",
+  surface: "#1C242D",
+  border: "#2B3845",
+  text: "#EAF1FA",
+  muted: "#AAB6C4",
+  placeholder: "#7D8A99",
+  blue: "#1B84FF",
+  danger: "#FF4D4D",
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.bg,
   },
-  headerCard: {
-    padding: 24,
-    margin: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    elevation: 1,
-    backgroundColor: "#fff",
+  scroll: {
+    flex: 1,
   },
-  headerSubtext: {
-    fontSize: 16,
-    color: "#495057",
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 170,
   },
-  formCard: {
-    margin: 16,
-    marginTop: 8,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 1,
-    backgroundColor: "#fff",
-  },
-  inputContainer: {
+  field: {
     marginBottom: 16,
   },
-  labelContainer: {
+  row: {
     flexDirection: "row",
-    marginBottom: 4,
+    justifyContent: "space-between",
+    marginBottom: 16,
+    overflow: "visible",
   },
-  inputLabel: {
-    fontSize: 14,
-    color: "#666",
+  fieldHalf: {
+    width: "48%",
   },
-  requiredLabel: {
-    color: "red",
-    marginLeft: 4,
+  label: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
   },
-  dropdown: {
+  inputOutline: {
+    borderRadius: 18,
+  },
+  inputContent: {
     height: 56,
-    borderColor: '#79747E',
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
-    marginTop: 8,
   },
-  placeholderStyle: {
-    fontSize: 16,
-    color: '#999',
+  fieldHeaderRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    marginBottom: 8,
   },
-  selectedTextStyle: {
-    fontSize: 16,
+  unitText: {
+    color: COLORS.muted,
+    fontSize: 14,
+    fontWeight: "700",
   },
   deleteButton: {
-    marginHorizontal: 25,
-    marginTop: 16,
-    borderColor: "#d32f2f",
+    marginTop: 8,
+    borderColor: COLORS.danger,
+    borderRadius: 18,
   },
   deleteButtonLabel: {
-    color: "#d32f2f",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    padding: 16,
-    paddingTop: 8,
-    backgroundColor: "#f8f9fa",
-  },
-  button: {
-    flex: 1,
-    marginHorizontal: 8,
-  },
-  cancelButton: {
-    borderColor: "#495057",
-  },
-  saveButton: {
-    backgroundColor: "#6c757d",
+    color: COLORS.danger,
+    fontWeight: "800",
   },
   dropdownSurface: {
     position: 'absolute',
-    top: 80, 
+    top: 78,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
-    borderRadius: 4,
-    elevation: 5,
+    backgroundColor: "#121A24",
+    borderRadius: 14,
+    elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -473,11 +626,37 @@ const styles = StyleSheet.create({
     maxHeight: 200,
     zIndex: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: COLORS.border,
   },
   dropdownItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#23303C",
+  },
+  dropdownItemText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: COLORS.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#15202B",
+  },
+  primaryButton: {
+    borderRadius: 18,
+  },
+  primaryButtonContent: {
+    height: 58,
+  },
+  primaryButtonLabel: {
+    fontSize: 20,
+    fontWeight: "800",
   },
 });

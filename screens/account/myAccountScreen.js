@@ -3,17 +3,15 @@ import {
   View,
   StyleSheet,
   Alert,
-  ScrollView,
-  Animated,
+  FlatList,
+  TouchableOpacity,
   TouchableWithoutFeedback,
+  Animated,
 } from "react-native";
 import {
   Text,
-  Button,
   Surface,
   Avatar,
-  List,
-  Divider,
   ActivityIndicator,
 } from "react-native-paper";
 import { useTranslation } from "react-i18next";
@@ -25,19 +23,21 @@ import {
   getUserProfile,
   updateUserProfile,
 } from "../../utils/userProfile";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function MyAccountScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [savingField, setSavingField] = useState(null);
   const [settings, setSettings] = useState(defaultUserProfile);
-
+  const [measurementExpanded, setMeasurementExpanded] = useState(false);
+  const [currencyExpanded, setCurrencyExpanded] = useState(false);
+  const [languageExpanded, setLanguageExpanded] = useState(false);
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
-  const deleteButtonAnim = useRef(new Animated.Value(100)).current; // Start translated down (hidden)
+  const deleteButtonAnim = useRef(new Animated.Value(200)).current; // Start translated down (hidden off-screen)
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -65,17 +65,6 @@ export default function MyAccountScreen() {
 
     loadSettings();
   }, [currentUser]);
-
-  const hideDeleteButton = () => {
-    if (isDeleteVisible) {
-      setIsDeleteVisible(false);
-      Animated.timing(deleteButtonAnim, {
-        toValue: 100,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -114,17 +103,101 @@ export default function MyAccountScreen() {
       // Save the language preference to persistent storage
       await saveLanguage(languageCode);
       await persistSetting("language", languageCode);
+      setLanguageExpanded(false);
     } catch (error) {
       // Error handled silently - language change may still work
     }
   };
 
-  const handleUnitChange = async (unitSystem) => {
-    await persistSetting("unitSystem", unitSystem);
+  const getEffectiveDistanceUnit = () =>
+    settings.distanceUnit || (settings.unitSystem === "imperial" ? "mi" : "km");
+
+  const getEffectiveVolumeUnit = () =>
+    settings.volumeUnit || (settings.unitSystem === "imperial" ? "gal" : "L");
+
+  const getEffectiveConsumptionUnit = () =>
+    settings.consumptionUnit ||
+    (settings.unitSystem === "imperial" ? "mpg" : "l_per_100km");
+
+  const getEffectiveElectricConsumptionUnit = () =>
+    settings.electricConsumptionUnit ||
+    (settings.unitSystem === "imperial" ? "kwh_per_100mi" : "kwh_per_100km");
+
+  const getMeasurementSummary = () => {
+    const distance = getEffectiveDistanceUnit();
+    const volume = getEffectiveVolumeUnit();
+    const fuelConsumption = getEffectiveConsumptionUnit();
+    const electricConsumption = getEffectiveElectricConsumptionUnit();
+
+    const distanceLabel =
+      distance === "mi" ? t("settings.unitMilesShort") : t("settings.unitKilometresShort");
+    const volumeLabel =
+      volume === "gal" ? t("settings.unitGallonsShort") : t("settings.unitLitresShort");
+    const fuelLabel =
+      fuelConsumption === "mpg"
+        ? t("settings.unitMpg")
+        : fuelConsumption === "km_per_l"
+          ? t("settings.unitKmPerL")
+          : t("settings.unitLPer100Km");
+
+    const electricLabel =
+      electricConsumption === "kwh_per_100mi"
+        ? t("settings.unitKwhPer100Mi")
+        : electricConsumption === "mi_per_kwh"
+          ? t("settings.unitMiPerKwh")
+          : electricConsumption === "km_per_kwh"
+            ? t("settings.unitKmPerKwh")
+            : t("settings.unitKwhPer100Km");
+
+    return `${distanceLabel} • ${volumeLabel} • ${fuelLabel} • ${electricLabel}`;
+  };
+
+  const persistMeasurementSettings = async (partial) => {
+    const prev = {
+      distanceUnit: getEffectiveDistanceUnit(),
+      volumeUnit: getEffectiveVolumeUnit(),
+      consumptionUnit: getEffectiveConsumptionUnit(),
+      electricConsumptionUnit: getEffectiveElectricConsumptionUnit(),
+    };
+
+    let next = { ...prev, ...(partial || {}) };
+
+    // Keep the legacy `unitSystem` field in sync with distance only.
+    // Unlike before, changing one measurement does NOT auto-change the others.
+    const unitSystem = next.distanceUnit === "mi" ? "imperial" : "metric";
+
+    // Optimistic UI update
+    setSettings((prevSettings) => ({
+      ...prevSettings,
+      ...next,
+      unitSystem,
+    }));
+
+    if (!currentUser || currentUser.isAnonymous) {
+      return;
+    }
+
+    try {
+      setSavingField("unitSystem");
+      const merged = await updateUserProfile(
+        {
+          ...next,
+          unitSystem,
+        },
+        settings
+      );
+      setSettings(merged);
+      setMeasurementExpanded(false);
+    } catch (error) {
+      setSettings((prevState) => ({ ...defaultUserProfile, ...prevState }));
+    } finally {
+      setSavingField(null);
+    }
   };
 
   const handleCurrencyChange = async (currency) => {
     await persistSetting("currency", currency);
+    setCurrencyExpanded(false);
   };
 
   const handleDeleteAccount = () => {
@@ -176,218 +249,429 @@ export default function MyAccountScreen() {
     }
   };
 
+  const getCurrencyLabel = () => {
+    if (settings.currency === "USD") return "USD ($)";
+    if (settings.currency === "EUR") return "EUR (€)";
+    if (settings.currency === "GBP") return "GBP (£)";
+    return settings.currency || "USD ($)";
+  };
+
+  const getCurrencyFullName = (code) => {
+    if (code === "USD") return "United States Dollar (USD)";
+    if (code === "EUR") return "Euro (EUR)";
+    if (code === "GBP") return "British Pound (GBP)";
+    return code;
+  };
+
+  const getLanguageLabel = () => {
+    if (settings.language === "en") return "English";
+    if (settings.language === "sl") return "Slovenščina";
+    return "English";
+  };
+
+  const getLanguageFullName = (code) => {
+    if (code === "en") return "English";
+    if (code === "sl") return "Slovenščina";
+    return "English";
+  };
+
+  const getUserDisplayName = () => {
+    if (currentUser?.displayName) return currentUser.displayName;
+    if (currentUser?.email) {
+      const emailParts = currentUser.email.split("@");
+      return emailParts[0].charAt(0).toUpperCase() + emailParts[0].slice(1);
+    }
+    return "User";
+  };
+
+  const getUserEmail = () => {
+    return currentUser?.email || "user@example.com";
+  };
+
   const handleScroll = (event) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const overscroll = contentOffset.y - (contentSize.height - layoutMeasurement.height);
+    const scrollPosition = contentOffset.y;
+    const maxScroll = contentSize.height - layoutMeasurement.height;
+    const overscroll = scrollPosition - maxScroll;
     const overscrollThreshold = 80;
+    const hideThreshold = 150; // Hide when scrolled back up by 150px from bottom
 
     if (overscroll > overscrollThreshold && !isDeleteVisible) {
+      // Show button when overscrolling past threshold
       setIsDeleteVisible(true);
       Animated.timing(deleteButtonAnim, {
         toValue: 0,
         duration: 250,
         useNativeDriver: true,
       }).start();
-    } else if (overscroll < 0 && isDeleteVisible) {
-      // Hide if user scrolls back up from the bottom
+    } else if (isDeleteVisible && scrollPosition < maxScroll - hideThreshold) {
+      // Once visible, only hide if user scrolls significantly away from bottom
       setIsDeleteVisible(false);
       Animated.timing(deleteButtonAnim, {
-        toValue: 100,
+        toValue: 200,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+    // If button is visible and user is still near bottom, keep it visible
+  };
+
+  const hideDeleteButton = () => {
+    if (isDeleteVisible) {
+      setIsDeleteVisible(false);
+      Animated.timing(deleteButtonAnim, {
+        toValue: 200,
         duration: 250,
         useNativeDriver: true,
       }).start();
     }
   };
 
+  const accountRows = [
+    { key: "preferences" },
+    { key: "support" },
+    { key: "footer" },
+  ];
+
+  const renderProfileHeader = () => (
+    <View style={styles.profileSection}>
+      <View style={styles.avatarContainer}>
+        {currentUser?.photoURL ? (
+          <Avatar.Image size={100} source={{ uri: currentUser.photoURL }} style={styles.avatar} />
+        ) : (
+          <Avatar.Icon size={100} icon="account" style={styles.avatar} color="#fff" />
+        )}
+      </View>
+      <Text style={styles.userName}>{getUserDisplayName()}</Text>
+      <Text style={styles.userEmail}>{getUserEmail()}</Text>
+    </View>
+  );
+
+  const renderPreferencesSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{t("common.preferences")}</Text>
+
+      {/* Measurement Units */}
+      <Surface style={styles.preferenceCard}>
+        <TouchableOpacity
+          style={styles.preferenceRow}
+          onPress={() => setMeasurementExpanded(!measurementExpanded)}
+          disabled={settingsLoading || savingField === "unitSystem"}
+        >
+          <View style={styles.preferenceRowLeft}>
+            <View style={[styles.iconCircle, styles.measurementIcon]}>
+              <MaterialCommunityIcons name="ruler" size={20} color="#fff" />
+            </View>
+            <View style={styles.preferenceRowText}>
+              <Text style={styles.preferenceTitle}>{t("settings.unitSystem")}</Text>
+              <Text style={styles.preferenceSubtitle}>
+                {settingsLoading ? t("common.loading") : getMeasurementSummary()}
+              </Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name={measurementExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+          />
+        </TouchableOpacity>
+
+        {measurementExpanded && !settingsLoading && (
+          <View style={styles.expandedContent}>
+            <Text style={styles.measurementSubsectionTitle}>{t("settings.distance")}</Text>
+            {["km", "mi"].map((unit) => (
+              <TouchableOpacity
+                key={unit}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ distanceUnit: unit })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveDistanceUnit() === unit && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>
+                  {unit === "km" ? t("settings.unitKilometres") : t("settings.unitMiles")}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.measurementDivider} />
+
+            <Text style={styles.measurementSubsectionTitle}>{t("settings.volume")}</Text>
+            {["L", "gal"].map((unit) => (
+              <TouchableOpacity
+                key={unit}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ volumeUnit: unit })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveVolumeUnit() === unit && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>
+                  {unit === "L" ? t("settings.unitLitres") : t("settings.unitGallons")}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.measurementDivider} />
+
+            <Text style={styles.measurementSubsectionTitle}>{t("settings.consumption")}</Text>
+            <Text style={styles.measurementGroupTitle}>{t("vehicles.fuelConsumption")}</Text>
+            {[
+              { value: "l_per_100km", label: t("settings.unitLPer100Km") },
+              { value: "mpg", label: t("settings.unitMpg") },
+              { value: "km_per_l", label: t("settings.unitKmPerL") },
+            ].map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ consumptionUnit: opt.value })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveConsumptionUnit() === opt.value && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.measurementDivider} />
+
+            <Text style={styles.measurementGroupTitle}>{t("vehicles.electricConsumption")}</Text>
+            {[
+              { value: "kwh_per_100km", label: t("settings.unitKwhPer100Km") },
+              { value: "kwh_per_100mi", label: t("settings.unitKwhPer100Mi") },
+              { value: "km_per_kwh", label: t("settings.unitKmPerKwh") },
+              { value: "mi_per_kwh", label: t("settings.unitMiPerKwh") },
+            ].map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ electricConsumptionUnit: opt.value })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveElectricConsumptionUnit() === opt.value && (
+                    <View style={styles.radioButtonSelected} />
+                  )}
+                </View>
+                <Text style={styles.radioOptionText}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </Surface>
+
+      {/* Currency */}
+      <Surface style={styles.preferenceCard}>
+        <TouchableOpacity
+          style={styles.preferenceRow}
+          onPress={() => setCurrencyExpanded(!currencyExpanded)}
+          disabled={settingsLoading || savingField === "currency"}
+        >
+          <View style={styles.preferenceRowLeft}>
+            <View style={[styles.iconCircle, styles.currencyIcon]}>
+              <MaterialCommunityIcons name="currency-usd" size={20} color="#fff" />
+            </View>
+            <View style={styles.preferenceRowText}>
+              <Text style={styles.preferenceTitle}>{t("settings.currency")}</Text>
+              <Text style={styles.preferenceSubtitle}>{getCurrencyLabel()}</Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name={currencyExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+          />
+        </TouchableOpacity>
+
+        {currencyExpanded && (
+          <View style={styles.expandedContent}>
+            {["USD", "EUR", "GBP"].map((currency) => (
+              <TouchableOpacity
+                key={currency}
+                style={styles.radioOption}
+                onPress={() => handleCurrencyChange(currency)}
+                disabled={savingField === "currency"}
+              >
+                <View style={styles.radioButton}>
+                  {settings.currency === currency && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>{getCurrencyFullName(currency)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </Surface>
+
+      {/* Language */}
+      <Surface style={styles.preferenceCard}>
+        <TouchableOpacity
+          style={styles.preferenceRow}
+          onPress={() => setLanguageExpanded(!languageExpanded)}
+          disabled={settingsLoading || savingField === "language"}
+        >
+          <View style={styles.preferenceRowLeft}>
+            <View style={[styles.iconCircle, styles.languageIcon]}>
+              <MaterialCommunityIcons name="web" size={20} color="#fff" />
+            </View>
+            <View style={styles.preferenceRowText}>
+              <Text style={styles.preferenceTitle}>{t("settings.language")}</Text>
+              <Text style={styles.preferenceSubtitle}>{getLanguageLabel()}</Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name={languageExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+          />
+        </TouchableOpacity>
+
+        {languageExpanded && (
+          <View style={styles.expandedContent}>
+            <Text style={styles.languageNote}>Changing language requires an app restart.</Text>
+            {["en", "sl"].map((language) => (
+              <TouchableOpacity
+                key={language}
+                style={styles.radioOption}
+                onPress={() => handleLanguageChange(language)}
+                disabled={savingField === "language"}
+              >
+                <View style={styles.radioButton}>
+                  {settings.language === language && <View style={styles.radioButtonSelected} />}
+                </View>
+                <View style={styles.radioOptionContent}>
+                  <Text style={styles.radioOptionFlag}>{language === "en" ? "🇬🇧" : "🇸🇮"}</Text>
+                  <Text style={styles.radioOptionText}>{getLanguageFullName(language)}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </Surface>
+    </View>
+  );
+
+  const renderSupportSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>
+        {t("common.support")} &amp; {t("common.legal")}
+      </Text>
+
+      <TouchableOpacity
+        style={styles.supportCard}
+        onPress={() => navigation.navigate("PrivacyPolicy")}
+      >
+        <View style={styles.preferenceRowLeft}>
+          <View style={[styles.iconCircle, styles.privacyIcon]}>
+            <MaterialCommunityIcons name="shield-search" size={20} color="#fff" />
+          </View>
+          <Text style={styles.supportCardTitle}>{t("common.privacyPolicy")}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.supportCard}
+        onPress={() => navigation.navigate("TermsOfUse")}
+      >
+        <View style={styles.preferenceRowLeft}>
+          <View style={[styles.iconCircle, styles.termsIcon]}>
+            <MaterialCommunityIcons name="file-document" size={20} color="#fff" />
+          </View>
+          <Text style={styles.supportCardTitle}>{t("common.terms")}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.supportCard}
+        onPress={() => navigation.navigate("FrequentlyAskedQuestions")}
+      >
+        <View style={styles.preferenceRowLeft}>
+          <View style={[styles.iconCircle, styles.faqIcon]}>
+            <MaterialCommunityIcons name="help-circle" size={20} color="#fff" />
+          </View>
+          <Text style={styles.supportCardTitle}>{t("common.faq")}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderFooter = () => (
+    <>
+      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <MaterialCommunityIcons name="logout" size={20} color="#FF3B30" />
+        <Text style={styles.signOutText}>{t("auth.signOut")}</Text>
+      </TouchableOpacity>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>{t("common.version")} 2.1.0</Text>
+      </View>
+    </>
+  );
+
+  const renderRow = ({ item }) => {
+    switch (item.key) {
+      case "preferences":
+        return renderPreferencesSection();
+      case "support":
+        return renderSupportSection();
+      case "footer":
+        return renderFooter();
+      default:
+        return null;
+    }
+  };
 
   return (
     <TouchableWithoutFeedback onPress={hideDeleteButton}>
       <View style={styles.container}>
-        <ScrollView
+        <FlatList
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
-          nestedScrollEnabled
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          data={accountRows}
+          renderItem={renderRow}
+          keyExtractor={(item) => item.key}
+          ListHeaderComponent={renderProfileHeader}
+          keyboardShouldPersistTaps="handled"
           bounces={true}
+          onScroll={handleScroll}
+          scrollEventThrottle={64}
+        />
+
+      {currentUser && !currentUser.isAnonymous && (
+        <Animated.View
+          style={[
+            styles.deleteButtonContainer,
+            { 
+              transform: [{ translateY: deleteButtonAnim }],
+              opacity: deleteButtonAnim.interpolate({
+                inputRange: [0, 200],
+                outputRange: [1, 0],
+              }),
+            },
+          ]}
         >
-          <Surface style={styles.headerCard}>
-            {currentUser?.photoURL ? (
-              <Avatar.Image
-                size={80}
-                source={{ uri: currentUser.photoURL }}
-                style={styles.avatar}
-              />
-            ) : (
-              <Avatar.Icon
-                size={80}
-                icon="account"
-                style={styles.avatar}
-                color="#fff"
-              />
-            )}
-            <Text style={styles.greeting}>
-              {currentUser?.isAnonymous
-                ? t("auth.greetingAnonymous")
-                : t("auth.greeting", {
-                    name: currentUser?.displayName || currentUser?.email,
-                  })}
-            </Text>
-          </Surface>
-
-          <Surface style={[styles.section, styles.accordionSurface]}>
-            <List.Accordion
-              title={t("settings.preferences")}
-              description={t("settings.preferencesDescription")}
-              left={(props) => <List.Icon {...props} icon="cog" />}
-              expanded={settingsExpanded}
-              onPress={() => setSettingsExpanded((prev) => !prev)}
-              style={styles.accordionHeader}
-            >
-              {settingsLoading ? (
-                <View style={styles.accordionLoading}>
-                  <ActivityIndicator />
-                </View>
-              ) : (
-                <View style={styles.accordionContent}>
-                  <List.Subheader>{t("settings.language")}</List.Subheader>
-                    <List.Item
-                      title={t("settings.languageEn")}
-                      right={(props) =>
-                        settings.language === "en" ? (
-                          <List.Icon {...props} icon="check" color="#4CAF50" />
-                        ) : null
-                      }
-                      onPress={() => handleLanguageChange("en")}
-                      disabled={savingField === "language"}
-                    />
-                    <Divider />
-                    <List.Item
-                      title={t("settings.languageSl")}
-                      right={(props) =>
-                        settings.language === "sl" ? (
-                          <List.Icon {...props} icon="check" color="#4CAF50" />
-                        ) : null
-                      }
-                      onPress={() => handleLanguageChange("sl")}
-                      disabled={savingField === "language"}
-                    />
-
-                  <Divider />
-
-                  <List.Subheader>{t("settings.unitSystem")}</List.Subheader>
-                    <List.Item
-                      title={t("settings.unitMetric")}
-                      description="km, L, L/100 km"
-                      right={(props) =>
-                        settings.unitSystem === "metric" ? (
-                          <List.Icon {...props} icon="check" color="#4CAF50" />
-                        ) : null
-                      }
-                      onPress={() => handleUnitChange("metric")}
-                      disabled={savingField === "unitSystem"}
-                    />
-                    <Divider />
-                    <List.Item
-                      title={t("settings.unitImperial")}
-                      description="mi, gal, MPG"
-                      right={(props) =>
-                        settings.unitSystem === "imperial" ? (
-                          <List.Icon {...props} icon="check" color="#4CAF50" />
-                        ) : null
-                      }
-                      onPress={() => handleUnitChange("imperial")}
-                      disabled={savingField === "unitSystem"}
-                    />
-
-                  <Divider />
-
-                  <List.Subheader>{t("settings.currency")}</List.Subheader>
-                    <List.Item
-                      title={t("settings.currencyEUR")}
-                      right={(props) =>
-                        settings.currency === "EUR" ? (
-                          <List.Icon {...props} icon="check" color="#4CAF50" />
-                        ) : null
-                      }
-                      onPress={() => handleCurrencyChange("EUR")}
-                      disabled={savingField === "currency"}
-                    />
-                    <Divider />
-                    <List.Item
-                      title={t("settings.currencyUSD")}
-                      right={(props) =>
-                        settings.currency === "USD" ? (
-                          <List.Icon {...props} icon="check" color="#4CAF50" />
-                        ) : null
-                      }
-                      onPress={() => handleCurrencyChange("USD")}
-                      disabled={savingField === "currency"}
-                    />
-                </View>
-              )}
-            </List.Accordion>
-          </Surface>
-
-          <Surface style={styles.section}>
-            <List.Item
-              title={t("common.privacyPolicy")}
-              left={(props) => <List.Icon {...props} icon="shield-account" />}
-              onPress={() => navigation.navigate("PrivacyPolicy")}
-            />
-            <Divider />
-            <List.Item
-              title={t("common.terms")}
-              left={(props) => <List.Icon {...props} icon="file-document" />}
-              onPress={() => navigation.navigate("TermsOfUse")}
-            />
-            <Divider />
-            <List.Item
-              title={t("common.faq")}
-              left={(props) => (
-                <List.Icon {...props} icon="frequently-asked-questions" />
-              )}
-              onPress={() => navigation.navigate("FrequentlyAskedQuestions")}
-            />
-            <Divider />
-            <List.Item
-              title={t("common.version")}
-              description="2.2.0"
-              left={(props) => <List.Icon {...props} icon="information" />}
-            />
-          </Surface>
-        </ScrollView>
-
-        {currentUser && !currentUser.isAnonymous && (
-          <Animated.View
-            style={[
-              styles.deleteButtonContainer,
-              { transform: [{ translateY: deleteButtonAnim }] },
-            ]}
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDeleteAccount}
+            disabled={isDeleting}
           >
-            <Button
-              mode="contained"
-              onPress={handleDeleteAccount}
-              style={styles.deleteButton}
-              labelStyle={styles.buttonLabel}
-              disabled={isDeleting}
-              icon="delete-forever"
-            >
+            <MaterialCommunityIcons 
+              name="delete-forever" 
+              size={20} 
+              color="#FF3B30" 
+            />
+            <Text style={styles.deleteButtonText}>
               {isDeleting ? t("common.loading") : t("auth.deleteAccount")}
-            </Button>
-          </Animated.View>
-        )}
-
-        <View style={styles.bottomContainer}>
-          <Button
-            mode="contained"
-            onPress={handleSignOut}
-            style={styles.signOutButton}
-            labelStyle={styles.buttonLabel}
-          >
-            {t("auth.signOut")}
-          </Button>
-        </View>
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -396,75 +680,246 @@ export default function MyAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#000000",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
-  headerCard: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
-    elevation: 2,
+  profileSection: {
     alignItems: "center",
+    paddingTop: 24,
+    paddingBottom: 32,
   },
-  avatar: {
-    backgroundColor: "#000",
+  avatarContainer: {
+    position: "relative",
     marginBottom: 16,
   },
-  greeting: {
-    fontSize: 18,
-    textAlign: "center",
+  avatar: {
+    backgroundColor: "#1A1A1A",
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: "#999999",
   },
   section: {
-    margin: 16,
-    borderRadius: 8,
-    elevation: 2,
+    paddingHorizontal: 16,
+    marginBottom: 24,
   },
-  bottomContainer: {
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  preferenceCard: {
+    backgroundColor: "#1A1A1A",
+    borderRadius: 12,
     padding: 16,
-    backgroundColor: "#f5f5f5",
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    marginBottom: 12,
+  },
+  preferenceTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#FFFFFF",
+    marginBottom: 12,
+  },
+  preferenceSubtitle: {
+    fontSize: 14,
+    color: "#999999",
+    marginTop: 2,
+  },
+  segmentedButtons: {
+    backgroundColor: "#2A2A2A",
+    borderRadius: 20,
+  },
+  segmentedButton: {
+    minHeight: 40,
+  },
+  preferenceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  preferenceRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  preferenceRowText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  currencyIcon: {
+    backgroundColor: "#34C759",
+  },
+  languageIcon: {
+    backgroundColor: "#4A9EFF",
+  },
+  measurementIcon: {
+    backgroundColor: "#3A3A3A",
+  },
+  privacyIcon: {
+    backgroundColor: "#5AC8FA",
+  },
+  termsIcon: {
+    backgroundColor: "#AF52DE",
+  },
+  faqIcon: {
+    backgroundColor: "#5E5CE6",
+  },
+  supportCard: {
+    backgroundColor: "#1A1A1A",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  supportCardTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#FFFFFF",
+    marginLeft: 16,
+    flex: 1,
   },
   signOutButton: {
-    backgroundColor: "#f44336",
-    paddingVertical: 6,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FF3B30",
   },
-  deleteButton: {
-    backgroundColor: "#B00020",
-    paddingVertical: 3,
-  },
-  buttonLabel: {
+  signOutText: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: "500",
+    color: "#FF3B30",
+    marginLeft: 8,
+  },
+  footer: {
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  footerText: {
+    fontSize: 12,
+    color: "#999999",
+    marginBottom: 8,
+  },
+  loadingIndicator: {
+    marginVertical: 8,
+  },
+  expandedContent: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#2A2A2A",
+  },
+  measurementSubsectionTitle: {
+    fontSize: 12,
+    color: "#999999",
+    marginBottom: 8,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  measurementGroupTitle: {
+    fontSize: 14,
+    color: "#CCCCCC",
+    marginBottom: 8,
+    marginTop: 4,
+    fontWeight: "600",
+  },
+  measurementDivider: {
+    height: 1,
+    backgroundColor: "#2A2A2A",
+    marginVertical: 12,
+  },
+  radioOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  radioButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  radioButtonSelected: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#4A9EFF",
+  },
+  radioOptionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  radioOptionFlag: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  radioOptionText: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    flex: 1,
+  },
+  languageNote: {
+    fontSize: 12,
+    color: "#999999",
+    marginBottom: 12,
+    fontStyle: "italic",
   },
   deleteButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#000000",
     padding: 16,
     paddingBottom: 110,
   },
-  accordionLoading: {
-    paddingVertical: 16,
+  deleteButton: {
+    backgroundColor: "#1A1A1A",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FF3B30",
   },
-  accordionHeader: {
-    // backgroundColor: "#f8f9fa",
-  },
-  accordionContent: {
-    paddingHorizontal: 4,
-    paddingBottom: 8,
-  },
-  accordionSurface: {
-    borderRadius: 8,
-    overflow: "hidden",
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#FF3B30",
+    marginLeft: 8,
   },
 });
