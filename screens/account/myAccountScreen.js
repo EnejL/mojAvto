@@ -3,7 +3,7 @@ import {
   View,
   StyleSheet,
   Alert,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   TouchableWithoutFeedback,
   Animated,
@@ -327,333 +327,321 @@ export default function MyAccountScreen() {
     }
   };
 
+  const accountRows = [
+    { key: "preferences" },
+    { key: "support" },
+    { key: "footer" },
+  ];
+
+  const renderProfileHeader = () => (
+    <View style={styles.profileSection}>
+      <View style={styles.avatarContainer}>
+        {currentUser?.photoURL ? (
+          <Avatar.Image size={100} source={{ uri: currentUser.photoURL }} style={styles.avatar} />
+        ) : (
+          <Avatar.Icon size={100} icon="account" style={styles.avatar} color="#fff" />
+        )}
+      </View>
+      <Text style={styles.userName}>{getUserDisplayName()}</Text>
+      <Text style={styles.userEmail}>{getUserEmail()}</Text>
+    </View>
+  );
+
+  const renderPreferencesSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{t("common.preferences")}</Text>
+
+      {/* Measurement Units */}
+      <Surface style={styles.preferenceCard}>
+        <TouchableOpacity
+          style={styles.preferenceRow}
+          onPress={() => setMeasurementExpanded(!measurementExpanded)}
+          disabled={settingsLoading || savingField === "unitSystem"}
+        >
+          <View style={styles.preferenceRowLeft}>
+            <View style={[styles.iconCircle, styles.measurementIcon]}>
+              <MaterialCommunityIcons name="ruler" size={20} color="#fff" />
+            </View>
+            <View style={styles.preferenceRowText}>
+              <Text style={styles.preferenceTitle}>{t("settings.unitSystem")}</Text>
+              <Text style={styles.preferenceSubtitle}>
+                {settingsLoading ? t("common.loading") : getMeasurementSummary()}
+              </Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name={measurementExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+          />
+        </TouchableOpacity>
+
+        {measurementExpanded && !settingsLoading && (
+          <View style={styles.expandedContent}>
+            <Text style={styles.measurementSubsectionTitle}>{t("settings.distance")}</Text>
+            {["km", "mi"].map((unit) => (
+              <TouchableOpacity
+                key={unit}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ distanceUnit: unit })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveDistanceUnit() === unit && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>
+                  {unit === "km" ? t("settings.unitKilometres") : t("settings.unitMiles")}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.measurementDivider} />
+
+            <Text style={styles.measurementSubsectionTitle}>{t("settings.volume")}</Text>
+            {["L", "gal"].map((unit) => (
+              <TouchableOpacity
+                key={unit}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ volumeUnit: unit })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveVolumeUnit() === unit && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>
+                  {unit === "L" ? t("settings.unitLitres") : t("settings.unitGallons")}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.measurementDivider} />
+
+            <Text style={styles.measurementSubsectionTitle}>{t("settings.consumption")}</Text>
+            <Text style={styles.measurementGroupTitle}>{t("vehicles.fuelConsumption")}</Text>
+            {[
+              { value: "l_per_100km", label: t("settings.unitLPer100Km") },
+              { value: "mpg", label: t("settings.unitMpg") },
+              { value: "km_per_l", label: t("settings.unitKmPerL") },
+            ].map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ consumptionUnit: opt.value })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveConsumptionUnit() === opt.value && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={styles.measurementDivider} />
+
+            <Text style={styles.measurementGroupTitle}>{t("vehicles.electricConsumption")}</Text>
+            {[
+              { value: "kwh_per_100km", label: t("settings.unitKwhPer100Km") },
+              { value: "kwh_per_100mi", label: t("settings.unitKwhPer100Mi") },
+              { value: "km_per_kwh", label: t("settings.unitKmPerKwh") },
+              { value: "mi_per_kwh", label: t("settings.unitMiPerKwh") },
+            ].map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={styles.radioOption}
+                onPress={() => persistMeasurementSettings({ electricConsumptionUnit: opt.value })}
+                disabled={savingField === "unitSystem"}
+              >
+                <View style={styles.radioButton}>
+                  {getEffectiveElectricConsumptionUnit() === opt.value && (
+                    <View style={styles.radioButtonSelected} />
+                  )}
+                </View>
+                <Text style={styles.radioOptionText}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </Surface>
+
+      {/* Currency */}
+      <Surface style={styles.preferenceCard}>
+        <TouchableOpacity
+          style={styles.preferenceRow}
+          onPress={() => setCurrencyExpanded(!currencyExpanded)}
+          disabled={settingsLoading || savingField === "currency"}
+        >
+          <View style={styles.preferenceRowLeft}>
+            <View style={[styles.iconCircle, styles.currencyIcon]}>
+              <MaterialCommunityIcons name="currency-usd" size={20} color="#fff" />
+            </View>
+            <View style={styles.preferenceRowText}>
+              <Text style={styles.preferenceTitle}>{t("settings.currency")}</Text>
+              <Text style={styles.preferenceSubtitle}>{getCurrencyLabel()}</Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name={currencyExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+          />
+        </TouchableOpacity>
+
+        {currencyExpanded && (
+          <View style={styles.expandedContent}>
+            {["USD", "EUR", "GBP"].map((currency) => (
+              <TouchableOpacity
+                key={currency}
+                style={styles.radioOption}
+                onPress={() => handleCurrencyChange(currency)}
+                disabled={savingField === "currency"}
+              >
+                <View style={styles.radioButton}>
+                  {settings.currency === currency && <View style={styles.radioButtonSelected} />}
+                </View>
+                <Text style={styles.radioOptionText}>{getCurrencyFullName(currency)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </Surface>
+
+      {/* Language */}
+      <Surface style={styles.preferenceCard}>
+        <TouchableOpacity
+          style={styles.preferenceRow}
+          onPress={() => setLanguageExpanded(!languageExpanded)}
+          disabled={settingsLoading || savingField === "language"}
+        >
+          <View style={styles.preferenceRowLeft}>
+            <View style={[styles.iconCircle, styles.languageIcon]}>
+              <MaterialCommunityIcons name="web" size={20} color="#fff" />
+            </View>
+            <View style={styles.preferenceRowText}>
+              <Text style={styles.preferenceTitle}>{t("settings.language")}</Text>
+              <Text style={styles.preferenceSubtitle}>{getLanguageLabel()}</Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name={languageExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="#fff"
+          />
+        </TouchableOpacity>
+
+        {languageExpanded && (
+          <View style={styles.expandedContent}>
+            <Text style={styles.languageNote}>Changing language requires an app restart.</Text>
+            {["en", "sl"].map((language) => (
+              <TouchableOpacity
+                key={language}
+                style={styles.radioOption}
+                onPress={() => handleLanguageChange(language)}
+                disabled={savingField === "language"}
+              >
+                <View style={styles.radioButton}>
+                  {settings.language === language && <View style={styles.radioButtonSelected} />}
+                </View>
+                <View style={styles.radioOptionContent}>
+                  <Text style={styles.radioOptionFlag}>{language === "en" ? "🇬🇧" : "🇸🇮"}</Text>
+                  <Text style={styles.radioOptionText}>{getLanguageFullName(language)}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </Surface>
+    </View>
+  );
+
+  const renderSupportSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>
+        {t("common.support")} &amp; {t("common.legal")}
+      </Text>
+
+      <TouchableOpacity
+        style={styles.supportCard}
+        onPress={() => navigation.navigate("PrivacyPolicy")}
+      >
+        <View style={styles.preferenceRowLeft}>
+          <View style={[styles.iconCircle, styles.privacyIcon]}>
+            <MaterialCommunityIcons name="shield-search" size={20} color="#fff" />
+          </View>
+          <Text style={styles.supportCardTitle}>{t("common.privacyPolicy")}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.supportCard}
+        onPress={() => navigation.navigate("TermsOfUse")}
+      >
+        <View style={styles.preferenceRowLeft}>
+          <View style={[styles.iconCircle, styles.termsIcon]}>
+            <MaterialCommunityIcons name="file-document" size={20} color="#fff" />
+          </View>
+          <Text style={styles.supportCardTitle}>{t("common.terms")}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.supportCard}
+        onPress={() => navigation.navigate("FrequentlyAskedQuestions")}
+      >
+        <View style={styles.preferenceRowLeft}>
+          <View style={[styles.iconCircle, styles.faqIcon]}>
+            <MaterialCommunityIcons name="help-circle" size={20} color="#fff" />
+          </View>
+          <Text style={styles.supportCardTitle}>{t("common.faq")}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderFooter = () => (
+    <>
+      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <MaterialCommunityIcons name="logout" size={20} color="#FF3B30" />
+        <Text style={styles.signOutText}>{t("auth.signOut")}</Text>
+      </TouchableOpacity>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>{t("common.version")} 2.1.0</Text>
+      </View>
+    </>
+  );
+
+  const renderRow = ({ item }) => {
+    switch (item.key) {
+      case "preferences":
+        return renderPreferencesSection();
+      case "support":
+        return renderSupportSection();
+      case "footer":
+        return renderFooter();
+      default:
+        return null;
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={hideDeleteButton}>
       <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        bounces={true}
-      >
-        {/* User Profile Section */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            {currentUser?.photoURL ? (
-              <Avatar.Image
-                size={100}
-                source={{ uri: currentUser.photoURL }}
-                style={styles.avatar}
-              />
-            ) : (
-              <Avatar.Icon
-                size={100}
-                icon="account"
-                style={styles.avatar}
-                color="#fff"
-              />
-            )}
-          </View>
-          <Text style={styles.userName}>{getUserDisplayName()}</Text>
-          <Text style={styles.userEmail}>{getUserEmail()}</Text>
-        </View>
-
-        {/* Preferences Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("common.preferences")}</Text>
-
-          {/* Measurement Units */}
-          <Surface style={styles.preferenceCard}>
-            <TouchableOpacity
-              style={styles.preferenceRow}
-              onPress={() => setMeasurementExpanded(!measurementExpanded)}
-              disabled={settingsLoading || savingField === "unitSystem"}
-            >
-              <View style={styles.preferenceRowLeft}>
-                <View style={[styles.iconCircle, styles.measurementIcon]}>
-                  <MaterialCommunityIcons name="ruler" size={20} color="#fff" />
-                </View>
-                <View style={styles.preferenceRowText}>
-                  <Text style={styles.preferenceTitle}>{t("settings.unitSystem")}</Text>
-                  <Text style={styles.preferenceSubtitle}>
-                    {settingsLoading ? t("common.loading") : getMeasurementSummary()}
-                  </Text>
-                </View>
-              </View>
-              <MaterialCommunityIcons
-                name={measurementExpanded ? "chevron-up" : "chevron-down"}
-                size={24}
-                color="#fff"
-              />
-            </TouchableOpacity>
-
-            {measurementExpanded && !settingsLoading && (
-              <View style={styles.expandedContent}>
-                <Text style={styles.measurementSubsectionTitle}>
-                  {t("settings.distance")}
-                </Text>
-                {["km", "mi"].map((unit) => (
-                  <TouchableOpacity
-                    key={unit}
-                    style={styles.radioOption}
-                    onPress={() => persistMeasurementSettings({ distanceUnit: unit })}
-                    disabled={savingField === "unitSystem"}
-                  >
-                    <View style={styles.radioButton}>
-                      {getEffectiveDistanceUnit() === unit && (
-                        <View style={styles.radioButtonSelected} />
-                      )}
-                    </View>
-                    <Text style={styles.radioOptionText}>
-                      {unit === "km"
-                        ? t("settings.unitKilometres")
-                        : t("settings.unitMiles")}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-
-                <View style={styles.measurementDivider} />
-
-                <Text style={styles.measurementSubsectionTitle}>
-                  {t("settings.volume")}
-                </Text>
-                {["L", "gal"].map((unit) => (
-                  <TouchableOpacity
-                    key={unit}
-                    style={styles.radioOption}
-                    onPress={() => persistMeasurementSettings({ volumeUnit: unit })}
-                    disabled={savingField === "unitSystem"}
-                  >
-                    <View style={styles.radioButton}>
-                      {getEffectiveVolumeUnit() === unit && (
-                        <View style={styles.radioButtonSelected} />
-                      )}
-                    </View>
-                    <Text style={styles.radioOptionText}>
-                      {unit === "L"
-                        ? t("settings.unitLitres")
-                        : t("settings.unitGallons")}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-
-                <View style={styles.measurementDivider} />
-
-                <Text style={styles.measurementSubsectionTitle}>
-                  {t("settings.consumption")}
-                </Text>
-                <Text style={styles.measurementGroupTitle}>{t("vehicles.fuelConsumption")}</Text>
-                {[
-                  { value: "l_per_100km", label: t("settings.unitLPer100Km") },
-                  { value: "mpg", label: t("settings.unitMpg") },
-                  { value: "km_per_l", label: t("settings.unitKmPerL") },
-                ].map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={styles.radioOption}
-                    onPress={() =>
-                      persistMeasurementSettings({ consumptionUnit: opt.value })
-                    }
-                    disabled={savingField === "unitSystem"}
-                  >
-                    <View style={styles.radioButton}>
-                      {getEffectiveConsumptionUnit() === opt.value && (
-                        <View style={styles.radioButtonSelected} />
-                      )}
-                    </View>
-                    <Text style={styles.radioOptionText}>{opt.label}</Text>
-                  </TouchableOpacity>
-                ))}
-
-                <View style={styles.measurementDivider} />
-
-                <Text style={styles.measurementGroupTitle}>
-                  {t("vehicles.electricConsumption")}
-                </Text>
-                {[
-                  { value: "kwh_per_100km", label: t("settings.unitKwhPer100Km") },
-                  { value: "kwh_per_100mi", label: t("settings.unitKwhPer100Mi") },
-                  { value: "km_per_kwh", label: t("settings.unitKmPerKwh") },
-                  { value: "mi_per_kwh", label: t("settings.unitMiPerKwh") },
-                ].map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={styles.radioOption}
-                    onPress={() =>
-                      persistMeasurementSettings({ electricConsumptionUnit: opt.value })
-                    }
-                    disabled={savingField === "unitSystem"}
-                  >
-                    <View style={styles.radioButton}>
-                      {getEffectiveElectricConsumptionUnit() === opt.value && (
-                        <View style={styles.radioButtonSelected} />
-                      )}
-                    </View>
-                    <Text style={styles.radioOptionText}>{opt.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </Surface>
-
-          {/* Currency */}
-          <Surface style={styles.preferenceCard}>
-            <TouchableOpacity
-              style={styles.preferenceRow}
-              onPress={() => setCurrencyExpanded(!currencyExpanded)}
-              disabled={settingsLoading || savingField === "currency"}
-            >
-              <View style={styles.preferenceRowLeft}>
-                <View style={[styles.iconCircle, styles.currencyIcon]}>
-                  <MaterialCommunityIcons name="currency-usd" size={20} color="#fff" />
-                </View>
-                <View style={styles.preferenceRowText}>
-                  <Text style={styles.preferenceTitle}>{t("settings.currency")}</Text>
-                  <Text style={styles.preferenceSubtitle}>{getCurrencyLabel()}</Text>
-                </View>
-              </View>
-              <MaterialCommunityIcons 
-                name={currencyExpanded ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color="#fff" 
-              />
-            </TouchableOpacity>
-            
-            {currencyExpanded && (
-              <View style={styles.expandedContent}>
-                {["USD", "EUR", "GBP"].map((currency) => (
-                  <TouchableOpacity
-                    key={currency}
-                    style={styles.radioOption}
-                    onPress={() => handleCurrencyChange(currency)}
-                    disabled={savingField === "currency"}
-                  >
-                    <View style={styles.radioButton}>
-                      {settings.currency === currency && (
-                        <View style={styles.radioButtonSelected} />
-                      )}
-                    </View>
-                    <Text style={styles.radioOptionText}>
-                      {getCurrencyFullName(currency)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </Surface>
-
-          {/* Language */}
-          <Surface style={styles.preferenceCard}>
-            <TouchableOpacity
-              style={styles.preferenceRow}
-              onPress={() => setLanguageExpanded(!languageExpanded)}
-              disabled={settingsLoading || savingField === "language"}
-            >
-              <View style={styles.preferenceRowLeft}>
-                <View style={[styles.iconCircle, styles.languageIcon]}>
-                  <MaterialCommunityIcons name="web" size={20} color="#fff" />
-                </View>
-                <View style={styles.preferenceRowText}>
-                  <Text style={styles.preferenceTitle}>{t("settings.language")}</Text>
-                  <Text style={styles.preferenceSubtitle}>{getLanguageLabel()}</Text>
-                </View>
-              </View>
-              <MaterialCommunityIcons 
-                name={languageExpanded ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color="#fff" 
-              />
-            </TouchableOpacity>
-            
-            {languageExpanded && (
-              <View style={styles.expandedContent}>
-                <Text style={styles.languageNote}>
-                  Changing language requires an app restart.
-                </Text>
-                {["en", "sl"].map((language) => (
-                  <TouchableOpacity
-                    key={language}
-                    style={styles.radioOption}
-                    onPress={() => handleLanguageChange(language)}
-                    disabled={savingField === "language"}
-                  >
-                    <View style={styles.radioButton}>
-                      {settings.language === language && (
-                        <View style={styles.radioButtonSelected} />
-                      )}
-                    </View>
-                    <View style={styles.radioOptionContent}>
-                      <Text style={styles.radioOptionFlag}>
-                        {language === "en" ? "🇬🇧" : "🇸🇮"}
-                      </Text>
-                      <Text style={styles.radioOptionText}>
-                        {getLanguageFullName(language)}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </Surface>
-        </View>
-
-        {/* Support & Legal Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("common.support")} & {t("common.legal")}</Text>
-
-          <TouchableOpacity
-            style={styles.supportCard}
-            onPress={() => navigation.navigate("PrivacyPolicy")}
-          >
-            <View style={styles.preferenceRowLeft}>
-              <View style={[styles.iconCircle, styles.privacyIcon]}>
-                <MaterialCommunityIcons name="shield-search" size={20} color="#fff" />
-              </View>
-              <Text style={styles.supportCardTitle}>{t("common.privacyPolicy")}</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.supportCard}
-            onPress={() => navigation.navigate("TermsOfUse")}
-          >
-            <View style={styles.preferenceRowLeft}>
-              <View style={[styles.iconCircle, styles.termsIcon]}>
-                <MaterialCommunityIcons name="file-document" size={20} color="#fff" />
-              </View>
-              <Text style={styles.supportCardTitle}>{t("common.terms")}</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.supportCard}
-            onPress={() => navigation.navigate("FrequentlyAskedQuestions")}
-          >
-            <View style={styles.preferenceRowLeft}>
-              <View style={[styles.iconCircle, styles.faqIcon]}>
-                <MaterialCommunityIcons name="help-circle" size={20} color="#fff" />
-              </View>
-              <Text style={styles.supportCardTitle}>{t("common.faq")}</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Sign Out Button */}
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <MaterialCommunityIcons name="logout" size={20} color="#FF3B30" />
-          <Text style={styles.signOutText}>{t("auth.signOut")}</Text>
-        </TouchableOpacity>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>{t("common.version")} 2.1.0</Text>
-        </View>
-      </ScrollView>
+        <FlatList
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          data={accountRows}
+          renderItem={renderRow}
+          keyExtractor={(item) => item.key}
+          ListHeaderComponent={renderProfileHeader}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
+          onScroll={handleScroll}
+          scrollEventThrottle={64}
+        />
 
       {currentUser && !currentUser.isAnonymous && (
         <Animated.View
