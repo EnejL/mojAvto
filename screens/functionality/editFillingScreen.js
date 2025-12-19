@@ -270,7 +270,7 @@ export default function EditFillingScreen({ route, navigation }) {
 
       <View style={styles.row}>
         <View style={[styles.field, styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("fillings.liters")} (${volumeUnit})`} />
+          <EntryLabelRow label={`${t("fillings.liters")}`} />
           <TextInput
             value={fillingData.liters}
             onChangeText={onChangeLiters}
@@ -290,7 +290,7 @@ export default function EditFillingScreen({ route, navigation }) {
         </View>
 
         <View style={[styles.field, styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("fillings.pricePerLiter")} (${currencySymbol}/${volumeUnit})`} />
+          <EntryLabelRow label={`${t("fillings.pricePerLiter")}`} />
           <TextInput
             value={fillingData.pricePerLiter}
             onChangeText={onChangePricePerLiter}

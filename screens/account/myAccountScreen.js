@@ -798,6 +798,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#FFFFFF",
     marginLeft: 16,
+    flex: 1,
   },
   signOutButton: {
     backgroundColor: "#1A1A1A",

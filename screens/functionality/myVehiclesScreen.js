@@ -102,15 +102,6 @@ export default function MyVehiclesScreen({ navigation, route }) {
     return { value, unit: "kWh / 100 km" };
   };
 
-  const convertFuelPrice = (value) => {
-    if (value === null || value === undefined) return value;
-    if (userSettings.unitSystem === "imperial") {
-      // price per gallon
-      return value * 3.78541;
-    }
-    return value;
-  };
-
   const formatNumber = (num, decimals = 1) => {
     if (num === null || num === undefined || Number.isNaN(num)) return "—";
     return parseFloat(num).toFixed(decimals).replace(".", ",");
@@ -407,13 +398,13 @@ export default function MyVehiclesScreen({ navigation, route }) {
               <View style={styles.vehicleNameContainer}>
                 <View style={styles.vehicleNameRow}>
                   <Text style={styles.vehicleName}>{item.name}</Text>
-                  <View style={[styles.vehicleTypeBadge, { backgroundColor: vehicleTypeInfo.color }]}>
-                    <Text style={styles.vehicleTypeBadgeText}>{vehicleTypeInfo.label}</Text>
-                  </View>
                 </View>
                 <View style={styles.vehicleSubtitleRow}>
                   <Text style={styles.vehicleSubtitle}>{item.make} {item.model}</Text>
                 </View>
+                <View style={[styles.vehicleTypeBadge, { backgroundColor: vehicleTypeInfo.color }]}>
+                    <Text style={styles.vehicleTypeBadgeText}>{vehicleTypeInfo.label}</Text>
+                  </View>
               </View>
               <MaterialCommunityIcons name="chevron-right" size={24} color="#ffffff" style={styles.arrowIcon} />
             </View>
@@ -597,7 +588,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "17.5%",
-    height: "85%",
+    height: "90%",
     borderRadius: 8,
     marginVertical: "auto",
     marginLeft: 8,
@@ -673,20 +664,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
-    flexWrap: "wrap",
+    gap: 8,
   },
   vehicleName: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#ffffff",
-    marginRight: 8,
+    flex: 1,
     flexShrink: 1,
+    minWidth: 0,
   },
   vehicleTypeBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: "auto",
+    borderRadius: 8,
+    flexShrink: 0,
+    width: "auto",
+    alignSelf: "flex-start",
   },
   vehicleTypeBadgeText: {
     fontSize: 11,
@@ -696,7 +690,7 @@ const styles = StyleSheet.create({
   vehicleSubtitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 0,
+    marginBottom: 8,
   },
   vehicleSubtitle: {
     fontSize: 14,

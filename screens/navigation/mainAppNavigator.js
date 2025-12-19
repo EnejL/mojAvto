@@ -261,10 +261,6 @@ function AccountStack() {
         component={PrivacyPolicyScreen}
         options={{
           title: t("common.privacyPolicy"),
-          contentStyle: {
-            backgroundColor: "#000000",
-          },
-          animation: "fade",
         }}
       />
       <Stack.Screen
@@ -272,10 +268,6 @@ function AccountStack() {
         component={TermsOfUseScreen}
         options={{
           title: t("common.terms"),
-          contentStyle: {
-            backgroundColor: "#000000",
-          },
-          animation: "fade",
         }}
       />
       <Stack.Screen
@@ -283,10 +275,6 @@ function AccountStack() {
         component={FrequentlyAskedQuestionsScreen}
         options={{
           title: t("common.faq"),
-          contentStyle: {
-            backgroundColor: "#000000",
-          },
-          animation: "fade",
         }}
       />
     </Stack.Navigator>

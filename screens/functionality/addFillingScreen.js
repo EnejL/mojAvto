@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Keyboard, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Keyboard, Platform, StyleSheet, TouchableOpacity, View, Dimensions } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Button, Text, TextInput } from "react-native-paper";
@@ -35,6 +35,8 @@ export default function AddFillingScreen({ route, navigation }) {
   const { t } = useTranslation();
   const scrollRef = useRef(null);
   const { vehicle } = route.params;
+  const screenWidth = Dimensions.get("window").width;
+  const isSmallScreen = screenWidth < 450; // Stack fields on iPhone 12 and smaller screens
 
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -211,6 +213,7 @@ export default function AddFillingScreen({ route, navigation }) {
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={handleDateChange}
+              textColor={Platform.OS === "ios" ? ENTRY_COLORS.text : undefined}
             />
           </View>
         ) : null}
@@ -219,9 +222,10 @@ export default function AddFillingScreen({ route, navigation }) {
       <View style={styles.field}>
         <EntryLabelRow
           label={`${t("fillings.odometer")} (${distanceUnit})`}
+          allowWrap={true}
           right={
             prevOdometer !== null ? (
-              <EntryPill>{`Prev: ${formatOdometer(prevOdometer)}`}</EntryPill>
+              <EntryPill>{`${t("fillings.previous")}: ${formatOdometer(prevOdometer)}`}</EntryPill>
             ) : null
           }
         />
@@ -244,8 +248,8 @@ export default function AddFillingScreen({ route, navigation }) {
 
       <EntryDivider />
 
-      <View style={styles.row}>
-        <View style={[styles.field, styles.fieldHalf]}>
+      <View style={[styles.row, isSmallScreen && styles.rowStacked]}>
+        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
           <EntryLabelRow label={`${t("fillings.liters")} (${volumeUnit})`} />
           <TextInput
             value={fillingData.liters}
@@ -265,8 +269,8 @@ export default function AddFillingScreen({ route, navigation }) {
           />
         </View>
 
-        <View style={[styles.field, styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("fillings.pricePerLiter")} (${currencySymbol}/${volumeUnit})`} />
+        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
+          <EntryLabelRow label={`${t("fillings.pricePerLiter")} (${currencySymbol}/${volumeUnit})`} allowWrap={true} />
           <TextInput
             value={fillingData.pricePerLiter}
             onChangeText={onChangePricePerLiter}
@@ -336,8 +340,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
+  rowStacked: {
+    flexDirection: "column",
+  },
   fieldHalf: {
     width: "48%",
+  },
+  fieldFull: {
+    width: "100%",
   },
   input: {
     backgroundColor: ENTRY_COLORS.surface,

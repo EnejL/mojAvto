@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Dimensions } from "react-native";
 import { Button, Surface, Text } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -25,10 +25,14 @@ export const EntryCard = ({ children, style }) => (
 
 export const EntryDivider = () => <View style={styles.divider} />;
 
-export const EntryLabelRow = ({ label, right }) => (
+export const EntryLabelRow = ({ label, right, allowWrap = false }) => (
   <View style={styles.fieldHeaderRow}>
-    <Text style={styles.label}>{label}</Text>
-    {right ? right : null}
+    <View style={styles.labelContainer}>
+      <Text style={styles.label} numberOfLines={allowWrap ? undefined : 1} ellipsizeMode={allowWrap ? undefined : "tail"}>
+        {label}
+      </Text>
+    </View>
+    {right ? <View style={styles.labelRight}>{right}</View> : null}
   </View>
 );
 
@@ -79,7 +83,7 @@ export function EntryScreenLayout({
         <View
           style={[
             styles.bottomBar,
-            { paddingBottom: Math.max(insets.bottom, 12) },
+            { paddingBottom: 12 },
           ]}
         >
           {bottom}
@@ -123,6 +127,12 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     opacity: 0.9,
   },
+  labelContainer: {
+    flex: 1,
+    flexShrink: 1,
+    marginRight: 8,
+    minWidth: 0,
+  },
   label: {
     fontSize: 18,
     fontWeight: "700",
@@ -133,6 +143,9 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
     justifyContent: "space-between",
     marginBottom: 8,
+  },
+  labelRight: {
+    flexShrink: 0,
   },
   pill: {
     paddingHorizontal: 10,

@@ -269,66 +269,64 @@ const AddVehicleScreen = ({ navigation }) => {
           />
         </View>
 
-        <View style={styles.row}>
-          {/* Make Input */}
-          <View style={[styles.fieldHalf, { zIndex: 5 }]}>
-            <FormLabel required style={styles.label}>
-              {t("vehicles.make")}
-            </FormLabel>
-            <TextInput
-              value={make}
-              onChangeText={handleMakeChange}
-              onFocus={() => setMakeDropdownVisible(true)}
-              onBlur={() => setTimeout(() => setMakeDropdownVisible(false), 200)}
-              style={styles.input}
-              outlineStyle={styles.inputOutline}
-              contentStyle={styles.inputContent}
-              disabled={saving || loadingBrands}
-              mode="outlined"
-              textColor={COLORS.text}
-              placeholder={t("vehicles.makeExample")}
-              placeholderTextColor={COLORS.placeholder}
-              outlineColor={COLORS.border}
-              activeOutlineColor={COLORS.blue}
-              right={renderClearIcon(make, () => {
-                setMake("");
-                setModel("");
-                setFilteredBrands([]);
-                setMakeDropdownVisible(false);
-              })}
-            />
-            {isMakeDropdownVisible &&
-              filteredBrands.length > 0 &&
-              renderDropdown(filteredBrands, handleSelectMake)}
-          </View>
+        {/* Make Input */}
+        <View style={[styles.field, { zIndex: 5 }]}>
+          <FormLabel required style={styles.label}>
+            {t("vehicles.make")}
+          </FormLabel>
+          <TextInput
+            value={make}
+            onChangeText={handleMakeChange}
+            onFocus={() => setMakeDropdownVisible(true)}
+            onBlur={() => setTimeout(() => setMakeDropdownVisible(false), 200)}
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
+            contentStyle={styles.inputContent}
+            disabled={saving || loadingBrands}
+            mode="outlined"
+            textColor={COLORS.text}
+            placeholder={t("vehicles.makeExample")}
+            placeholderTextColor={COLORS.placeholder}
+            outlineColor={COLORS.border}
+            activeOutlineColor={COLORS.blue}
+            right={renderClearIcon(make, () => {
+              setMake("");
+              setModel("");
+              setFilteredBrands([]);
+              setMakeDropdownVisible(false);
+            })}
+          />
+          {isMakeDropdownVisible &&
+            filteredBrands.length > 0 &&
+            renderDropdown(filteredBrands, handleSelectMake)}
+        </View>
 
-          {/* Model Input */}
-          <View style={[styles.fieldHalf, { zIndex: 4 }]}>
-            <FormLabel required style={styles.label}>
-              {t("vehicles.model")}
-            </FormLabel>
-            <TextInput
-              value={model}
-              onChangeText={handleModelChange}
-              onFocus={() => setModelDropdownVisible(true)}
-              onBlur={() =>
-                setTimeout(() => setModelDropdownVisible(false), 200)
-              }
-              style={styles.input}
-              outlineStyle={styles.inputOutline}
-              contentStyle={styles.inputContent}
-              disabled={saving || loadingModels || !make}
-              mode="outlined"
-              textColor={COLORS.text}
-              placeholder={make ? t("vehicles.modelExample") : t("vehicles.modelPlaceholder")}
-              placeholderTextColor={COLORS.placeholder}
-              outlineColor={COLORS.border}
-              activeOutlineColor={COLORS.blue}
-            />
-            {isModelDropdownVisible &&
-              filteredModels.length > 0 &&
-              renderDropdown(filteredModels, handleSelectModel)}
-          </View>
+        {/* Model Input */}
+        <View style={[styles.field, { zIndex: 4 }]}>
+          <FormLabel required style={styles.label}>
+            {t("vehicles.model")}
+          </FormLabel>
+          <TextInput
+            value={model}
+            onChangeText={handleModelChange}
+            onFocus={() => setModelDropdownVisible(true)}
+            onBlur={() =>
+              setTimeout(() => setModelDropdownVisible(false), 200)
+            }
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
+            contentStyle={styles.inputContent}
+            disabled={saving || loadingModels || !make}
+            mode="outlined"
+            textColor={COLORS.text}
+            placeholder={make ? t("vehicles.modelExample") : t("vehicles.modelPlaceholder")}
+            placeholderTextColor={COLORS.placeholder}
+            outlineColor={COLORS.border}
+            activeOutlineColor={COLORS.blue}
+          />
+          {isModelDropdownVisible &&
+            filteredModels.length > 0 &&
+            renderDropdown(filteredModels, handleSelectModel)}
         </View>
 
         <View style={[styles.field, { zIndex: 3 }]}>
@@ -430,7 +428,7 @@ const AddVehicleScreen = ({ navigation }) => {
         )}
       </KeyboardAwareScrollView>
 
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.bottomBar, { paddingBottom: 12 }]}>
         <Button
           mode="contained"
           onPress={handleAddVehicle}
@@ -555,6 +553,7 @@ const styles = StyleSheet.create({
   primaryButtonLabel: {
     fontSize: 20,
     fontWeight: "800",
+    lineHeight: 24,
   },
 });
 

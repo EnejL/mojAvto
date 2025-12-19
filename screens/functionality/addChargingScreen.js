@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Keyboard, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Keyboard, Platform, StyleSheet, TouchableOpacity, View, Dimensions } from "react-native";
 import { Button, SegmentedButtons, Text, TextInput } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { addChargingSession, getVehicleHistory } from "../../utils/firestore";
@@ -35,6 +35,8 @@ export default function AddChargingScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { vehicle } = route.params;
   const scrollRef = useRef(null);
+  const screenWidth = Dimensions.get("window").width;
+  const isSmallScreen = screenWidth < 450; // Stack fields on iPhone 12 and smaller screens
 
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -242,6 +244,7 @@ export default function AddChargingScreen({ route, navigation }) {
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={handleDateChange}
+              textColor={Platform.OS === "ios" ? ENTRY_COLORS.text : undefined}
             />
           </View>
         ) : null}
@@ -250,9 +253,10 @@ export default function AddChargingScreen({ route, navigation }) {
       <View style={styles.field}>
         <EntryLabelRow
           label={`${t("charging.odometer")} (${distanceUnit})`}
+          allowWrap={true}
           right={
             prevOdometer !== null ? (
-              <EntryPill>{`Prev: ${formatOdometer(prevOdometer)}`}</EntryPill>
+              <EntryPill>{`${t("fillings.previous")}: ${formatOdometer(prevOdometer)}`}</EntryPill>
             ) : null
           }
         />
@@ -277,8 +281,8 @@ export default function AddChargingScreen({ route, navigation }) {
 
       <EntryDivider />
 
-      <View style={styles.row}>
-        <View style={[styles.field, styles.fieldHalf]}>
+      <View style={[styles.row, isSmallScreen && styles.rowStacked]}>
+        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
           <EntryLabelRow label={`${t("charging.energyAdded")} (kWh)`} />
           <TextInput
             value={chargingData.energyAdded}
@@ -300,8 +304,8 @@ export default function AddChargingScreen({ route, navigation }) {
           />
         </View>
 
-        <View style={[styles.field, styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("charging.pricePerKWh")} (${currencySymbol}/kWh)`} />
+        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
+          <EntryLabelRow label={`${t("charging.pricePerKWh")} (${currencySymbol}/kWh)`} allowWrap={true} />
           <TextInput
             value={chargingData.pricePerKWh}
             onChangeText={onChangePricePerKWh}
@@ -374,6 +378,14 @@ export default function AddChargingScreen({ route, navigation }) {
               buttons={locationTypeOptions}
               disabled={loading}
               style={styles.segmentedButtons}
+              theme={{
+                colors: {
+                  secondaryContainer: ENTRY_COLORS.blue,
+                  onSecondaryContainer: "#fff",
+                  outline: ENTRY_COLORS.border,
+                  onSurface: ENTRY_COLORS.text,
+                },
+              }}
             />
           </View>
 
@@ -390,6 +402,14 @@ export default function AddChargingScreen({ route, navigation }) {
               buttons={chargerTypeOptions}
               disabled={loading}
               style={styles.segmentedButtons}
+              theme={{
+                colors: {
+                  secondaryContainer: ENTRY_COLORS.blue,
+                  onSecondaryContainer: "#fff",
+                  outline: ENTRY_COLORS.border,
+                  onSurface: ENTRY_COLORS.text,
+                },
+              }}
             />
           </View>
 
@@ -451,8 +471,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
+  rowStacked: {
+    flexDirection: "column",
+  },
   fieldHalf: {
     width: "48%",
+  },
+  fieldFull: {
+    width: "100%",
   },
   input: {
     backgroundColor: ENTRY_COLORS.surface,

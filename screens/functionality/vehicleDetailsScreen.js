@@ -1113,7 +1113,11 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const canShowAdvancedStats = (showFuel && fillings.length >= 3) || (showCharge && chargingSessions.length >= 3);
   const canShowGraph = graphConfig.totalEntries >= 5 && graphConfig.data?.length >= 5;
 
-  const visibleHistory = showAllHistory ? historyConfig.data : historyConfig.data.slice(0, 3);
+  const hasAnyEvents = (showFuel && fillings.length > 0) || (showCharge && chargingSessions.length > 0) || (vehicleType === "PHEV" && combinedHistory.length > 0);
+  const totalHistoryCount = historyConfig.data.length;
+  const initialHistoryCount = 5;
+  const visibleHistory = showAllHistory ? historyConfig.data : historyConfig.data.slice(0, Math.min(initialHistoryCount, totalHistoryCount));
+  const hasMoreHistory = totalHistoryCount > initialHistoryCount;
 
   const bottomBarHeight = showFuel && showCharge ? 88 : 76;
 
@@ -1167,29 +1171,40 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               ) : (
                 <MaterialCommunityIcons name="download" size={22} color={COLORS.primary} />
               )}
-              <Text style={styles.exportButtonText}>{t("export.title")}</Text>
             </TouchableOpacity>
           </View>
         </Surface>
 
-        {/* Stats */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionLabel}>{t("vehicles.statistics").toUpperCase()}</Text>
-        </View>
-        <View style={styles.metricGrid}>
-          {metricTiles.map((tile) => (
-            <MetricTile key={tile.key} icon={tile.icon} accent={tile.accent} label={tile.label} value={tile.value} />
-          ))}
-        </View>
+        {!hasAnyEvents ? (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateText}>
+              {vehicleType === "BEV" 
+                ? t("charging.notEnoughData")
+                : vehicleType === "PHEV"
+                ? t("common.notEnoughData")
+                : t("fillings.notEnoughData")}
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Stats */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionLabel}>{t("vehicles.statistics").toUpperCase()}</Text>
+            </View>
+            <View style={styles.metricGrid}>
+              {metricTiles.map((tile) => (
+                <MetricTile key={tile.key} icon={tile.icon} accent={tile.accent} label={tile.label} value={tile.value} />
+              ))}
+            </View>
 
-        {/* Panels */}
-        <CollapsibleCard
-          icon="chart-bar"
-          title={t("vehicles.additionalStatistics")}
-          expanded={advancedExpanded}
-          onToggle={() => setAdvancedExpanded((p) => !p)}
-          disabled={!canShowAdvancedStats}
-        >
+            {/* Panels */}
+            <CollapsibleCard
+              icon="chart-bar"
+              title={t("vehicles.additionalStatistics")}
+              expanded={advancedExpanded}
+              onToggle={() => setAdvancedExpanded((p) => !p)}
+              disabled={!canShowAdvancedStats}
+            >
           <View style={styles.panelSection}>
             {showFuel && fillings.length >= 2 ? (
               <>
@@ -1271,48 +1286,61 @@ export default function VehicleDetailsScreen({ route, navigation }) {
               </>
             ) : null}
           </View>
-        </CollapsibleCard>
+            </CollapsibleCard>
 
-        <CollapsibleCard
-          icon="chart-line"
-          title={t("vehicles.consumptionOverTime")}
-          expanded={graphExpanded}
-          onToggle={() => setGraphExpanded((p) => !p)}
-          disabled={!canShowGraph}
-        >
-          <ConsumptionGraph
-            data={graphConfig.data}
-            dataType={graphConfig.dataType}
-            unitSystem={userSettings.unitSystem}
-            locale={locale}
-          />
-        </CollapsibleCard>
+            <CollapsibleCard
+              icon="chart-line"
+              title={t("vehicles.consumptionOverTime")}
+              expanded={graphExpanded}
+              onToggle={() => setGraphExpanded((p) => !p)}
+              disabled={!canShowGraph}
+            >
+              <ConsumptionGraph
+                data={graphConfig.data}
+                dataType={graphConfig.dataType}
+                unitSystem={userSettings.unitSystem}
+                locale={locale}
+              />
+            </CollapsibleCard>
+          </>
+        )}
 
         {/* History */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionLabel}>{historyConfig.title.toUpperCase()}</Text>
-          {historyConfig.data.length > 3 ? (
-            <TouchableOpacity onPress={() => setShowAllHistory((p) => !p)} activeOpacity={0.8}>
-              <Text style={styles.historyToggle}>
-                {showAllHistory ? t("common.hide") : t("common.show")}
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        {hasAnyEvents && (
+          <>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionLabel}>{historyConfig.title}</Text>
+              {totalHistoryCount > 0 && (
+                <Text style={styles.historyCount}>({totalHistoryCount})</Text>
+              )}
+            </View>
 
-        <Surface style={styles.historyCard}>
-          {historyConfig.data.length === 0 ? (
-            <Text style={styles.emptyText}>{t("vehicles.noHistory")}</Text>
-          ) : (
-            <FlatList
-              data={visibleHistory}
-              renderItem={renderHistoryItem}
-              keyExtractor={historyConfig.keyExtractor}
-              scrollEnabled={false}
-              contentContainerStyle={styles.flatListContent}
-            />
-          )}
-        </Surface>
+            <Surface style={styles.historyCard}>
+              {historyConfig.data.length === 0 ? (
+                <Text style={styles.emptyText}>{t("vehicles.noHistory")}</Text>
+              ) : (
+                <>
+                  <FlatList
+                    data={visibleHistory}
+                    renderItem={renderHistoryItem}
+                    keyExtractor={historyConfig.keyExtractor}
+                    scrollEnabled={false}
+                    contentContainerStyle={styles.flatListContent}
+                  />
+                  {hasMoreHistory && !showAllHistory && (
+                    <TouchableOpacity
+                      onPress={() => setShowAllHistory(true)}
+                      activeOpacity={0.8}
+                      style={styles.showMoreButton}
+                    >
+                      <Text style={styles.showMoreButtonText}>{t("common.showMore")}</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </Surface>
+          </>
+        )}
       </ScrollView>
 
       {/* Bottom actions */}
@@ -1350,7 +1378,8 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           )}
         </View>
         {/* Safe-area spacer: keeps buttons above the home indicator without inflating the bar's visual bottom padding */}
-        <View style={{ height: insets.bottom, backgroundColor: COLORS.bg }} />
+        {/* Temporarily disabled for testing */}
+        {/* <View style={{ height: insets.bottom, backgroundColor: COLORS.bg }} /> */}
       </View>
     </View>
   );
@@ -1419,6 +1448,12 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     backgroundColor: "transparent",
     borderWidth: 0,
+    backgroundColor: "gray",
+    boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#333333",
+    padding: 4,
   },
   vehicleName: {
     color: COLORS.text,
@@ -1431,25 +1466,31 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   exportButton: {
-    flexDirection: "row",
+    width: 44,
+    height: 44,
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    justifyContent: "center",
     borderRadius: 14,
     backgroundColor: "rgba(37,99,235,0.10)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(37,99,235,0.35)",
   },
-  exportButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: "700",
+  emptyStateContainer: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    padding: 20,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    color: COLORS.subtext,
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 22,
   },
 
   sectionHeaderRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignItems: "center",
     paddingHorizontal: 16,
     marginTop: 18,
@@ -1572,7 +1613,18 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  historyToggle: {
+  historyCount: {
+    color: COLORS.subtext,
+    fontSize: 14,
+    fontWeight: "700",
+    marginLeft: 4,
+  },
+  showMoreButton: {
+    marginTop: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  showMoreButtonText: {
     color: COLORS.primary,
     fontSize: 14,
     fontWeight: "700",
@@ -1605,6 +1657,7 @@ const styles = StyleSheet.create({
     width: 72,
     marginLeft: 10,
     borderRadius: 16,
+    height: "90%",
   },
 
   historyItemCard: {
@@ -1674,6 +1727,10 @@ const styles = StyleSheet.create({
   },
 
   bottomBarWrapper: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.border,
     backgroundColor: "rgba(11,20,30,0.96)",
