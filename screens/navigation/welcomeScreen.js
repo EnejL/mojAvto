@@ -6,11 +6,16 @@ import { useFocusEffect } from "@react-navigation/native";
 import { signInWithGoogle } from "../../utils/googleSignIn";
 import AppleSignIn from "../../components/AppleSignIn";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import TourModal from "../../components/TourModal";
+import { TOUR_STEPS } from "../../utils/tourData";
 
 export default function WelcomeScreen() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Set status bar style on screen focus
   useFocusEffect(
@@ -82,6 +87,26 @@ export default function WelcomeScreen() {
           )}
         </Surface>
       </KeyboardAwareScrollView>
+
+      {/* Tour Button at Bottom */}
+      <View style={[styles.bottomContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+        <Button
+          mode="outlined"
+          onPress={() => setShowTour(true)}
+          style={styles.tourButton}
+          labelStyle={styles.tourButtonLabel}
+          icon="rocket-launch"
+        >
+          Take a Tour
+        </Button>
+      </View>
+
+      {/* Tour Modal */}
+      <TourModal
+        visible={showTour}
+        onClose={() => setShowTour(false)}
+        steps={TOUR_STEPS}
+      />
     </View>
   );
 }
@@ -144,5 +169,24 @@ const styles = StyleSheet.create({
   buttonIcon: {
     width: 15,
     height: 15,
+  },
+  bottomContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  tourButton: {
+    borderColor: "#ffffff",
+    borderWidth: 1.5,
+    borderRadius: 12,
+    width: "100%",
+  },
+  tourButtonLabel: {
+    color: "#ffffff",
+    fontSize: 16,
   },
 });
