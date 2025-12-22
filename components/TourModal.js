@@ -12,6 +12,23 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// Optional video support - only import if expo-av is available
+let Video, ResizeMode;
+let expoAvAvailable = false;
+try {
+  const expoAv = require("expo-av");
+  if (expoAv && expoAv.Video && expoAv.ResizeMode) {
+    Video = expoAv.Video;
+    ResizeMode = expoAv.ResizeMode;
+    expoAvAvailable = true;
+  }
+} catch (e) {
+  // expo-av not installed or not available - video support disabled
+  Video = null;
+  ResizeMode = null;
+  expoAvAvailable = false;
+}
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SLIDE_DURATION = 5000; // 5 seconds per slide
 
@@ -46,16 +63,38 @@ export default function TourModal({ visible, onClose, steps = [] }) {
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
   const elapsedRef = useRef(0);
+  const videoRef = useRef(null);
   const insets = useSafeAreaInsets();
 
   const currentSlide = steps[currentIndex];
   const isLastSlide = currentIndex === steps.length - 1;
+  // Only treat as video if expo-av is available and slide has video property
+  const hasVideoProperty = currentSlide?.type === "video" || currentSlide?.video;
+  const isVideo = Video && hasVideoProperty;
+  // Use image if video is requested but expo-av is not available, otherwise use video or image
+  const mediaSource = isVideo ? currentSlide.video : (currentSlide?.image || currentSlide?.video);
+
+  // Get slide duration (supports custom duration for both images and videos)
+  const getSlideDuration = () => {
+    // If slide has explicit duration, use it (works for both images and videos)
+    if (currentSlide?.duration) {
+      return currentSlide.duration * 1000; // Convert seconds to milliseconds
+    }
+    // Otherwise use default duration
+    return SLIDE_DURATION;
+  };
 
   // Start or resume timer
   const startTimer = () => {
+    const slideDuration = getSlideDuration();
     startTimeRef.current = Date.now();
-    const remainingTime = SLIDE_DURATION - elapsedRef.current;
-    const remainingPercent = (remainingTime / SLIDE_DURATION) * 100;
+    const remainingTime = slideDuration - elapsedRef.current;
+    const remainingPercent = (remainingTime / slideDuration) * 100;
+
+    // For videos, let the video control the progress
+    if (isVideo && videoRef.current) {
+      videoRef.current.playAsync();
+    }
 
     Animated.timing(progress, {
       toValue: 100,
@@ -76,8 +115,13 @@ export default function TourModal({ visible, onClose, steps = [] }) {
   // Pause timer
   const pauseTimer = () => {
     progress.stopAnimation((value) => {
-      elapsedRef.current = (value / 100) * SLIDE_DURATION;
+      const slideDuration = getSlideDuration();
+      elapsedRef.current = (value / 100) * slideDuration;
     });
+    // Pause video if playing
+    if (isVideo && videoRef.current) {
+      videoRef.current.pauseAsync();
+    }
   };
 
   // Reset timer for new slide
@@ -86,6 +130,11 @@ export default function TourModal({ visible, onClose, steps = [] }) {
     elapsedRef.current = 0;
     startTimeRef.current = null;
     progress.setValue(0);
+    // Stop and reset video if playing
+    if (videoRef.current) {
+      videoRef.current.stopAsync();
+      videoRef.current.setPositionAsync(0);
+    }
   };
 
   // Navigate to next slide
@@ -128,6 +177,25 @@ export default function TourModal({ visible, onClose, steps = [] }) {
     setIsPaused(false);
   };
 
+  // Handle video playback status updates
+  const handleVideoStatusUpdate = (status) => {
+    if (!status.isLoaded) return;
+
+    if (status.didJustFinish) {
+      // Video finished, move to next slide
+      if (isLastSlide) {
+        onClose();
+      } else {
+        goToNext();
+      }
+    } else if (status.positionMillis && status.durationMillis) {
+      // Update progress bar based on video position
+      const progressPercent = (status.positionMillis / status.durationMillis) * 100;
+      progress.setValue(progressPercent);
+      elapsedRef.current = status.positionMillis;
+    }
+  };
+
   // Timer management
   useEffect(() => {
     if (visible && !isPaused) {
@@ -136,6 +204,9 @@ export default function TourModal({ visible, onClose, steps = [] }) {
 
     return () => {
       progress.stopAnimation();
+      if (videoRef.current) {
+        videoRef.current.pauseAsync();
+      }
     };
   }, [visible, isPaused, currentIndex]);
 
@@ -147,7 +218,34 @@ export default function TourModal({ visible, onClose, steps = [] }) {
     }
   }, [visible]);
 
+  // Handle slide changes - reset video when switching
+  useEffect(() => {
+    if (visible) {
+      resetTimer();
+      // Small delay to ensure video is ready
+      setTimeout(() => {
+        if (isVideo && videoRef.current && !isPaused) {
+          videoRef.current.playAsync();
+        }
+      }, 100);
+    }
+  }, [currentIndex]);
+
   if (!visible || steps.length === 0) return null;
+
+  // Warn if video slide is used but expo-av is not available (only once)
+  const hasWarnedRef = useRef(false);
+  useEffect(() => {
+    if (hasVideoProperty && !Video && !hasWarnedRef.current && visible) {
+      hasWarnedRef.current = true;
+      console.warn(
+        "TourModal: Video slide detected but expo-av is not available. " +
+        "If you installed expo-av, try: 1) Clear Metro cache (npx expo start --clear), " +
+        "2) Restart your dev server, 3) Rebuild your app (npx expo run:ios or npx expo run:android). " +
+        "Falling back to image or skipping video slide."
+      );
+    }
+  }, [hasVideoProperty, visible]);
 
   return (
     <Modal
@@ -158,12 +256,25 @@ export default function TourModal({ visible, onClose, steps = [] }) {
     >
       <StatusBar barStyle="light-content" />
       <View style={styles.container}>
-        {/* Background Image */}
-        <Image
-          source={currentSlide.image}
-          style={styles.backgroundImage}
-          resizeMode="cover"
-        />
+        {/* Background Media (Video or Image) */}
+        {isVideo && Video ? (
+          <Video
+            ref={videoRef}
+            source={mediaSource}
+            style={styles.backgroundImage}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay={!isPaused && visible}
+            isLooping={false}
+            isMuted={false}
+            onPlaybackStatusUpdate={handleVideoStatusUpdate}
+          />
+        ) : (
+          <Image
+            source={mediaSource}
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
+        )}
 
         {/* Top Overlay */}
         <View style={styles.topGradient} />
