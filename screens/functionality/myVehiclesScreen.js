@@ -21,6 +21,7 @@ import {
 import { Swipeable } from "react-native-gesture-handler";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import BrandLogo from "../../components/BrandLogo";
+import { defaultUserProfile, getUserProfile } from "../../utils/userProfile";
 
 export default function MyVehiclesScreen({ navigation, route }) {
   const { t } = useTranslation();
@@ -29,17 +30,22 @@ export default function MyVehiclesScreen({ navigation, route }) {
   const [vehicleStats, setVehicleStats] = useState({});
   const swipeableRefs = useRef({});
   const [openSwipeableId, setOpenSwipeableId] = useState(null);
+  const [userSettings, setUserSettings] = useState(defaultUserProfile);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       loadVehicles();
+      loadUserSettings();
     });
 
     return unsubscribe;
   }, [navigation]);
 
   useEffect(() => {
-    loadVehicles();
+    const loadInitial = async () => {
+      await Promise.all([loadUserSettings(), loadVehicles()]);
+    };
+    loadInitial();
   }, []);
 
   useEffect(() => {
@@ -56,6 +62,50 @@ export default function MyVehiclesScreen({ navigation, route }) {
       addNewVehicle();
     }
   }, [route.params?.newVehicle]);
+
+  const loadUserSettings = async () => {
+    try {
+      const profile = await getUserProfile();
+      setUserSettings(profile);
+    } catch (error) {
+      setUserSettings(defaultUserProfile);
+    }
+  };
+
+  const getCurrencySymbol = (code) => {
+    switch (code) {
+      case "USD":
+        return "$";
+      case "EUR":
+      default:
+        return "€";
+    }
+  };
+
+  const convertFuelConsumption = (value) => {
+    if (value === null || value === undefined) return { value, unit: "l / 100 km" };
+    if (userSettings.unitSystem === "imperial") {
+      // Convert L/100km to MPG
+      const mpg = 235.214583 / value;
+      return { value: mpg, unit: "MPG" };
+    }
+    return { value, unit: "l / 100 km" };
+  };
+
+  const convertElectricConsumption = (value) => {
+    if (value === null || value === undefined) return { value, unit: "kWh / 100 km" };
+    if (userSettings.unitSystem === "imperial") {
+      // kWh/100km -> kWh/100mi
+      const per100mi = value * 1.60934;
+      return { value: per100mi, unit: "kWh / 100 mi" };
+    }
+    return { value, unit: "kWh / 100 km" };
+  };
+
+  const formatNumber = (num, decimals = 1) => {
+    if (num === null || num === undefined || Number.isNaN(num)) return "—";
+    return parseFloat(num).toFixed(decimals).replace(".", ",");
+  };
 
   const loadVehicles = async () => {
     try {
@@ -110,6 +160,11 @@ export default function MyVehiclesScreen({ navigation, route }) {
           if (totalLitersForPrice > 0) {
             stats.avgPricePerLiter = totalCostForPrice / totalLitersForPrice;
           }
+          
+          // Calculate efficiency cost (cost per km)
+          if (totalDistance > 0 && totalCostForPrice > 0) {
+            stats.efficiencyCost = totalCostForPrice / totalDistance;
+          }
         }
         
         // Calculate average electricity consumption
@@ -132,6 +187,11 @@ export default function MyVehiclesScreen({ navigation, route }) {
           const totalCostForPrice = chargingSessions.reduce((sum, c) => sum + (c.cost || 0), 0);
           if (totalEnergyForPrice > 0) {
             stats.avgPricePerKWh = totalCostForPrice / totalEnergyForPrice;
+          }
+          
+          // Calculate efficiency cost (cost per km)
+          if (totalDistance > 0 && totalCostForPrice > 0) {
+            stats.efficiencyCost = totalCostForPrice / totalDistance;
           }
         }
         
@@ -235,76 +295,68 @@ export default function MyVehiclesScreen({ navigation, route }) {
       );
     };
 
-    // Get vehicle type icon
-    const getVehicleTypeIcon = () => {
+    // Get vehicle type info
+    const getVehicleTypeInfo = () => {
       switch (vehicleType) {
         case 'BEV':
-          return '⚡';
+          return {
+            label: t("vehicles.typeBadge.electric"),
+            color: '#2196F3',
+            icon: 'lightning-bolt',
+            bgColor: '#1a237e',
+          };
         case 'PHEV':
-          return '🔌';
-        case 'ICE':
+          return {
+            label: t("vehicles.typeBadge.phev"),
+            color: '#9C27B0',
+            icon: 'car-electric',
+            bgColor: '#4a148c',
+          };
         case 'HYBRID':
+          return {
+            label: t("vehicles.typeBadge.mhevFhev"),
+            color: '#4CAF50',
+            icon: 'car-electric-outline',
+            bgColor: '#1b5e20',
+          };
+        case 'ICE':
         default:
-          return '⛽';
+          return {
+            label: t("vehicles.typeBadge.gasoline"),
+            color: '#FF9800',
+            icon: 'gas-station',
+            bgColor: '#e65100',
+          };
       }
     };
 
+    const vehicleTypeInfo = getVehicleTypeInfo();
     const stats = vehicleStats[item.id] || {};
+    const currencySymbol = getCurrencySymbol(userSettings.currency);
     
-    const formatNumber = (num, decimals = 1) => {
-      if (num === null || num === undefined) return '—';
-      return parseFloat(num).toFixed(decimals).replace('.', ',');
+    // Calculate efficiency cost display
+    const getEfficiencyCost = () => {
+      if (stats.efficiencyCost !== null && stats.efficiencyCost !== undefined) {
+        return `${formatNumber(stats.efficiencyCost, 2)} ${currencySymbol}`;
+      }
+      return null;
     };
     
-    // Determine which stats to show based on vehicle type
-    const statCards = [];
-    
-    if (vehicleType === 'PHEV') {
-      // PHEV: show fuel consumption and electricity consumption
-      if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
-        statCards.push({
-          value: `${formatNumber(stats.avgFuelConsumption)} l / 100 km`,
-          label: t("fillings.consumption"),
-        });
+    // Get consumption display
+    const getConsumption = () => {
+      if (vehicleType === 'BEV' || vehicleType === 'PHEV') {
+        if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
+          const converted = convertElectricConsumption(stats.avgElectricityConsumption);
+          return `${formatNumber(converted.value)} ${converted.unit}`;
+        }
+      } else {
+        if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
+          const converted = convertFuelConsumption(stats.avgFuelConsumption);
+          return `${formatNumber(converted.value)} ${converted.unit}`;
+        }
       }
-      if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
-        statCards.push({
-          value: `${formatNumber(stats.avgElectricityConsumption)} kWh / 100 km`,
-          label: t("charging.avgConsumption"),
-        });
-      }
-    } else if (vehicleType === 'BEV') {
-      // BEV: show electricity consumption and average price per kWh
-      if (stats.avgElectricityConsumption !== null && stats.avgElectricityConsumption !== undefined) {
-        statCards.push({
-          value: `${formatNumber(stats.avgElectricityConsumption)} kWh / 100 km`,
-          label: t("charging.avgConsumption"),
-        });
-      }
-      if (stats.avgPricePerKWh !== null && stats.avgPricePerKWh !== undefined) {
-        statCards.push({
-          value: `${formatNumber(stats.avgPricePerKWh, 2)} €`,
-          label: t("charging.avgPricePerKWh"),
-        });
-      }
-    } else {
-      // ICE/HYBRID: show fuel consumption and average price per liter
-      if (stats.avgFuelConsumption !== null && stats.avgFuelConsumption !== undefined) {
-        statCards.push({
-          value: `${formatNumber(stats.avgFuelConsumption)} l / 100 km`,
-          label: t("fillings.consumption"),
-        });
-      }
-      if (stats.avgPricePerLiter !== null && stats.avgPricePerLiter !== undefined) {
-        statCards.push({
-          value: `${formatNumber(stats.avgPricePerLiter, 2)} €`,
-          label: t("fillings.avgPricePerLiter"),
-        });
-      }
-    }
-    
-    // Limit to max 2 stats
-    const displayStats = statCards.slice(0, 2);
+      return null;
+    };
 
     return (
       <Swipeable 
@@ -338,25 +390,62 @@ export default function MyVehiclesScreen({ navigation, route }) {
         >
           <View style={styles.vehicleContent}>
             <View style={styles.vehicleInfo}>
-              <BrandLogo brand={item.make} style={styles.brandLogo} />
+              <View style={styles.brandLogoContainer}>
+                <View style={styles.brandLogoCircle}>
+                  <BrandLogo brand={item.make} style={styles.brandLogo} />
+                </View>
+              </View>
               <View style={styles.vehicleNameContainer}>
                 <View style={styles.vehicleNameRow}>
                   <Text style={styles.vehicleName}>{item.name}</Text>
-                  <Text style={styles.vehicleTypeIcon}>{getVehicleTypeIcon()}</Text>
                 </View>
                 <View style={styles.vehicleSubtitleRow}>
                   <Text style={styles.vehicleSubtitle}>{item.make} {item.model}</Text>
                 </View>
-              </View>
-            </View>
-            {displayStats.length > 0 ? (
-              <View style={styles.statsGrid}>
-                {displayStats.map((stat, index) => (
-                  <View key={index} style={styles.statCard}>
-                    <Text style={styles.statValue}>{stat.value}</Text>
-                    <Text style={styles.statLabel}>{stat.label}</Text>
+                <View style={[styles.vehicleTypeBadge, { backgroundColor: vehicleTypeInfo.color }]}>
+                    <Text style={styles.vehicleTypeBadgeText}>{vehicleTypeInfo.label}</Text>
                   </View>
-                ))}
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color="#ffffff" style={styles.arrowIcon} />
+            </View>
+            {(getConsumption() || getEfficiencyCost()) ? (
+              <View style={styles.statsRow}>
+                {getConsumption() && (
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons 
+                      name={
+                        vehicleType === 'BEV'
+                          ? 'battery'
+                          : vehicleType === 'PHEV'
+                            ? 'car-electric'
+                            : vehicleType === 'HYBRID'
+                              ? 'car-electric-outline'
+                              : 'gas-station'
+                      } 
+                      size={16} 
+                      color={vehicleTypeInfo.color}
+                      style={styles.statIcon}
+                    />
+                    <View>
+                      <Text style={styles.statLabel}>{t("vehicles.avgConsumption")}</Text>
+                      <Text style={styles.statValue}>{getConsumption()}</Text>
+                    </View>
+                  </View>
+                )}
+                {getEfficiencyCost() && (
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons 
+                      name="currency-usd" 
+                      size={16} 
+                      color="#4CAF50"
+                      style={styles.statIcon}
+                    />
+                    <View>
+                      <Text style={styles.statLabel}>{t("vehicles.efficiencyCost")}</Text>
+                      <Text style={styles.statValue}>{getEfficiencyCost()} /km</Text>
+                    </View>
+                  </View>
+                )}
               </View>
             ) : (
               <View style={styles.noDataContainer}>
@@ -372,7 +461,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#3169ad" />
       </View>
     );
   }
@@ -393,7 +482,7 @@ export default function MyVehiclesScreen({ navigation, route }) {
     <TouchableWithoutFeedback onPress={handleContainerPress}>
       <View style={styles.container}>
         {loading ? (
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color="#3169ad" />
         ) : (
           <>
             {vehicles.length === 0 ? (
@@ -431,34 +520,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#1A1A1A",
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#1A1A1A",
   },
   vehicleItem: {
     marginVertical: 8,
-    backgroundColor: "#e0e0e0",
-    display: "flex",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    backgroundColor: "#2A2A2A",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   vehicleText: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#ffffff",
   },
   vehicleSubtext: {
     fontSize: 14,
-    color: "#666",
+    color: "#cccccc",
   },
   emptyText: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
-    color: "#666",
+    color: "#cccccc",
   },
   emptyContainer: {
     flex: 1,
@@ -477,7 +572,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#1A1A1A",
   },
   addButton: {
     borderRadius: 8,
@@ -493,7 +588,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "17.5%",
-    height: "85%",
+    height: "90%",
     borderRadius: 8,
     marginVertical: "auto",
     marginLeft: 8,
@@ -526,109 +621,119 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
   },
+  brandLogoContainer: {
+    position: "relative",
+    width: 70,
+    height: 70,
+    marginRight: 12,
+  },
+  brandLogoCircle: {
+    width: 70,
+    height: 70,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    backgroundColor: "gray",
+    boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#333333",
+    padding: 4,
+  },
   brandLogo: {
-    width: "auto",
-    minWidth: 70,
-    left: 0,
-    top: 0,
-    marginRight: 0,
-    borderRadius: 0,
+    width: "100%",
+    height: "100%",
     borderWidth: 0,
-    padding: 10,
+    backgroundColor: "transparent",
   },
   vehicleContent: {
-    alignItems: "center",
-    display: "flex",
+    width: "100%",
   },
   vehicleInfo: {
-    display: "flex",
     flexDirection: "row",
     width: "100%",
-    justifyContent: "space-between",
+    alignItems: "center",
   },
   vehicleNameContainer: {
     flex: 1,
-    display: "flex",
     flexDirection: "column",
-    width: "80%",
     justifyContent: "center",
-    padding: 10,
+    paddingRight: 8,
   },
   vehicleNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     marginBottom: 4,
+    gap: 8,
   },
   vehicleName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
+    color: "#ffffff",
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
-  vehicleTypeIcon: {
-    fontSize: 20,
-    marginLeft: 8,
-    position: "absolute",
-    right: 0,
-    top: "50%",
+  vehicleTypeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    flexShrink: 0,
+    width: "auto",
+    alignSelf: "flex-start",
+  },
+  vehicleTypeBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#ffffff",
   },
   vehicleSubtitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    marginBottom: 8,
   },
   vehicleSubtitle: {
     fontSize: 14,
-    color: "#666",
-    flex: 1,
+    color: "#cccccc",
   },
-  vehicleTypeText: {
-    fontSize: 12,
-    color: "#888",
-    fontStyle: "italic",
+  arrowIcon: {
+    alignSelf: "center",
     marginLeft: 8,
   },
-  statsGrid: {
+  statsRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 12,
     justifyContent: "space-between",
-    gap: 12,
+    marginTop: 12,
     width: "100%",
+    gap: 16,
   },
-  statCard: {
-    width: "48%",
+  statItem: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-    display: "flex",
-    justifyContent: "flex-start",
+    justifyContent: "center",
+    flex: 1,
   },
-  statValue: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#2e7d32",
-    marginBottom: 4,
-    textAlign: "center",
+  statIcon: {
+    marginRight: 8,
   },
   statLabel: {
-    fontSize: 8,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 12,
+    fontSize: 11,
+    color: "#999999",
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ffffff",
   },
   noDataContainer: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: "center",
+    marginTop: 8,
+    paddingVertical: 8,
+    alignItems: "flex-start",
   },
   noDataText: {
-    fontSize: 11,
-    color: "#999",
-    textAlign: "center",
+    fontSize: 12,
+    color: "#999999",
     fontStyle: "italic",
   },
 });

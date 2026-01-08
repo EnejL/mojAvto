@@ -1,97 +1,142 @@
-import React, { useState, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  TouchableOpacity,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
-import { TextInput, Button, Surface, Text } from "react-native-paper";
-import { useTranslation } from "react-i18next";
-import { updateFilling, deleteFilling } from "../../utils/firestore";
-import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Keyboard, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import FormLabel from "../../components/FormLabel";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { Button, Text, TextInput } from "react-native-paper";
+import { useTranslation } from "react-i18next";
+import { deleteFilling, updateFilling } from "../../utils/firestore";
+import { defaultUserProfile, getUserProfile } from "../../utils/userProfile";
+import {
+  ENTRY_COLORS,
+  EntryCard,
+  EntryDivider,
+  EntryLabelRow,
+  EntryScreenLayout,
+} from "../../components/EntryScreenLayout";
+
+const formatDecimalInput = (value) => value.replace(".", ",");
+const parseDecimal = (value) => {
+  if (!value) return null;
+  const n = parseFloat(value.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+};
+const formatComputedDecimal = (value) => {
+  if (!Number.isFinite(value)) return "";
+  return value.toFixed(2).replace(".", ",");
+};
+const getCurrencySymbol = (code) => (code === "USD" ? "$" : "€");
+
+const parseDate = (dateValue) => {
+  if (!dateValue) return new Date();
+  if (dateValue instanceof Date) return dateValue;
+  if (dateValue?.seconds) return new Date(dateValue.seconds * 1000);
+  return new Date(dateValue);
+};
 
 export default function EditFillingScreen({ route, navigation }) {
   const { t } = useTranslation();
-  const { filling, vehicleId } = route.params;
+  const scrollRef = useRef(null);
+  const { filling, vehicleId, vehicle } = route.params;
+
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const scrollViewRef = useRef(null);
+  const [userSettings, setUserSettings] = useState(defaultUserProfile);
 
-  const formatDecimal = (value) => {
-    return value.replace(".", ",");
+  const currencySymbol = getCurrencySymbol(userSettings.currency);
+  const volumeUnit = userSettings.volumeUnit || (userSettings.unitSystem === "imperial" ? "gal" : "L");
+  const distanceUnit = userSettings.distanceUnit || (userSettings.unitSystem === "imperial" ? "mi" : "km");
+
+  const initial = useMemo(() => {
+    const liters = typeof filling?.liters === "number" ? filling.liters : parseFloat(String(filling?.liters || 0));
+    const cost = typeof filling?.cost === "number" ? filling.cost : parseFloat(String(filling?.cost || 0));
+    const pricePerLiter = liters > 0 && Number.isFinite(cost) ? cost / liters : null;
+
+    return {
+      date: parseDate(filling?.date),
+      liters: String(filling?.liters ?? "").replace(".", ","),
+      pricePerLiter: pricePerLiter !== null ? formatComputedDecimal(pricePerLiter) : "",
+      cost: String(filling?.cost ?? "").replace(".", ","),
+      odometer: String(filling?.odometer ?? ""),
+    };
+  }, [filling]);
+
+  const [fillingData, setFillingData] = useState(initial);
+
+  useEffect(() => {
+    setFillingData(initial);
+  }, [initial]);
+
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      try {
+        const profile = await getUserProfile();
+        setUserSettings(profile);
+      } catch (e) {
+        setUserSettings(defaultUserProfile);
+      }
+    };
+    loadUserSettings();
+    const unsubscribe = navigation?.addListener?.("focus", loadUserSettings);
+    return unsubscribe;
+  }, [navigation]);
+
+  const toggleDatePicker = () => {
+    Keyboard.dismiss();
+    setShowDatePicker((v) => !v);
   };
 
-  // Parse the date from the filling object
-  const parseDate = (dateValue) => {
-    if (dateValue instanceof Date) {
-      return dateValue;
-    } else if (dateValue.seconds) {
-      return new Date(dateValue.seconds * 1000);
-    } else {
-      return new Date(dateValue);
-    }
-  };
-
-  const formatDate = (date) => {
-    return date.toISOString().split("T")[0];
+  const handleDateChange = (event, selectedDate) => {
+    if (selectedDate) setFillingData((d) => ({ ...d, date: selectedDate }));
   };
 
   const renderClearIcon = (value, onClear) => {
     if (!value || value.length === 0) return null;
-    return (
-      <TextInput.Icon
-        icon="close"
-        onPress={onClear}
-        iconColor="#666"
-      />
-    );
+    return <TextInput.Icon icon="close" onPress={onClear} iconColor={ENTRY_COLORS.muted} />;
   };
 
-  const [fillingData, setFillingData] = useState({
-    date: parseDate(filling.date),
-    liters: filling.liters.toString().replace(".", ","),
-    cost: filling.cost.toString().replace(".", ","),
-    odometer: filling.odometer.toString(),
-  });
-
-  const handleDateChange = (event, selectedDate) => {
-    // Only update the date if a date was actually selected (user didn't cancel)
-    if (selectedDate) {
-      setFillingData({ ...fillingData, date: selectedDate });
-    }
-
-    // Note: We're not closing the picker here anymore
-    // The picker will stay open until the user taps elsewhere
+  const onChangeLiters = (text) => {
+    const liters = formatDecimalInput(text);
+    setFillingData((prev) => {
+      const litersNum = parseDecimal(liters);
+      const priceNum = parseDecimal(prev.pricePerLiter);
+      const next = { ...prev, liters };
+      if (litersNum !== null && priceNum !== null) {
+        next.cost = formatComputedDecimal(litersNum * priceNum);
+      }
+      return next;
+    });
   };
 
-  // Toggle date picker visibility
-  const toggleDatePicker = () => {
-    // Close keyboard if open
-    Keyboard.dismiss();
-    setShowDatePicker(!showDatePicker);
+  const onChangePricePerLiter = (text) => {
+    const pricePerLiter = formatDecimalInput(text);
+    setFillingData((prev) => {
+      const litersNum = parseDecimal(prev.liters);
+      const priceNum = parseDecimal(pricePerLiter);
+      const next = { ...prev, pricePerLiter };
+      if (litersNum !== null && priceNum !== null) {
+        next.cost = formatComputedDecimal(litersNum * priceNum);
+      }
+      return next;
+    });
   };
 
-  // Handle tapping outside of inputs to dismiss keyboard and date picker
-  const handleOutsidePress = () => {
-    Keyboard.dismiss();
-    if (showDatePicker) {
-      setShowDatePicker(false);
-    }
+  const onChangeCost = (text) => {
+    const cost = formatDecimalInput(text);
+    setFillingData((prev) => {
+      const litersNum = parseDecimal(prev.liters);
+      const costNum = parseDecimal(cost);
+      const next = { ...prev, cost };
+      if (litersNum !== null && costNum !== null && litersNum > 0) {
+        next.pricePerLiter = formatComputedDecimal(costNum / litersNum);
+      }
+      return next;
+    });
   };
+
+  const formatDisplayDate = (date) => date?.toLocaleDateString?.() || "";
 
   const handleSave = async () => {
-    if (
-      !fillingData.date ||
-      !fillingData.liters ||
-      !fillingData.cost ||
-      !fillingData.odometer
-    ) {
+    if (!fillingData.date || !fillingData.liters || !fillingData.cost || !fillingData.odometer) {
       alert(t("common.error.required"));
       return;
     }
@@ -105,9 +150,9 @@ export default function EditFillingScreen({ route, navigation }) {
       const cost = parseFloat(parseFloat(costStr).toFixed(2));
 
       await updateFilling(vehicleId, filling.id, {
-        date: formatDate(fillingData.date),
-        liters: liters,
-        cost: cost,
+        date: fillingData.date.toISOString().split("T")[0],
+        liters,
+        cost,
         odometer: parseInt(fillingData.odometer, 10),
       });
 
@@ -121,10 +166,7 @@ export default function EditFillingScreen({ route, navigation }) {
 
   const handleDelete = () => {
     Alert.alert(t("common.delete"), t("fillings.deleteConfirmMessage"), [
-      {
-        text: t("common.cancel"),
-        style: "cancel",
-      },
+      { text: t("common.cancel"), style: "cancel" },
       {
         text: t("common.delete"),
         style: "destructive",
@@ -144,195 +186,250 @@ export default function EditFillingScreen({ route, navigation }) {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <View style={styles.container}>
-        <ScrollView ref={scrollViewRef}>
-          <Surface style={styles.formCard}>
-            {/* Date Picker Button */}
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={toggleDatePicker}
-            >
-              <FormLabel required style={styles.datePickerLabel}>{t("fillings.date")}</FormLabel>
-              <View style={styles.datePickerValueContainer}>
-                <Text style={styles.datePickerValue}>
-                  {formatDate(fillingData.date)}
-                </Text>
-                <MaterialIcons name="calendar-today" size={20} color="#666" />
-              </View>
-            </TouchableOpacity>
-
-            {/* Date Picker */}
-            {showDatePicker && (
-              <DateTimePicker
-                value={fillingData.date}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={handleDateChange}
-              />
-            )}
-
-            <TextInput
-              label={<FormLabel required>{t("fillings.liters")}</FormLabel>}
-              value={fillingData.liters}
-              onChangeText={(text) => {
-                const formattedText = formatDecimal(text);
-                setFillingData({ ...fillingData, liters: formattedText });
-              }}
-              keyboardType="numeric"
-              style={styles.input}
-              mode="outlined"
-              onFocus={() => setShowDatePicker(false)}
-              right={renderClearIcon(fillingData.liters, () =>
-                setFillingData({ ...fillingData, liters: "" })
-              )}
-            />
-
-            <TextInput
-              label={<FormLabel required>{t("fillings.cost")}</FormLabel>}
-              value={fillingData.cost}
-              onChangeText={(text) => {
-                const formattedText = formatDecimal(text);
-                setFillingData({ ...fillingData, cost: formattedText });
-              }}
-              keyboardType="numeric"
-              style={styles.input}
-              mode="outlined"
-              onFocus={() => setShowDatePicker(false)}
-              right={renderClearIcon(fillingData.cost, () =>
-                setFillingData({ ...fillingData, cost: "" })
-              )}
-            />
-
-            <TextInput
-              label={<FormLabel required>{t("fillings.odometer")}</FormLabel>}
-              value={fillingData.odometer}
-              onChangeText={(text) =>
-                setFillingData({ ...fillingData, odometer: text })
-              }
-              keyboardType="numeric"
-              style={styles.input}
-              mode="outlined"
-              onFocus={() => setShowDatePicker(false)}
-              right={renderClearIcon(fillingData.odometer, () =>
-                setFillingData({ ...fillingData, odometer: "" })
-              )}
-            />
-          </Surface>
-        </ScrollView>
-
-        <View style={styles.bottomContainer}>
+    <EntryScreenLayout
+      scrollRef={scrollRef}
+      bottom={
+        <View style={styles.bottomRow}>
           <Button
             mode="outlined"
             onPress={handleDelete}
+            disabled={loading}
+            textColor={ENTRY_COLORS.danger}
             style={styles.deleteButton}
-            labelStyle={styles.deleteButtonLabel}
+            contentStyle={styles.bottomButtonContent}
+            labelStyle={styles.bottomButtonLabel}
             icon={({ size, color }) => (
-              <MaterialCommunityIcons
-                name="trash-can"
-                size={size}
-                color={color}
-              />
+              <MaterialCommunityIcons name="trash-can" size={size} color={color} />
             )}
           >
             {t("fillings.delete")}
           </Button>
 
-          <View style={styles.buttonContainer}>
-            <Button
-              mode="outlined"
-              onPress={() => navigation.goBack()}
-              style={[styles.button, styles.cancelButton]}
-              disabled={loading}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={[styles.button, styles.saveButton]}
-              loading={loading}
-              disabled={loading}
-            >
-              {t("common.save")}
-            </Button>
+          <Button
+            mode="contained"
+            onPress={handleSave}
+            disabled={loading}
+            loading={loading}
+            buttonColor={ENTRY_COLORS.blue}
+            style={styles.saveButton}
+            contentStyle={styles.bottomButtonContent}
+            labelStyle={styles.bottomButtonLabel}
+          >
+            {t("common.save")}
+          </Button>
+        </View>
+      }
+    >
+      {vehicle ? (
+        <EntryCard style={styles.vehicleCard}>
+          <Text style={styles.vehicleName}>{vehicle.name}</Text>
+          <Text style={styles.vehicleMeta}>
+            {vehicle.make} {vehicle.model}
+          </Text>
+        </EntryCard>
+      ) : null}
+
+      <View style={styles.field}>
+        <EntryLabelRow label={t("fillings.date")} />
+        <TouchableOpacity style={styles.dateField} onPress={toggleDatePicker} activeOpacity={0.85}>
+          <Text style={styles.dateValue}>{formatDisplayDate(fillingData.date)}</Text>
+          <MaterialIcons name="calendar-today" size={18} color={ENTRY_COLORS.muted} />
+        </TouchableOpacity>
+        {showDatePicker ? (
+          <View style={styles.inlinePicker}>
+            <DateTimePicker
+              value={fillingData.date}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={handleDateChange}
+            />
           </View>
+        ) : null}
+      </View>
+
+      <View style={styles.field}>
+        <EntryLabelRow label={`${t("fillings.odometer")} (${distanceUnit})`} />
+        <TextInput
+          value={fillingData.odometer}
+          onChangeText={(text) => setFillingData((d) => ({ ...d, odometer: text }))}
+          keyboardType="numeric"
+          mode="outlined"
+          style={styles.input}
+          outlineStyle={styles.inputOutline}
+          contentStyle={styles.inputContent}
+          textColor={ENTRY_COLORS.text}
+          outlineColor={ENTRY_COLORS.border}
+          activeOutlineColor={ENTRY_COLORS.blue}
+          placeholderTextColor={ENTRY_COLORS.placeholder}
+          onFocus={() => setShowDatePicker(false)}
+          right={renderClearIcon(fillingData.odometer, () => setFillingData((d) => ({ ...d, odometer: "" })))}
+        />
+      </View>
+
+      <EntryDivider />
+
+      <View style={styles.row}>
+        <View style={[styles.field, styles.fieldHalf]}>
+          <EntryLabelRow label={`${t("fillings.liters")}`} />
+          <TextInput
+            value={fillingData.liters}
+            onChangeText={onChangeLiters}
+            keyboardType="numeric"
+            mode="outlined"
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
+            contentStyle={styles.inputContent}
+            textColor={ENTRY_COLORS.text}
+            outlineColor={ENTRY_COLORS.border}
+            activeOutlineColor={ENTRY_COLORS.blue}
+            placeholderTextColor={ENTRY_COLORS.placeholder}
+            placeholder="0.00"
+            onFocus={() => setShowDatePicker(false)}
+            right={renderClearIcon(fillingData.liters, () => setFillingData((d) => ({ ...d, liters: "" })))}
+          />
+        </View>
+
+        <View style={[styles.field, styles.fieldHalf]}>
+          <EntryLabelRow label={`${t("fillings.pricePerLiter")}`} />
+          <TextInput
+            value={fillingData.pricePerLiter}
+            onChangeText={onChangePricePerLiter}
+            keyboardType="numeric"
+            mode="outlined"
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
+            contentStyle={styles.inputContent}
+            textColor={ENTRY_COLORS.text}
+            outlineColor={ENTRY_COLORS.border}
+            activeOutlineColor={ENTRY_COLORS.blue}
+            placeholderTextColor={ENTRY_COLORS.placeholder}
+            placeholder={`${currencySymbol} 0.00`}
+            onFocus={() => setShowDatePicker(false)}
+            right={renderClearIcon(fillingData.pricePerLiter, () => setFillingData((d) => ({ ...d, pricePerLiter: "" })))}
+          />
         </View>
       </View>
-    </TouchableWithoutFeedback>
+
+      <View style={styles.field}>
+        <EntryLabelRow label={t("common.totalCost")} />
+        <TextInput
+          value={fillingData.cost}
+          onChangeText={onChangeCost}
+          keyboardType="numeric"
+          mode="outlined"
+          style={styles.inputBig}
+          outlineStyle={styles.inputOutline}
+          contentStyle={styles.inputBigContent}
+          textColor={ENTRY_COLORS.text}
+          outlineColor={ENTRY_COLORS.border}
+          activeOutlineColor={ENTRY_COLORS.blue}
+          placeholderTextColor={ENTRY_COLORS.placeholder}
+          placeholder={`${currencySymbol} 0.00`}
+          onFocus={() => setShowDatePicker(false)}
+          left={<TextInput.Icon icon={() => <Text style={styles.currencyPrefix}>{currencySymbol}</Text>} />}
+          right={renderClearIcon(fillingData.cost, () => setFillingData((d) => ({ ...d, cost: "" })))}
+        />
+      </View>
+    </EntryScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
+  vehicleCard: {
+    paddingVertical: 22,
   },
-  formCard: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 1,
-    backgroundColor: "#fff",
+  vehicleName: {
+    color: ENTRY_COLORS.text,
+    fontSize: 34,
+    fontWeight: "800",
+    letterSpacing: -0.2,
   },
-  input: {
-    marginBottom: 16,
-    backgroundColor: "#fff",
-  },
-  bottomContainer: {
-    backgroundColor: "#f5f5f5",
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  deleteButton: {
-    marginBottom: 16,
-    borderColor: "#d32f2f",
-    backgroundColor: "transparent",
-    width: "95%",
-    alignSelf: "center",
-  },
-  deleteButtonLabel: {
+  vehicleMeta: {
+    color: ENTRY_COLORS.muted,
     fontSize: 16,
-    paddingVertical: 4,
-    color: "#d32f2f",
+    fontWeight: "700",
+    marginTop: 6,
   },
-  buttonContainer: {
-    flexDirection: "row",
-  },
-  button: {
-    flex: 1,
-    marginHorizontal: 8,
-  },
-  cancelButton: {
-    borderColor: "#495057",
-  },
-  saveButton: {
-    backgroundColor: "#6c757d",
-  },
-  datePickerButton: {
-    borderWidth: 1,
-    borderColor: "#666",
-    borderRadius: 4,
-    padding: 12,
+  field: {
     marginBottom: 16,
-    backgroundColor: "#fff",
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
   },
-  datePickerLabel: {
-    alignSelf: "center",
-  },
-  datePickerValueContainer: {
+  row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    flex: 1,
-    paddingLeft: 15,
+    marginBottom: 6,
   },
-  datePickerValue: {
+  fieldHalf: {
+    width: "48%",
+  },
+  input: {
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  inputBig: {
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  inputOutline: {
+    borderRadius: 18,
+  },
+  inputContent: {
+    height: 56,
+  },
+  inputBigContent: {
+    height: 56,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingVertical: 0,
+    textAlignVertical: "center",
+  },
+  currencyPrefix: {
+    color: ENTRY_COLORS.muted,
+    fontWeight: "900",
+    fontSize: 18,
+    paddingLeft: 2,
+    includeFontPadding: false,
+  },
+  dateField: {
+    height: 56,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: ENTRY_COLORS.border,
+    backgroundColor: ENTRY_COLORS.surface,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dateValue: {
+    color: ENTRY_COLORS.text,
     fontSize: 16,
+    fontWeight: "700",
+  },
+  inlinePicker: {
+    marginTop: 8,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: ENTRY_COLORS.border,
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  bottomRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  deleteButton: {
+    flex: 1,
+    borderRadius: 18,
+    borderColor: "rgba(255, 77, 79, 0.7)",
+  },
+  saveButton: {
+    flex: 1,
+    borderRadius: 18,
+  },
+  bottomButtonContent: {
+    height: 58,
+  },
+  bottomButtonLabel: {
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.2,
   },
 });

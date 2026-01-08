@@ -1,8 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { IconButton } from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -53,23 +51,12 @@ function MyVehiclesStack() {
       <Stack.Screen
         name="VehicleDetails"
         component={VehicleDetailsScreen}
-        options={({ route, navigation }) => ({
-          title: t("vehicles.details"),
-          headerBackTitle: t("navigation.back"),
-          headerRight: () => (
-            <IconButton
-              icon="cog"
-              color="#fff"
-              size={24}
-              style={styles.headerIcon}
-              onPress={() => {
-                navigation.navigate("EditVehicle", {
-                  vehicle: route.params.vehicle,
-                });
-              }}
-            />
-          ),
-        })}
+        options={{
+          headerShown: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
+        }}
       />
       <Stack.Screen
         name="AddVehicle"
@@ -77,6 +64,17 @@ function MyVehiclesStack() {
         options={{
           title: t("vehicles.add"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -85,6 +83,17 @@ function MyVehiclesStack() {
         options={{
           title: t("vehicles.edit"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -93,6 +102,17 @@ function MyVehiclesStack() {
         options={{
           title: t("fillings.add"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -101,6 +121,17 @@ function MyVehiclesStack() {
         options={{
           title: t("fillings.edit"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -109,6 +140,17 @@ function MyVehiclesStack() {
         options={{
           title: t("charging.add"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -117,6 +159,17 @@ function MyVehiclesStack() {
         options={{
           title: t("charging.edit"),
           headerBackTitle: t("navigation.back"),
+          headerBackTitleVisible: false,
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "#0B141E",
+            borderBottomColor: "#15202B",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+          headerShadowVisible: false,
+          contentStyle: {
+            backgroundColor: "#0B141E",
+          },
         }}
       />
       <Stack.Screen
@@ -151,7 +204,7 @@ function SettingsStack() {
         component={SettingsScreen}
         options={{
           title: t("navigation.settings"),
-          headerLeft: () => null, // Remove back button
+          headerLeft: () => null,
         }}
       />
       <Stack.Screen
@@ -191,14 +244,16 @@ function AccountStack() {
         headerTitleStyle: {
           color: "#fff",
         },
+        contentStyle: {
+          backgroundColor: "#000000",
+        },
       }}
     >
       <Stack.Screen
         name="MyAccountMain"
         component={MyAccountScreen}
         options={{
-          title: t("auth.title"),
-          headerLeft: () => null, // Remove back button
+          title: t("navigation.account"),
         }}
       />
       <Stack.Screen
@@ -232,12 +287,15 @@ export default function MainAppNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: "#000000",
-        tabBarInactiveTintColor: "#777777",
+        tabBarActiveTintColor: "#ffffff",
+        tabBarInactiveTintColor: "#999999",
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: "#1A1A1A",
           borderTopWidth: 1,
-          borderTopColor: "#e0e0e0",
+          borderTopColor: "#2A2A2A",
+          height: 60,
+          paddingBottom: 4,
+          paddingTop: 4,
         },
         headerShown: false,
       }}
@@ -278,16 +336,3 @@ export default function MainAppNavigator() {
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  headerIcon: {
-    margin: 0,
-    marginTop: -4,
-    alignSelf: "center",
-  },
-  accountIcon: {
-    backgroundColor: "#333",
-    marginRight: 10,
-    marginTop: -4,
-  },
-});
