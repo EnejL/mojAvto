@@ -50,7 +50,6 @@ export default function AddFillingScreen({ route, navigation }) {
   const [fillingData, setFillingData] = useState({
     date: new Date(),
     liters: "",
-    pricePerLiter: "",
     cost: "",
     odometer: "",
   });
@@ -102,43 +101,21 @@ export default function AddFillingScreen({ route, navigation }) {
   };
 
   const onChangeLiters = (text) => {
-    const liters = formatDecimalInput(text);
-    setFillingData((prev) => {
-      const litersNum = parseDecimal(liters);
-      const priceNum = parseDecimal(prev.pricePerLiter);
-      const next = { ...prev, liters };
-      if (litersNum !== null && priceNum !== null) {
-        next.cost = formatComputedDecimal(litersNum * priceNum);
-      }
-      return next;
-    });
-  };
-
-  const onChangePricePerLiter = (text) => {
-    const pricePerLiter = formatDecimalInput(text);
-    setFillingData((prev) => {
-      const litersNum = parseDecimal(prev.liters);
-      const priceNum = parseDecimal(pricePerLiter);
-      const next = { ...prev, pricePerLiter };
-      if (litersNum !== null && priceNum !== null) {
-        next.cost = formatComputedDecimal(litersNum * priceNum);
-      }
-      return next;
-    });
+    setFillingData((prev) => ({ ...prev, liters: formatDecimalInput(text) }));
   };
 
   const onChangeCost = (text) => {
-    const cost = formatDecimalInput(text);
-    setFillingData((prev) => {
-      const litersNum = parseDecimal(prev.liters);
-      const costNum = parseDecimal(cost);
-      const next = { ...prev, cost };
-      if (litersNum !== null && costNum !== null && litersNum > 0) {
-        next.pricePerLiter = formatComputedDecimal(costNum / litersNum);
-      }
-      return next;
-    });
+    setFillingData((prev) => ({ ...prev, cost: formatDecimalInput(text) }));
   };
+
+  const pricePerLiterComputed = (() => {
+    const litersNum = parseDecimal(fillingData.liters);
+    const costNum = parseDecimal(fillingData.cost);
+    if (litersNum !== null && costNum !== null && litersNum > 0) {
+      return formatComputedDecimal(costNum / litersNum);
+    }
+    return null;
+  })();
 
   const renderClearIcon = (value, onClear) => {
     if (!value || value.length === 0) return null;
@@ -201,7 +178,7 @@ export default function AddFillingScreen({ route, navigation }) {
       </EntryCard>
 
       <View style={styles.field}>
-        <EntryLabelRow label={t("fillings.date")} />
+        <EntryLabelRow label={t("fillings.date")} required />
         <TouchableOpacity style={styles.dateField} onPress={toggleDatePicker} activeOpacity={0.85}>
           <Text style={styles.dateValue}>{formatDisplayDate(fillingData.date)}</Text>
           <MaterialIcons name="calendar-today" size={18} color={ENTRY_COLORS.muted} />
@@ -222,6 +199,7 @@ export default function AddFillingScreen({ route, navigation }) {
       <View style={styles.field}>
         <EntryLabelRow
           label={`${t("fillings.odometer")} (${distanceUnit})`}
+          required
           allowWrap={true}
           right={
             prevOdometer !== null ? (
@@ -248,52 +226,28 @@ export default function AddFillingScreen({ route, navigation }) {
 
       <EntryDivider />
 
-      <View style={[styles.row, isSmallScreen && styles.rowStacked]}>
-        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("fillings.liters")} (${volumeUnit})`} />
-          <TextInput
-            value={fillingData.liters}
-            onChangeText={onChangeLiters}
-            keyboardType="numeric"
-            mode="outlined"
-            style={styles.input}
-            outlineStyle={styles.inputOutline}
-            contentStyle={styles.inputContent}
-            textColor={ENTRY_COLORS.text}
-            outlineColor={ENTRY_COLORS.border}
-            activeOutlineColor={ENTRY_COLORS.blue}
-            placeholderTextColor={ENTRY_COLORS.placeholder}
-            placeholder="0.00"
-            onFocus={() => setShowDatePicker(false)}
-            right={renderClearIcon(fillingData.liters, () => setFillingData((d) => ({ ...d, liters: "" })))}
-          />
-        </View>
-
-        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("fillings.pricePerLiter")} (${currencySymbol}/${volumeUnit})`} allowWrap={true} />
-          <TextInput
-            value={fillingData.pricePerLiter}
-            onChangeText={onChangePricePerLiter}
-            keyboardType="numeric"
-            mode="outlined"
-            style={styles.input}
-            outlineStyle={styles.inputOutline}
-            contentStyle={styles.inputContent}
-            textColor={ENTRY_COLORS.text}
-            outlineColor={ENTRY_COLORS.border}
-            activeOutlineColor={ENTRY_COLORS.blue}
-            placeholderTextColor={ENTRY_COLORS.placeholder}
-            placeholder={`${currencySymbol} 0.00`}
-            onFocus={() => setShowDatePicker(false)}
-            right={renderClearIcon(fillingData.pricePerLiter, () =>
-              setFillingData((d) => ({ ...d, pricePerLiter: "" }))
-            )}
-          />
-        </View>
+      <View style={[styles.field, isSmallScreen ? styles.fieldFull : undefined]}>
+        <EntryLabelRow label={`${t("fillings.liters")} (${volumeUnit})`} required />
+        <TextInput
+          value={fillingData.liters}
+          onChangeText={onChangeLiters}
+          keyboardType="numeric"
+          mode="outlined"
+          style={styles.input}
+          outlineStyle={styles.inputOutline}
+          contentStyle={styles.inputContent}
+          textColor={ENTRY_COLORS.text}
+          outlineColor={ENTRY_COLORS.border}
+          activeOutlineColor={ENTRY_COLORS.blue}
+          placeholderTextColor={ENTRY_COLORS.placeholder}
+          placeholder="0.00"
+          onFocus={() => setShowDatePicker(false)}
+          right={renderClearIcon(fillingData.liters, () => setFillingData((d) => ({ ...d, liters: "" })))}
+        />
       </View>
 
       <View style={styles.field}>
-        <EntryLabelRow label={t("common.totalCost")} />
+        <EntryLabelRow label={t("common.totalCost")} required />
         <TextInput
           value={fillingData.cost}
           onChangeText={onChangeCost}
@@ -312,6 +266,15 @@ export default function AddFillingScreen({ route, navigation }) {
           right={renderClearIcon(fillingData.cost, () => setFillingData((d) => ({ ...d, cost: "" })))}
         />
       </View>
+
+      {pricePerLiterComputed !== null ? (
+        <View style={styles.computedRow}>
+          <EntryLabelRow label={`${t("fillings.pricePerLiter")} (${currencySymbol}/${volumeUnit})`} />
+          <Text style={styles.computedValue}>
+            {currencySymbol} {pricePerLiterComputed}
+          </Text>
+        </View>
+      ) : null}
     </EntryScreenLayout>
   );
 }
@@ -394,6 +357,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ENTRY_COLORS.border,
     backgroundColor: ENTRY_COLORS.surface,
+  },
+  computedRow: {
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: ENTRY_COLORS.border,
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  computedValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: ENTRY_COLORS.text,
+    marginTop: 4,
   },
   primaryButton: {
     borderRadius: 18,
