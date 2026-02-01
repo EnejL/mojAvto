@@ -25,11 +25,12 @@ export const EntryCard = ({ children, style }) => (
 
 export const EntryDivider = () => <View style={styles.divider} />;
 
-export const EntryLabelRow = ({ label, right, allowWrap = false }) => (
+export const EntryLabelRow = ({ label, right, allowWrap = false, required = false }) => (
   <View style={styles.fieldHeaderRow}>
     <View style={styles.labelContainer}>
       <Text style={styles.label} numberOfLines={allowWrap ? undefined : 1} ellipsizeMode={allowWrap ? undefined : "tail"}>
         {label}
+        {required ? <Text style={styles.requiredAsterisk}> *</Text> : null}
       </Text>
     </View>
     {right ? <View style={styles.labelRight}>{right}</View> : null}
@@ -137,6 +138,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: ENTRY_COLORS.text,
+  },
+  requiredAsterisk: {
+    color: ENTRY_COLORS.danger,
+    fontWeight: "700",
   },
   fieldHeaderRow: {
     flexDirection: "row",

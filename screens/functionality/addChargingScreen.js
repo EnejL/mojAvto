@@ -47,7 +47,6 @@ export default function AddChargingScreen({ route, navigation }) {
   const [chargingData, setChargingData] = useState({
     date: new Date(),
     energyAdded: "",
-    pricePerKWh: "",
     cost: "",
     odometer: "",
     chargingLocation: {
@@ -129,43 +128,21 @@ export default function AddChargingScreen({ route, navigation }) {
   };
 
   const onChangeEnergyAdded = (text) => {
-    const energyAdded = formatDecimalInput(text);
-    setChargingData((prev) => {
-      const energyNum = parseDecimal(energyAdded);
-      const priceNum = parseDecimal(prev.pricePerKWh);
-      const next = { ...prev, energyAdded };
-      if (energyNum !== null && priceNum !== null) {
-        next.cost = formatComputedDecimal(energyNum * priceNum);
-      }
-      return next;
-    });
-  };
-
-  const onChangePricePerKWh = (text) => {
-    const pricePerKWh = formatDecimalInput(text);
-    setChargingData((prev) => {
-      const energyNum = parseDecimal(prev.energyAdded);
-      const priceNum = parseDecimal(pricePerKWh);
-      const next = { ...prev, pricePerKWh };
-      if (energyNum !== null && priceNum !== null) {
-        next.cost = formatComputedDecimal(energyNum * priceNum);
-      }
-      return next;
-    });
+    setChargingData((prev) => ({ ...prev, energyAdded: formatDecimalInput(text) }));
   };
 
   const onChangeCost = (text) => {
-    const cost = formatDecimalInput(text);
-    setChargingData((prev) => {
-      const energyNum = parseDecimal(prev.energyAdded);
-      const costNum = parseDecimal(cost);
-      const next = { ...prev, cost };
-      if (energyNum !== null && costNum !== null && energyNum > 0) {
-        next.pricePerKWh = formatComputedDecimal(costNum / energyNum);
-      }
-      return next;
-    });
+    setChargingData((prev) => ({ ...prev, cost: formatDecimalInput(text) }));
   };
+
+  const pricePerKWhComputed = (() => {
+    const energyNum = parseDecimal(chargingData.energyAdded);
+    const costNum = parseDecimal(chargingData.cost);
+    if (energyNum !== null && costNum !== null && energyNum > 0) {
+      return formatComputedDecimal(costNum / energyNum);
+    }
+    return null;
+  })();
 
   const handleSave = async () => {
     if (
@@ -253,6 +230,7 @@ export default function AddChargingScreen({ route, navigation }) {
       <View style={styles.field}>
         <EntryLabelRow
           label={`${t("charging.odometer")} (${distanceUnit})`}
+          required
           allowWrap={true}
           right={
             prevOdometer !== null ? (
@@ -281,9 +259,8 @@ export default function AddChargingScreen({ route, navigation }) {
 
       <EntryDivider />
 
-      <View style={[styles.row, isSmallScreen && styles.rowStacked]}>
-        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("charging.energyAdded")} (kWh)`} />
+      <View style={[styles.field, isSmallScreen ? styles.fieldFull : undefined]}>
+        <EntryLabelRow label={`${t("charging.energyAdded")} (kWh)`} required />
           <TextInput
             value={chargingData.energyAdded}
             onChangeText={onChangeEnergyAdded}
@@ -302,33 +279,10 @@ export default function AddChargingScreen({ route, navigation }) {
               setChargingData((d) => ({ ...d, energyAdded: "" }))
             )}
           />
-        </View>
-
-        <View style={[styles.field, isSmallScreen ? styles.fieldFull : styles.fieldHalf]}>
-          <EntryLabelRow label={`${t("charging.pricePerKWh")} (${currencySymbol}/kWh)`} allowWrap={true} />
-          <TextInput
-            value={chargingData.pricePerKWh}
-            onChangeText={onChangePricePerKWh}
-            keyboardType="numeric"
-            mode="outlined"
-            style={styles.input}
-            outlineStyle={styles.inputOutline}
-            contentStyle={styles.inputContent}
-            textColor={ENTRY_COLORS.text}
-            outlineColor={ENTRY_COLORS.border}
-            activeOutlineColor={ENTRY_COLORS.blue}
-            placeholderTextColor={ENTRY_COLORS.placeholder}
-            placeholder={`${currencySymbol} 0.00`}
-            onFocus={() => setShowDatePicker(false)}
-            right={renderClearIcon(chargingData.pricePerKWh, () =>
-              setChargingData((d) => ({ ...d, pricePerKWh: "" }))
-            )}
-          />
-        </View>
       </View>
 
       <View style={styles.field}>
-        <EntryLabelRow label={t("common.totalCost")} />
+        <EntryLabelRow label={t("common.totalCost")} required />
         <TextInput
           value={chargingData.cost}
           onChangeText={onChangeCost}
@@ -349,6 +303,15 @@ export default function AddChargingScreen({ route, navigation }) {
           )}
         />
       </View>
+
+      {pricePerKWhComputed !== null ? (
+        <View style={styles.computedRow}>
+          <EntryLabelRow label={`${t("charging.pricePerKWh")} (${currencySymbol}/kWh)`} />
+          <Text style={styles.computedValue}>
+            {currencySymbol} {pricePerKWhComputed}
+          </Text>
+        </View>
+      ) : null}
 
       <TouchableOpacity
         style={styles.moreDetailsButton}
@@ -557,6 +520,21 @@ const styles = StyleSheet.create({
   },
   segmentedButtons: {
     marginBottom: 6,
+  },
+  computedRow: {
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: ENTRY_COLORS.border,
+    backgroundColor: ENTRY_COLORS.surface,
+  },
+  computedValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: ENTRY_COLORS.text,
+    marginTop: 4,
   },
   primaryButton: {
     borderRadius: 18,
