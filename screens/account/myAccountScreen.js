@@ -3,9 +3,8 @@ import {
   View,
   StyleSheet,
   Alert,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   Animated,
 } from "react-native";
 import {
@@ -26,6 +25,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function MyAccountScreen() {
+  // Fixed scrolling issues
   const { t } = useTranslation();
   const navigation = useNavigation();
   const currentUser = getCurrentUser();
@@ -316,23 +316,6 @@ export default function MyAccountScreen() {
     // If button is visible and user is still near bottom, keep it visible
   };
 
-  const hideDeleteButton = () => {
-    if (isDeleteVisible) {
-      setIsDeleteVisible(false);
-      Animated.timing(deleteButtonAnim, {
-        toValue: 200,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const accountRows = [
-    { key: "preferences" },
-    { key: "support" },
-    { key: "footer" },
-  ];
-
   const renderProfileHeader = () => (
     <View style={styles.profileSection}>
       <View style={styles.avatarContainer}>
@@ -613,35 +596,21 @@ export default function MyAccountScreen() {
     </>
   );
 
-  const renderRow = ({ item }) => {
-    switch (item.key) {
-      case "preferences":
-        return renderPreferencesSection();
-      case "support":
-        return renderSupportSection();
-      case "footer":
-        return renderFooter();
-      default:
-        return null;
-    }
-  };
-
   return (
-    <TouchableWithoutFeedback onPress={hideDeleteButton}>
-      <View style={styles.container}>
-        <FlatList
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          data={accountRows}
-          renderItem={renderRow}
-          keyExtractor={(item) => item.key}
-          ListHeaderComponent={renderProfileHeader}
-          keyboardShouldPersistTaps="handled"
-          bounces={true}
-          onScroll={handleScroll}
-          scrollEventThrottle={64}
-        />
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {renderProfileHeader()}
+        {renderPreferencesSection()}
+        {renderSupportSection()}
+        {renderFooter()}
+      </ScrollView>
 
       {currentUser && !currentUser.isAnonymous && (
         <Animated.View
@@ -672,8 +641,7 @@ export default function MyAccountScreen() {
           </TouchableOpacity>
         </Animated.View>
       )}
-      </View>
-    </TouchableWithoutFeedback>
+    </View>
   );
 }
 

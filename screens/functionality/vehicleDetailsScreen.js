@@ -1133,7 +1133,7 @@ export default function VehicleDetailsScreen({ route, navigation }) {
           style={styles.topBarIconButton}
           onPress={() => navigation.navigate("EditVehicle", { vehicle })}
         >
-          <MaterialCommunityIcons name="cog" size={24} color={COLORS.text} />
+          <MaterialCommunityIcons name="pencil" size={24} color={COLORS.text} />
         </TouchableOpacity>
       </View>
 
