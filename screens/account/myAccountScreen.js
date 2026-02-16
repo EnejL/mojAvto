@@ -591,7 +591,7 @@ export default function MyAccountScreen() {
       </TouchableOpacity>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>{t("common.version")} 3.0.1</Text>
+        <Text style={styles.footerText}>{t("common.version")} 3.0.2</Text>
       </View>
     </>
   );

@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { Text, Button } from "react-native-paper";
+import { Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import {
   getAllVehicles,
@@ -498,17 +498,13 @@ export default function MyVehiclesScreen({ navigation, route }) {
               />
             )}
 
-            <View style={styles.actionButtonsContainer}>
-              <Button
-                mode="contained"
-                onPress={() => navigation.navigate("AddVehicle")}
-                style={styles.addButton}
-                labelStyle={styles.buttonLabel}
-                buttonColor="#3169ad"
-              >
-                {t("vehicles.add")}
-              </Button>
-            </View>
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => navigation.navigate("AddVehicle")}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons name="plus" size={28} color="#fff" />
+            </TouchableOpacity>
           </>
         )}
       </View>
@@ -561,27 +557,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   listContent: {
-    paddingBottom: 80,
+    paddingBottom: 100,
   },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+  fab: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#1A1A1A",
-  },
-  addButton: {
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-  },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
+    bottom: 24,
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#3169ad",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   deleteAction: {
     backgroundColor: "#f44336",

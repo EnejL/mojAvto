@@ -803,29 +803,31 @@ export default function VehicleDetailsScreen({ route, navigation }) {
   const CollapsibleCard = ({ icon, title, expanded, onToggle, children, disabled }) => {
     return (
       <Surface style={[styles.panelCard, disabled && styles.panelCardDisabled]}>
-        <TouchableOpacity
-          onPress={disabled ? undefined : onToggle}
-          activeOpacity={disabled ? 1 : 0.8}
-          style={styles.panelHeader}
-        >
-          <View style={styles.panelHeaderLeft}>
+        <View style={styles.panelCardInner}>
+          <TouchableOpacity
+            onPress={disabled ? undefined : onToggle}
+            activeOpacity={disabled ? 1 : 0.8}
+            style={styles.panelHeader}
+          >
+            <View style={styles.panelHeaderLeft}>
+              <MaterialCommunityIcons
+                name={icon}
+                size={22}
+                color={disabled ? COLORS.muted : COLORS.text}
+                style={styles.panelHeaderIcon}
+              />
+              <Text style={[styles.panelHeaderTitle, disabled && { color: COLORS.muted }]}>
+                {title}
+              </Text>
+            </View>
             <MaterialCommunityIcons
-              name={icon}
-              size={22}
-              color={disabled ? COLORS.muted : COLORS.text}
-              style={styles.panelHeaderIcon}
+              name={expanded ? "chevron-up" : "chevron-down"}
+              size={24}
+              color={disabled ? COLORS.muted : COLORS.subtext}
             />
-            <Text style={[styles.panelHeaderTitle, disabled && { color: COLORS.muted }]}>
-              {title}
-            </Text>
-          </View>
-          <MaterialCommunityIcons
-            name={expanded ? "chevron-up" : "chevron-down"}
-            size={24}
-            color={disabled ? COLORS.muted : COLORS.subtext}
-          />
-        </TouchableOpacity>
-        {expanded && !disabled ? <View style={styles.panelBody}>{children}</View> : null}
+          </TouchableOpacity>
+          {expanded && !disabled ? <View style={styles.panelBody}>{children}</View> : null}
+        </View>
       </Surface>
     );
   };
@@ -1547,7 +1549,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
+  },
+  panelCardInner: {
     overflow: "hidden",
+    borderRadius: 18,
   },
   panelCardDisabled: {
     opacity: 0.6,
